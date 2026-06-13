@@ -978,7 +978,7 @@ function applyFilters(){
     if(l&&r['EJECUTIVO']!==l)return false;
     if(t&&r['TIPO_CLIENTE']!==t)return false;
     if(ss.length&&!ss.includes(r['ESTATUS_LEGAL']))return false;
-    if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(dt){if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}}
+    if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt)return false;if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}
     return true;
   });
   renderKPIs();renderTable();
@@ -1040,7 +1040,7 @@ function countReps(r){let n=1;if(r['CORREO_REPRESENTANTES2']||r['NUMERO_REPRESEN
 function renderTabDatos(r){
   const dy=calcDays(r['Fecha de Instalacion Cliente']);
   const dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
-  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
+  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
   h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación</label><textarea id="f_obs">'+esc(r['Observacion']||'')+'</textarea></div></div>';
   h+='<div class="sec-lbl">Representantes Legales</div><div id="repsC">';
   for(let i=1;i<=S.nReps;i++) h+=buildRep(i,r);
@@ -1462,7 +1462,7 @@ function genReport(){
   S.rptData=getBase().filter(r=>{
     if(l&&r['EJECUTIVO']!==l)return false;
     if(e&&r['ESTATUS_LEGAL']!==e)return false;
-    if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(dt){if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}}
+    if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt)return false;if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}
     return true;
   });
   const si_map=SI;
@@ -1581,7 +1581,24 @@ document.addEventListener('click',e=>{if(!document.getElementById('avatarBtn').c
 
 // UTILS
 function calcDays(s){const d=parseDate(s);return d?Math.floor((Date.now()-d.getTime())/86400000):null;}
-function parseDate(s){if(!s)return null;s=s.trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);const n=parseFloat(s);if(!isNaN(n)&&n>10000)return new Date((n-25569)*86400000);return null;}
+function parseDate(s){
+  if(!s)return null;
+  s=String(s).trim();
+  if(!s||s==='-'||s==='—')return null;
+  // DD/MM/YYYY (formato del Sheet)
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){const d=new Date(+m[3],+m[2]-1,+m[1]);if(!isNaN(d))return d;}
+  // DD-MM-YYYY (formato TAD)
+  m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if(m){const d=new Date(+m[3],+m[2]-1,+m[1]);if(!isNaN(d))return d;}
+  // YYYY-MM-DD
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m){const d=new Date(+m[1],+m[2]-1,+m[3]);if(!isNaN(d))return d;}
+  // Excel serial
+  const n=parseFloat(s);
+  if(!isNaN(n)&&n>30000&&n<60000){const d=new Date((n-25569)*86400000);if(!isNaN(d))return d;}
+  return null;
+}
 function fmtDate(s){const d=parseDate(s);if(!d)return'—';return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 function toast(m,t){const el=document.getElementById('toast');el.textContent=m;el.className='toast show'+(t?' '+t:'');setTimeout(()=>el.className='toast',2800);}
