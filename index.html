@@ -681,7 +681,7 @@ tbody tr:hover td{background:var(--surface2)}
         <div class="rpt-title">Filtros del reporte</div>
         <div class="rpt-grid">
           <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
-          <div class="fp-group"><label>Estatus</label><select class="fp-sel" id="rEstatus" multiple size="4" style="min-height:90px"><option value="GRANDES NEGOCIOS">Grandes Negocios</option><option value="PENDIENTE POR DOCUMENTOS">Pend. Documentos</option><option value="DOCUMENTOS SOLICITADOS">Docs. Solicitados</option><option value="DOCUMENTOS EN REVISION">Docs. en Revisión</option><option value="DOCUMENTOS RECIBIDOS">Docs. Recibidos</option><option value="CONTRATO EN CURSO">Contrato en Curso</option><option value="PENDIENTE POR FIRMAR">Pend. por Firmar</option><option value="CONTRATO FIRMADO">Contrato Firmado</option></select></div>
+          <div class="fp-group"><label>Estatus (Ctrl+clic para varios)</label><select class="fp-sel" id="rEstatus" multiple size="4" style="min-height:90px"><option value="GRANDES NEGOCIOS">Grandes Negocios</option><option value="PENDIENTE POR DOCUMENTOS">Pend. Documentos</option><option value="DOCUMENTOS SOLICITADOS">Docs. Solicitados</option><option value="DOCUMENTOS EN REVISION">Docs. en Revisión</option><option value="DOCUMENTOS RECIBIDOS">Docs. Recibidos</option><option value="CONTRATO EN CURSO">Contrato en Curso</option><option value="PENDIENTE POR FIRMAR">Pend. por Firmar</option><option value="CONTRATO FIRMADO">Contrato Firmado</option></select></div>
           <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="rDesde"></div>
           <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
         </div>
@@ -714,10 +714,11 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<!-- DRAWER EXPEDIENTE -->
-<div class="view" id="view-seguimiento"><div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div class="rpt-title" style="margin-bottom:0">✉ Vista previa</div><div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button><button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar</button></div></div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">Para: <strong id="segMsgTo"></strong> · CC: <strong id="segMsgCc"></strong></div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asunto: <strong id="segMsgSubj"></strong></div><textarea id="segMsgBody" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:250px;outline:none"></textarea></div></div></div>
 
-    <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
+
+    <div class="view" id="view-seguimiento" style="padding-top:16px"><div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div class="rpt-title" style="margin-bottom:0">✉ Vista previa</div><div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button><button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar</button></div></div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">Para: <strong id="segMsgTo"></strong> · CC: <strong id="segMsgCc"></strong></div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asunto: <strong id="segMsgSubj"></strong></div><textarea id="segMsgBody" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:250px;outline:none"></textarea></div></div></div>
+
+        <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
   <div class="drawer">
     <div class="drawer-hd">
       <div class="drawer-title" id="drawerTitle">Expediente</div>
@@ -872,18 +873,26 @@ document.addEventListener('keydown',e=>{
 
 // DATOS
 async function loadData(){
+  // Intenta Sheet real, cae a demo si falla
   try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
     const[r1,r2]=await Promise.all([
-      fetch(`${BASE}?gid=977740412&single=true&output=csv&t=${Date.now()}`),
-      fetch(`${BASE}?gid=943629637&single=true&output=csv&t=${Date.now()}`),
+      fetch(`${BASE}?gid=977740412&single=true&output=csv&t=${Date.now()}`,{signal:controller.signal}),
+      fetch(`${BASE}?gid=943629637&single=true&output=csv&t=${Date.now()}`,{signal:controller.signal}),
     ]);
+    clearTimeout(timeout);
     if(!r1.ok||!r2.ok) throw new Error('fetch error');
-    const data=parseCSV(await r1.text()).filter(r=>r['RAZON SOCIAL']);
-    if(data.length===0) throw new Error('empty');
+    const txt1=await r1.text();
+    const data=parseCSV(txt1).filter(r=>r['RAZON SOCIAL']&&r['RAZON SOCIAL'].trim());
+    if(data.length<5) throw new Error('datos insuficientes');
     S.all=data;
-    S.cfg=parseCSV(await r2.text());
+    const txt2=await r2.text();
+    const cfg=parseCSV(txt2);
+    if(cfg.length>0) S.cfg=cfg;
+    console.log('Sheet cargado: '+S.all.length+' clientes');
   }catch(e){
-    console.warn('Sheet no disponible, usando datos demo');
+    console.warn('Sheet no disponible ('+e.message+'), usando datos demo');
     loadDemo();
   }
 }
