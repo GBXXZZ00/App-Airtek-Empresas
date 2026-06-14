@@ -457,7 +457,6 @@ tbody tr:hover td{background:var(--surface2)}
       <button class="nav-item" id="nav-reportes" onclick="showView('reportes')">
         <span class="nav-icon">📄</span> Reportes
       </button>
-    </div>
       <button class="nav-item" id="nav-seguimiento" onclick="showView('seguimiento')">
         <span class="nav-icon">📬</span> Seguimiento
         <span class="nav-badge" id="segBadge" style="display:none;background:var(--red)">0</span>
@@ -716,54 +715,9 @@ tbody tr:hover td{background:var(--surface2)}
 </div>
 
 <!-- DRAWER EXPEDIENTE -->
+<div class="view" id="view-seguimiento"><div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div class="rpt-title" style="margin-bottom:0">✉ Vista previa</div><div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button><button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar</button></div></div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">Para: <strong id="segMsgTo"></strong> · CC: <strong id="segMsgCc"></strong></div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asunto: <strong id="segMsgSubj"></strong></div><textarea id="segMsgBody" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:250px;outline:none"></textarea></div></div></div>
 
-    <!-- SEGUIMIENTO -->
-    <div class="view" id="view-seguimiento">
-      <div class="view-hd">
-        <div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones y gestiones</div></div>
-        <button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes de notificar</button>
-        <button class="chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button>
-        <button class="chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button>
-        <button class="chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial enviados</button>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-        <div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div>
-        <div style="margin-left:auto;display:flex;gap:8px">
-          <button class="btn btn-p btn-sm" id="segSendAllBtn" onclick="segSendAll()">✉ Enviar seleccionados</button>
-          <button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button>
-        </div>
-      </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr>
-            <th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th>
-            <th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th>
-          </tr></thead>
-          <tbody id="segTbl"></tbody>
-        </table>
-      </div>
-      <div id="segMsgPanel" style="display:none;margin-top:16px">
-        <div class="rpt-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="rpt-title" style="margin-bottom:0">✉ Vista previa del correo</div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button>
-              <button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar correo</button>
-            </div>
-          </div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">
-            <span>Para: <strong id="segMsgTo"></strong></span> · <span>CC: <strong id="segMsgCc"></strong></span>
-          </div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asunto: <strong id="segMsgSubj"></strong></div>
-          <textarea id="segMsgBody" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:250px;outline:none"></textarea>
-        </div>
-      </div>
-    </div>
-
-<div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
+    <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
   <div class="drawer">
     <div class="drawer-hd">
       <div class="drawer-title" id="drawerTitle">Expediente</div>
@@ -772,6 +726,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="tabs">
       <button class="tab active" onclick="showTab('datos')">Datos</button>
       <button class="tab" onclick="showTab('documentos')">Documentos</button>
+      <button class="tab" onclick="showTab('seguimiento_cli')">Seguimiento</button>
       <button class="tab" onclick="showTab('historial')">Historial</button>
     </div>
     <div class="tab-panel active" id="tab-datos"></div>
@@ -890,7 +845,6 @@ async function doLogin(){
   document.getElementById('sbUserInfo').textContent=S.user+' · '+S.rol;
   if(S.rol==='LIDER'){
     document.getElementById('nav-reportes').style.display='none';
-    document.getElementById('nav-seguimiento').style.display='none';
     document.getElementById('df-lider-grp').style.display='none';
   }
   if(S.rol==='ABOGADO'){
@@ -1103,7 +1057,7 @@ function renderTabDatos(r){
   if(S.nReps<4) h+='<button class="add-rep" onclick="addRep()">+ Agregar representante</button>';
   h+='<div class="sec-lbl">Expediente en Drive</div>';
   if(r['Carpeta_Drive_URL']) h+='<a href="'+r['Carpeta_Drive_URL']+'" target="_blank" class="btn btn-g btn-sm">📁 Abrir carpeta en Drive</a>';
-  else h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada a\u00fan \u2014 se crear\u00e1 al activar el script</div>';
+  else h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada aún</div>';
   document.getElementById('tab-datos').innerHTML=h;
 }
 
@@ -1596,16 +1550,16 @@ function genWhatsApp(){
     if(l){
       lines.push('');
       lines.push('*DETALLE DE CLIENTES:*');
-      const pendientes=datos.filter(r=>r['ESTATUS_LEGAL']!=='CONTRATO FIRMADO');
-      pendientes.forEach((r,idx)=>{
-        const dy=calcDays(r['Fecha de Instalacion Cliente']);
-        const obs=r['Observacion']?r['Observacion'].trim():'';
-        lines.push((idx+1)+'. *'+r['RAZON SOCIAL']+'*');
-        lines.push('   RIF: '+r['RIF']+' | '+r['ESTATUS_LEGAL']);
-        if(dy!==null)lines.push('   Dias sin avance: '+dy);
-        if(obs)lines.push('   Obs: '+obs);
+      var pendientes=datos.filter(function(r2){return r2['ESTATUS_LEGAL']!=='CONTRATO FIRMADO';});
+      pendientes.forEach(function(r2,idx){
+        var dy2=calcDays(r2['Fecha de Instalacion Cliente']);
+        var obs2=r2['Observacion']?r2['Observacion'].trim():'';
+        lines.push((idx+1)+'. *'+r2['RAZON SOCIAL']+'*');
+        lines.push('   RIF: '+r2['RIF']+' | '+r2['ESTATUS_LEGAL']);
+        if(dy2!==null)lines.push('   Dias: '+dy2);
+        if(obs2)lines.push('   Obs: '+obs2);
       });
-      if(!pendientes.length)lines.push('   Sin clientes pendientes');
+      if(!pendientes.length)lines.push('   Sin pendientes');
     }
   });
   lines.push('');
@@ -1639,7 +1593,7 @@ function showView(v){
   document.getElementById('view-'+v).classList.add('active');
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+v)?.classList.add('active');
-  const lbs={clientes:'Contratos B2B · Clientes',dashboard:'Contratos B2B · Dashboard',reportes:'Contratos B2B · Reportes'};
+  const lbs={clientes:'Contratos B2B · Clientes',dashboard:'Contratos B2B · Dashboard',reportes:'Contratos B2B · Reportes',seguimiento:'Contratos B2B · Seguimiento'};
   document.getElementById('crumb').textContent=lbs[v]||v;
   if(v==='dashboard')renderDash();
   closeSidebar();
@@ -1677,303 +1631,59 @@ function toast(m,t){const el=document.getElementById('toast');el.textContent=m;e
 // EXPORT PDF
 function exportPDF(){
   if(!S.rptData||!S.rptData.length){toast('Genera un reporte primero','err');return;}
-  const w=window.open('','_blank');
-  const d=S.rptData;
-  const tot=d.length;
-  const firm=d.filter(r=>r['ESTATUS_LEGAL']==='CONTRATO FIRMADO').length;
-  const sinD=d.filter(r=>['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL'])).length;
-  const pF=d.filter(r=>r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR').length;
-  const pct=tot?Math.round(firm/tot*100):0;
-  const lids=[...new Set(d.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
-  let lidRows='';
-  lids.forEach(lid=>{
-    const b=d.filter(r=>r['EJECUTIVO']===lid);
-    const f=b.filter(r=>r['ESTATUS_LEGAL']==='CONTRATO FIRMADO').length;
-    const s=b.filter(r=>['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL'])).length;
-    lidRows+='<tr><td>'+lid+'</td><td>'+b.length+'</td><td>'+f+' ('+Math.round(b.length?f/b.length*100:0)+'%)</td><td>'+s+'</td></tr>';
-  });
-  let tblRows='';
-  d.forEach(r=>{
-    const dy=calcDays(r['Fecha de Instalacion Cliente']);
-    tblRows+='<tr><td>'+esc(r['RAZON SOCIAL'])+'</td><td>'+esc(r['RIF'])+'</td><td>'+esc(r['EJECUTIVO'])+'</td><td>'+esc(r['ESTATUS_LEGAL'])+'</td><td>'+(dy!==null?dy+'d':'\u2014')+'</td><td>'+esc(r['Observacion']||'')+'</td></tr>';
-  });
-  const hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
-  w.document.write('<html><head><title>Reporte Contratos B2B - Airtek</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;color:#111}h1{font-size:18px;margin-bottom:4px}h2{font-size:14px;margin:20px 0 8px;border-bottom:2px solid #111;padding-bottom:4px}.sub{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}th{background:#111;color:#fff;padding:6px 8px;text-align:left}td{padding:5px 8px;border-bottom:1px solid #ddd}.kpi-row{display:flex;gap:16px;margin-bottom:20px}.kpi{background:#f5f5f5;padding:12px 16px;border-radius:6px;flex:1;text-align:center}.kpi-v{font-size:22px;font-weight:700}.kpi-l{font-size:10px;color:#666;text-transform:uppercase}@media print{body{padding:20px}}</style></head><body>');
-  w.document.write('<h1>REPORTE CONTRATOS B2B \u2014 AIRTEK</h1>');
-  w.document.write('<div class="sub">Generado el '+hoy+' \u00b7 Administraci\u00f3n de Contratos</div>');
-  w.document.write('<div class="kpi-row"><div class="kpi"><div class="kpi-v">'+tot+'</div><div class="kpi-l">Total</div></div><div class="kpi"><div class="kpi-v">'+firm+' ('+pct+'%)</div><div class="kpi-l">Firmados</div></div><div class="kpi"><div class="kpi-v">'+sinD+'</div><div class="kpi-l">Sin Docs</div></div><div class="kpi"><div class="kpi-v">'+pF+'</div><div class="kpi-l">Pend. Firmar</div></div></div>');
-  w.document.write('<h2>Rendimiento por L\u00edder</h2>');
-  w.document.write('<table><thead><tr><th>L\u00edder</th><th>Total</th><th>Firmados</th><th>Sin Docs</th></tr></thead><tbody>'+lidRows+'</tbody></table>');
-  w.document.write('<h2>Detalle de Clientes ('+tot+')</h2>');
-  w.document.write('<table><thead><tr><th>Raz\u00f3n Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>D\u00edas</th><th>Observaci\u00f3n</th></tr></thead><tbody>'+tblRows+'</tbody></table>');
-  w.document.write('<div style="text-align:center;color:#999;font-size:10px;margin-top:30px;border-top:1px solid #ddd;padding-top:10px">Airtek \u00b7 Administraci\u00f3n de Contratos B2B \u00b7 airtek.com.ve</div>');
-  w.document.write('</body></html>');
-  w.document.close();
-  setTimeout(()=>w.print(),500);
+  var w=window.open('','_blank');
+  var d=S.rptData,tot=d.length;
+  var firm=d.filter(function(r){return r['ESTATUS_LEGAL']==='CONTRATO FIRMADO';}).length;
+  var sinD=d.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].indexOf(r['ESTATUS_LEGAL'])>=0;}).length;
+  var pF=d.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';}).length;
+  var pct=tot?Math.round(firm/tot*100):0;
+  var lids=[];d.forEach(function(r){if(r['EJECUTIVO']&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);});lids.sort();
+  var lidRows='';
+  lids.forEach(function(lid){var b=d.filter(function(r){return r['EJECUTIVO']===lid;});var f=b.filter(function(r){return r['ESTATUS_LEGAL']==='CONTRATO FIRMADO';}).length;var s=b.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].indexOf(r['ESTATUS_LEGAL'])>=0;}).length;lidRows+='<tr><td>'+lid+'</td><td>'+b.length+'</td><td>'+f+' ('+Math.round(b.length?f/b.length*100:0)+'%)</td><td>'+s+'</td></tr>';});
+  var tblRows='';
+  d.forEach(function(r){var dy=calcDays(r['Fecha de Instalacion Cliente']);tblRows+='<tr><td>'+esc(r['RAZON SOCIAL'])+'</td><td>'+esc(r['RIF'])+'</td><td>'+esc(r['EJECUTIVO'])+'</td><td>'+esc(r['ESTATUS_LEGAL'])+'</td><td>'+(dy!==null?dy+'d':'\u2014')+'</td><td>'+esc(r['Observacion']||'')+'</td></tr>';});
+  var hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var html='<html><head><title>Reporte Contratos B2B</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:40px;color:#111}h1{font-size:18px;margin-bottom:4px}h2{font-size:14px;margin:20px 0 8px;border-bottom:2px solid #111;padding-bottom:4px}.sub{color:#666;font-size:12px;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}th{background:#111;color:#fff;padding:6px 8px;text-align:left}td{padding:5px 8px;border-bottom:1px solid #ddd}.kr{display:flex;gap:16px;margin-bottom:20px}.k{background:#f5f5f5;padding:12px 16px;border-radius:6px;flex:1;text-align:center}.kv{font-size:22px;font-weight:700}.kl{font-size:10px;color:#666;text-transform:uppercase}@media print{body{padding:20px}}</style></head><body>';
+  html+='<h1>REPORTE CONTRATOS B2B \u2014 AIRTEK</h1><div class="sub">Generado el '+hoy+'</div>';
+  html+='<div class="kr"><div class="k"><div class="kv">'+tot+'</div><div class="kl">Total</div></div><div class="k"><div class="kv">'+firm+' ('+pct+'%)</div><div class="kl">Firmados</div></div><div class="k"><div class="kv">'+sinD+'</div><div class="kl">Sin Docs</div></div><div class="k"><div class="kv">'+pF+'</div><div class="kl">Pend Firmar</div></div></div>';
+  html+='<h2>Por L\u00edder</h2><table><thead><tr><th>L\u00edder</th><th>Total</th><th>Firmados</th><th>Sin Docs</th></tr></thead><tbody>'+lidRows+'</tbody></table>';
+  html+='<h2>Detalle ('+tot+')</h2><table><thead><tr><th>Raz\u00f3n Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>D\u00edas</th><th>Obs</th></tr></thead><tbody>'+tblRows+'</tbody></table>';
+  html+='<div style="text-align:center;color:#999;font-size:10px;margin-top:30px;border-top:1px solid #ddd;padding-top:10px">Airtek \u00b7 Contratos B2B</div></body></html>';
+  w.document.write(html);w.document.close();setTimeout(function(){w.print();},500);
 }
 
-// ══ MODULO SEGUIMIENTO ══════════════════════════════
-let segTab='pend';
-let segLog=[];
-let segSelected=new Set();
+var segTab='pend';var segLog=[];var segSelected={};
 
-function switchSegTab(tab){
-  segTab=tab;segSelected.clear();
-  ['pend','sinmov','firmar','log'].forEach(t=>{
-    const el=document.getElementById('seg-tab-'+t);
-    if(el){el.classList.toggle('on',t===tab);}
-  });
-  renderSegTab();
-}
+function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab)el.classList.add('on');else el.classList.remove('on');}});renderSegTab();}
 
-function refreshSeg(){
-  renderSegTab();
-  const pend=getBase().filter(r=>(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE').length;
-  const badge=document.getElementById('segBadge');
-  badge.textContent=pend;badge.style.display=pend?'inline':'none';
-  toast('Seguimiento actualizado','ok');
-}
+function refreshSeg(){try{renderSegTab();}catch(e){console.warn('seg:',e);}var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;var badge=document.getElementById('segBadge');if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}}
 
-function getSegData(){
-  const base=getBase();
-  const lid=document.getElementById('segLider')?.value||'';
-  let data=[];
-  if(segTab==='pend'){
-    data=base.filter(r=>(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE'||(r['NOTIF_LIDER_ENVIADA']||'').trim()==='');
-    const now=new Date();const curMonth=now.getMonth();const curYear=now.getFullYear();
-    data=data.filter(r=>{
-      const fd=parseDate(r['Fecha de Instalacion Cliente']);
-      return fd&&fd.getMonth()===curMonth&&fd.getFullYear()===curYear;
-    });
-  }else if(segTab==='sinmov'){
-    data=base.filter(r=>{
-      if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;
-      const dy=calcDays(r['Fecha de Instalacion Cliente']);
-      return dy!==null&&dy>30;
-    });
-  }else if(segTab==='firmar'){
-    data=base.filter(r=>r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR');
-  }else if(segTab==='log'){
-    renderSegLog();return;
-  }
-  if(lid)data=data.filter(r=>r['EJECUTIVO']===lid);
-  return data.sort((a,b)=>(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0));
-}
+function getSegData(){var base=getBase();var lid=(document.getElementById('segLider')||{}).value||'';var data=[];if(segTab==='pend'){var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();data=base.filter(function(r){var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();if(nle==='SI'||nle==='HISTORICO')return false;var fd=parseDate(r['Fecha de Instalacion Cliente']);return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;});}else if(segTab==='sinmov'){data=base.filter(function(r){if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30;});}else if(segTab==='firmar'){data=base.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});}else{return null;}if(lid)data=data.filter(function(r){return r['EJECUTIVO']===lid;});data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});return data;}
 
-function renderSegTab(){
-  if(segTab==='log'){renderSegLog();return;}
-  const data=getSegData()||[];
-  document.getElementById('segSub').textContent=data.length+' registros';
-  document.getElementById('segCheckAll').checked=false;
-  const actionLabels={pend:'Notificar l\u00edder',sinmov:'Recordar l\u00edder',firmar:'Recordar cliente'};
-  const tbl=document.getElementById('segTbl');
-  if(!data.length){
-    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros en esta categor\u00eda</td></tr>';
-    return;
-  }
-  tbl.innerHTML=data.map((r,i)=>{
-    const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
-    const dy=calcDays(r['Fecha de Instalacion Cliente']);
-    const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
-    const rif=r['RIF']||'';
-    const checked=segSelected.has(rif)?'checked':'';
-    return '<tr><td><input type="checkbox" data-rif="'+rif+'" '+checked+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td><button class="btn btn-p btn-sm" onclick="segAction(\''+rif+'\',\'single\')" style="font-size:10px;padding:4px 8px">'+(actionLabels[segTab]||'Enviar')+'</button></td></tr>';
-  }).join('');
-}
+function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button></td></tr>';});tbl.innerHTML=html;}
 
-function renderSegLog(){
-  const tbl=document.getElementById('segTbl');
-  if(!segLog.length){
-    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin env\u00edos registrados en esta sesi\u00f3n</td></tr>';
-    return;
-  }
-  tbl.innerHTML=segLog.map(l=>'<tr><td></td><td>'+esc(l.cliente)+'</td><td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td><td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td><td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td><td>'+esc(l.dest)+'</td><td>\u2705</td></tr>').join('');
-}
+function renderSegLog(){var tbl=document.getElementById('segTbl');if(!tbl)return;if(!segLog.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin env\u00edos registrados</td></tr>';return;}var html='';segLog.forEach(function(l){html+='<tr><td></td><td>'+esc(l.cliente)+'</td><td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td><td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td><td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td><td>'+esc(l.dest)+'</td><td>\u2705</td></tr>';});tbl.innerHTML=html;}
 
-function segToggleAll(el){
-  const data=getSegData()||[];
-  if(el.checked){data.forEach(r=>segSelected.add(r['RIF']));}else{segSelected.clear();}
-  renderSegTab();
-}
-function segToggleOne(el){
-  const rif=el.dataset.rif;
-  if(el.checked)segSelected.add(rif);else segSelected.delete(rif);
-}
-function segSelectAll(){
-  const data=getSegData()||[];
-  data.forEach(r=>segSelected.add(r['RIF']));
-  document.getElementById('segCheckAll').checked=true;
-  renderSegTab();
-  toast(data.length+' seleccionados','ok');
-}
+function segToggleAll(el){var data=getSegData()||[];segSelected={};if(el.checked)data.forEach(function(r){segSelected[r['RIF']]=true;});renderSegTab();}
+function segToggleOne(el){var rif=el.dataset.rif;if(el.checked)segSelected[rif]=true;else delete segSelected[rif];}
+function segSelectAll(){var data=getSegData()||[];data.forEach(function(r){segSelected[r['RIF']]=true;});var ca=document.getElementById('segCheckAll');if(ca)ca.checked=true;renderSegTab();toast(data.length+' seleccionados','ok');}
 
-function segAction(rif,mode){
-  const base=getBase();
-  let clients=[];
-  if(mode==='single'){
-    const r=base.find(r=>r['RIF']===rif);
-    if(r)clients=[r];
-  }
-  if(!clients.length){toast('Cliente no encontrado','err');return;}
-  segBuildMsg(clients);
-}
+function segActionByIdx(idx){var data=getSegData()||[];if(idx>=0&&idx<data.length)segBuildMsg([data[idx]]);}
 
-function segSendAll(){
-  if(!segSelected.size){toast('Selecciona al menos un cliente','err');return;}
-  const base=getBase();
-  const clients=base.filter(r=>segSelected.has(r['RIF']));
-  if(!clients.length){toast('No se encontraron clientes','err');return;}
-  segBuildMsg(clients);
-}
+function segSendAll(){var rifs=Object.keys(segSelected);if(!rifs.length){toast('Selecciona al menos un cliente','err');return;}var base=getBase();var clients=base.filter(function(r){return segSelected[r['RIF']];});if(!clients.length){toast('No se encontraron','err');return;}segBuildMsg(clients);}
 
-function segBuildMsg(clients){
-  const config=S.cfg||[];
-  const isMasivo=clients.length>1;
-  const lid=clients[0]['EJECUTIVO']||'';
-  const correoLider=(config.find(c=>c.EJECUTIVO===lid)||{}).CORREO||lid;
-  const correoAdmin=(config.find(c=>c.ROL==='ADMIN')||{}).CORREO||'admin';
-  let para='',cc='',subj='',body='';
-  const hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+function segBuildMsg(clients){var config=S.cfg||[];var isMasivo=clients.length>1;var lid=clients[0]['EJECUTIVO']||'';var correoLider='',correoAdmin='';config.forEach(function(c2){if(c2.EJECUTIVO===lid)correoLider=c2.CORREO||'';if(c2.ROL==='ADMIN'&&!correoAdmin)correoAdmin=c2.CORREO||'';});var para='',cc='',subj='',body='';var hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});var NL=String.fromCharCode(10);if(segTab==='pend'||segTab==='sinmov'){para=correoLider||lid;cc=correoAdmin;if(isMasivo){subj='[Airtek] Expedientes pendientes \u2014 Cartera al '+hoy;body='Estimado/a '+lid+','+NL+NL+'Expedientes que requieren tu gestion:'+NL+NL;clients.forEach(function(r,i){var dy=calcDays(r['Fecha de Instalacion Cliente']);body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL+'   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' | '+dy+' dias':'')+NL;if(r['Observacion'])body+='   Obs: '+r['Observacion']+NL;body+=NL;});body+='Total: '+clients.length+' clientes.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}else{var r=clients[0];subj='[Airtek] '+(segTab==='pend'?'Nuevo cliente requiere documentacion':'Recordatorio expediente pendiente')+' \u2014 '+r['RAZON SOCIAL'];body='Estimado/a '+lid+','+NL+NL+(segTab==='pend'?'Nuevo cliente en tu cartera:':'Cliente sin avance:')+NL+NL+'Razon Social: '+r['RAZON SOCIAL']+NL+'RIF: '+r['RIF']+NL+'Tipo: '+r['TIPO_CLIENTE']+NL+'Estatus: '+r['ESTATUS_LEGAL']+NL;var dy2=calcDays(r['Fecha de Instalacion Cliente']);if(dy2!==null)body+='Dias: '+dy2+NL;if(r['Observacion'])body+='Obs: '+r['Observacion']+NL;body+=NL+'Administracion de Contratos \u2014 Airtek';}}else if(segTab==='firmar'){var r0=clients[0];var corrCliente=r0['CORREO_EMPRESA']||r0['CORREO_REPRESENTANTES']||'';if(isMasivo){para=correoLider||lid;cc=correoAdmin;subj='[Airtek] Contratos pendientes de firma \u2014 '+hoy;body='Estimado/a '+lid+','+NL+NL+'Contratos pendientes de firma:'+NL+NL;clients.forEach(function(r,i){body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL;});body+=NL+'Coordina la firma a la brevedad.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}else{para=corrCliente||correoLider||lid;cc=correoAdmin+(corrCliente&&correoLider?', '+correoLider:'');subj='[Airtek] Contrato pendiente de firma \u2014 '+r0['RAZON SOCIAL'];body='Estimado cliente,'+NL+NL+'Su contrato con Airtek esta pendiente de firma.'+NL+NL+'Empresa: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+NL+'Coordine la firma a la brevedad.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}}document.getElementById('segMsgTo').textContent=para;document.getElementById('segMsgCc').textContent=cc;document.getElementById('segMsgSubj').textContent=subj;document.getElementById('segMsgBody').value=body;document.getElementById('segMsgPanel').style.display='block';document.getElementById('segMsgPanel').scrollIntoView({behavior:'smooth'});}
 
-  if(segTab==='pend'||segTab==='sinmov'){
-    para=correoLider;cc=correoAdmin;
-    if(isMasivo){
-      subj='[Airtek] Expedientes pendientes \u2014 Tu cartera al '+hoy;
-      body='Estimado/a '+lid+',\n\n';
-      body+='Te comparto el resumen de expedientes que requieren tu gesti\u00f3n:\n\n';
-      clients.forEach((r,i)=>{
-        const dy=calcDays(r['Fecha de Instalacion Cliente']);
-        body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')\n';
-        body+='   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' | '+dy+' d\u00edas':'')+'\n';
-        if(r['Observacion'])body+='   Obs: '+r['Observacion']+'\n';
-        body+='\n';
-      });
-      body+='Total: '+clients.length+' clientes pendientes.\n\n';
-      body+='Por favor gestiona la documentaci\u00f3n requerida a la brevedad.\n\n';
-      body+='Administraci\u00f3n de Contratos \u00b7 Airtek';
-    }else{
-      const r=clients[0];
-      subj='[Airtek] '+(segTab==='pend'?'Nuevo cliente requiere documentaci\u00f3n':'Recordatorio expediente pendiente')+' \u2014 '+r['RAZON SOCIAL'];
-      body='Estimado/a '+lid+',\n\n';
-      body+=(segTab==='pend'?'Se ha registrado un nuevo cliente en tu cartera que requiere gesti\u00f3n de documentaci\u00f3n legal':'El siguiente cliente lleva tiempo sin avance en su expediente')+':\n\n';
-      body+='Raz\u00f3n Social: '+r['RAZON SOCIAL']+'\n';
-      body+='RIF: '+r['RIF']+'\n';
-      body+='Tipo: '+r['TIPO_CLIENTE']+'\n';
-      body+='Estatus: '+r['ESTATUS_LEGAL']+'\n';
-      const dy=calcDays(r['Fecha de Instalacion Cliente']);
-      if(dy!==null)body+='D\u00edas en gesti\u00f3n: '+dy+'\n';
-      if(r['Observacion'])body+='Observaci\u00f3n: '+r['Observacion']+'\n';
-      body+='\nDocumentos requeridos: c\u00e9dula del representante, RIF vigente, acta constitutiva, acta de asamblea.\n\n';
-      body+='Administraci\u00f3n de Contratos \u00b7 Airtek';
-    }
-  }else if(segTab==='firmar'){
-    const r=clients[0];
-    const correoCliente=r['CORREO_EMPRESA']||r['CORREO_REPRESENTANTES']||'';
-    if(isMasivo){
-      para=correoLider;cc=correoAdmin;
-      subj='[Airtek] Contratos pendientes de firma \u2014 '+hoy;
-      body='Estimado/a '+lid+',\n\nLos siguientes clientes tienen contrato pendiente de firma:\n\n';
-      clients.forEach((r,i)=>{
-        body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')\n';
-      });
-      body+='\nPor favor coordina la firma a la brevedad.\n\nAdministraci\u00f3n de Contratos \u00b7 Airtek';
-    }else{
-      para=correoCliente||correoLider;
-      cc=[correoAdmin,correoCliente?correoLider:''].filter(Boolean).join(', ');
-      subj='[Airtek] Contrato pendiente de firma \u2014 '+r['RAZON SOCIAL'];
-      body='Estimado cliente,\n\n';
-      body+='Le informamos que su contrato de servicio con Airtek se encuentra elaborado y pendiente de firma.\n\n';
-      body+='Empresa: '+r['RAZON SOCIAL']+'\nRIF: '+r['RIF']+'\n\n';
-      body+='Le agradecemos coordinar la firma del contrato a la brevedad posible.\n\n';
-      body+='Quedamos a su disposici\u00f3n para cualquier consulta.\n\n';
-      body+='Administraci\u00f3n de Contratos \u00b7 Airtek\nairtek.com.ve';
-    }
-  }
+function copySegMsg(){var txt=document.getElementById('segMsgBody').value;navigator.clipboard.writeText(txt).then(function(){toast('Copiado','ok');}).catch(function(){document.getElementById('segMsgBody').select();});}
 
-  document.getElementById('segMsgTo').textContent=para;
-  document.getElementById('segMsgCc').textContent=cc;
-  document.getElementById('segMsgSubj').textContent=subj;
-  document.getElementById('segMsgBody').value=body;
-  document.getElementById('segMsgPanel').style.display='block';
-  document.getElementById('segMsgPanel').scrollIntoView({behavior:'smooth'});
-}
+function sendSegEmail(){if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL','err');return;}toast('Enviando...','');fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'enviarSeguimiento',para:document.getElementById('segMsgTo').textContent,cc:document.getElementById('segMsgCc').textContent,asunto:document.getElementById('segMsgSubj').textContent,cuerpo:document.getElementById('segMsgBody').value}),headers:{'Content-Type':'application/json'}}).then(function(){toast('Correo enviado','ok');segSelected={};document.getElementById('segMsgPanel').style.display='none';renderSegTab();}).catch(function(){toast('Error al enviar','err');});}
 
-function copySegMsg(){
-  const body=document.getElementById('segMsgBody').value;
-  navigator.clipboard.writeText(body)
-    .then(()=>toast('Mensaje copiado','ok'))
-    .catch(()=>{document.getElementById('segMsgBody').select();toast('Selecciona y copia manualmente','');});
-}
+function renderTabSeg(r){var rif=r['RIF']||'';var logs=segLog.filter(function(l){return l.rif===rif;});var h='<div style="padding:12px 0"><div class="sec-lbl">Registrar gestion</div><div class="fg full"><div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel"><option>Llamada realizada</option><option>Correo enviado</option><option>WhatsApp enviado</option><option>Docs solicitados</option><option>Cliente no contesta</option><option>Cliente confirma entrega</option><option>Otro</option></select></div><div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle..." style="min-height:60px"></textarea></div></div><button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-top:8px">+ Registrar</button><div class="sec-lbl" style="margin-top:20px">Historial</div>';if(logs.length){h+='<div style="display:flex;flex-direction:column;gap:8px">';logs.forEach(function(l){h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span><span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';});h+='</div>';}else{h+='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Sin gestiones registradas</div>';}h+='</div>';document.getElementById('tab-seguimiento_cli').innerHTML=h;}
 
-function sendSegEmail(){
-  if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL para enviar correos','err');return;}
-  const para=document.getElementById('segMsgTo').textContent;
-  const cc=document.getElementById('segMsgCc').textContent;
-  const subj=document.getElementById('segMsgSubj').textContent;
-  const body=document.getElementById('segMsgBody').value;
-  toast('Enviando...','');
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'enviarSeguimiento',para:para,cc:cc,asunto:subj,cuerpo:body}),headers:{'Content-Type':'application/json'}})
-    .then(r=>r.json())
-    .then(d=>{
-      toast('Correo enviado \u2713','ok');
-      segLog.push({cliente:para,rif:'',ejecutivo:'',tipo:segTab,fecha:new Date().toLocaleTimeString('es-VE'),dest:para});
-      segSelected.forEach(rif=>{
-        const r=getBase().find(r=>r['RIF']===rif);
-        if(r)segLog.push({cliente:r['RAZON SOCIAL'],rif:rif,ejecutivo:r['EJECUTIVO'],tipo:segTab,fecha:new Date().toLocaleTimeString('es-VE'),dest:para});
-      });
-      segSelected.clear();
-      document.getElementById('segMsgPanel').style.display='none';
-      renderSegTab();
-    })
-    .catch(()=>toast('Error al enviar','err'));
-}
+function addSegEntry(){var tipo=(document.getElementById('seg_tipo')||{}).value||'';var nota=(document.getElementById('seg_nota')||{}).value||'';if(!S.cur)return;segLog.push({cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,fecha:new Date().toLocaleTimeString('es-VE'),dest:nota||tipo});toast('Registrado','ok');renderTabSeg(S.cur);}
 
-function renderTabSeg(r){
-  const rif=r['RIF']||'';
-  const logs=segLog.filter(l=>l.rif===rif);
-  let h='<div style="padding:12px 0">';
-  h+='<div class="sec-lbl">Registrar gesti\u00f3n</div>';
-  h+='<div class="fg full"><div class="field"><label>Tipo de gesti\u00f3n</label><select id="seg_tipo" class="fp-sel"><option>Llamada realizada</option><option>Correo enviado</option><option>WhatsApp enviado</option><option>Documentos solicitados</option><option>Cliente no contesta</option><option>Cliente confirma entrega</option><option>Otro</option></select></div>';
-  h+='<div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle de la gesti\u00f3n..." style="min-height:60px"></textarea></div></div>';
-  h+='<button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-top:8px">\u2795 Registrar gesti\u00f3n</button>';
-  h+='<div class="sec-lbl" style="margin-top:20px">Historial de gestiones</div>';
-  if(logs.length){
-    h+='<div style="display:flex;flex-direction:column;gap:8px">';
-    logs.forEach(l=>{
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span><span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';
-    });
-    h+='</div>';
-  }else{
-    h+='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Sin gestiones registradas</div>';
-  }
-  h+='</div>';
-  document.getElementById('tab-seguimiento_cli').innerHTML=h;
-}
+function initSeg(){var lid=document.getElementById('segLider');if(!lid)return;var lids=[];getBase().forEach(function(r){if(r['EJECUTIVO']&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);});lids.sort();lid.innerHTML='<option value="">Todos</option>';lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;lid.appendChild(o);});try{refreshSeg();}catch(e){console.warn('initSeg:',e);}}
 
-function addSegEntry(){
-  const tipo=document.getElementById('seg_tipo')?.value||'';
-  const nota=document.getElementById('seg_nota')?.value||'';
-  if(!S.cur)return;
-  segLog.push({
-    cliente:S.cur['RAZON SOCIAL'],
-    rif:S.cur['RIF'],
-    ejecutivo:S.cur['EJECUTIVO'],
-    tipo:tipo,
-    fecha:new Date().toLocaleTimeString('es-VE'),
-    dest:nota||tipo
-  });
-  toast('Gesti\u00f3n registrada \u2713','ok');
-  renderTabSeg(S.cur);
-}
-
-function initSeg(){
-  const lid=document.getElementById('segLider');
-  if(!lid)return;
-  const lids=[...new Set(getBase().map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
-  lid.innerHTML='<option value="">Todos</option>';
-  lids.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;lid.appendChild(o);});
-  refreshSeg();
-}
 
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#111111',theme_color:'#111111',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
