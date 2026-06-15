@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#111111">
-<title>Airtek · Contratos B2B</title>
+<title>Airtek · Gestión Clientes B2B</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -250,6 +250,7 @@ tbody tr:hover td{background:var(--surface2)}
 .doc-section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .doc-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px}
+.doc-item-ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.06)}
 .doc-lbl{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px}
 .doc-upload{border:1px dashed var(--border);padding:12px;text-align:center;cursor:pointer;transition:all .15s;position:relative;border-radius:4px}
 .doc-upload:hover{border-color:var(--border2);background:var(--surface3)}
@@ -393,7 +394,7 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="ts-card" onclick="selectTeam('ventas')">
         <div class="ts-card-icon">🏢</div>
         <div class="ts-card-title">Ventas Corporativas</div>
-        <div class="ts-card-sub">Contratos B2B · Gestión de expedientes</div>
+        <div class="ts-card-sub">Gestión Clientes B2B</div>
       </div>
       <div class="ts-card disabled" onclick="showComingSoon()">
         <div class="ts-card-icon">🤝</div>
@@ -455,7 +456,7 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="sidebar-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
   <div class="sidebar" id="sidebar">
     <div class="sb-section">
-      <div class="sb-label">Contratos B2B</div>
+      <div class="sb-label">Gestión Clientes B2B</div>
       <button class="nav-item active" id="nav-clientes" onclick="showView('clientes')">
         <span class="nav-icon">📋</span> Clientes
         <span class="nav-badge" id="pendBadge" style="display:none">0</span>
@@ -810,6 +811,9 @@ tbody tr:hover td{background:var(--surface2)}
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJgVHzYaNHh5iXHhRpyUKoeXym3jH_N3chru8ekY0cvIgkop_qJ5UnJBhSaLWmxKnnPg/exec';
+const WA_PRUEBA=true;
+const WA_NUM_PRUEBA='584126656931';
+const CC_CORP='ventascorporativas@airtek.com.ve';
 const PS = 40;
 
 const SI = {
@@ -1116,12 +1120,13 @@ function countReps(r){let n=1;if(r['CORREO_REPRESENTANTES2']||r['NUMERO_REPRESEN
 function renderTabDatos(r){
   const dy=calcDays(r['Fecha de Instalacion Cliente']);
   const dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
-  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
+  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class=\"field\"><label>Tel. Proham</label><input id=\"f_tel_proham\" value=\"\'+esc(r[\'TELEFONO_PROHAM\']||\'\')+\'\"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
   h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación</label><textarea id="f_obs">'+esc(r['Observacion']||'')+'</textarea></div></div>';
   h+='<div class="sec-lbl">Representantes Legales</div><div id="repsC">';
   for(let i=1;i<=S.nReps;i++) h+=buildRep(i,r);
   h+='</div>';
   if(S.nReps<4) h+='<button class="add-rep" onclick="addRep()">+ Agregar representante</button>';
+  h+=renderDrawerComm(r);
   h+='<div class="sec-lbl">Expediente en Drive</div>';
   if(r['Carpeta_Drive_URL']) h+='<a href="'+r['Carpeta_Drive_URL']+'" target="_blank" class="btn btn-g btn-sm">📁 Abrir carpeta en Drive</a>';
   else h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada aún</div>';
@@ -1180,14 +1185,88 @@ function renderTabDocs(r){
 }
 
 function docField(d,r){
-  const url=r[d.col]||'';
-  return '<div class="doc-item"><div class="doc-lbl">'+d.lbl+'</div>'+(url?'<div class="doc-ok"><span>✓ Cargado</span><a href="'+url+'" target="_blank">Ver ↗</a></div>':'<div class="doc-upload"><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,'+d.col+')"><div class="doc-upload-txt">PDF / Imagen</div></div>')+'</div>';
+  var url=r[d.col]||'';
+  var hasDoc=url&&(url.startsWith('http')||url.startsWith('https'));
+  if(hasDoc){
+    return (
+      '<div class="doc-item doc-item-ok">'
+      +'<div class="doc-lbl">'+d.lbl+'</div>'
+      +'<div class="doc-ok">'
+      +'<span style="color:var(--green)">✓ Cargado</span>'
+      +'<div style="display:flex;gap:6px;margin-top:4px">'
+      +'<a href="'+url+'" target="_blank" class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px">Ver ↗</a>'
+      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="replaceDoc(this,\''+d.col+'\')" >Reemplazar</button>'
+      +'</div>'
+      +'</div>'
+      +'</div>'
+    );
+  }else{
+    return (
+      '<div class="doc-item">'
+      +'<div class="doc-lbl">'+d.lbl+'</div>'
+      +'<div class="doc-upload">'
+      +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,\''+d.col+'\')">'+
+      +'<div class="doc-upload-txt">PDF / Imagen · Máx 10MB</div>'
+      +'</div>'
+      +'</div>'
+    );
+  }
+}
+
+function replaceDoc(btn,col){
+  // Create a hidden file input and trigger it
+  var inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='.pdf,.jpg,.jpeg,.png';
+  inp.onchange=function(){handleFile(inp,col);};
+  inp.click();
 }
 
 function renderTabHist(r){
   document.getElementById('tab-historial').innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:40px 0"><div style="font-size:24px;margin-bottom:8px">📋</div>El historial de cambios se activará cuando el Apps Script esté desplegado.</div>';
 }
 
+function renderDrawerComm(r){
+  var est=(r['ESTATUS_LEGAL']||'').toUpperCase();
+  var nums=[];
+  if(r['NUMERO_REPRESENTANTES'])nums.push({l:'Rep.1: '+r['NUMERO_REPRESENTANTES'],v:r['NUMERO_REPRESENTANTES']});
+  if(r['NUMERO_REPRESENTANTES2'])nums.push({l:'Rep.2: '+r['NUMERO_REPRESENTANTES2'],v:r['NUMERO_REPRESENTANTES2']});
+  if(r['TELEFONO_PROHAM'])nums.push({l:'Proham: '+r['TELEFONO_PROHAM'],v:r['TELEFONO_PROHAM']});
+  var lc=(S.cfg||[]).find(function(x){return x.EJECUTIVO===r['EJECUTIVO'];});
+  var numL=lc?formatWANumber(lc.TELEFONO||lc.Numero||''):'';
+  var corrL=lc?lc.CORREO||'':'';
+  var corrC=r['CORREO_EMPRESA']||r['CORREO_REPRESENTANTES']||'';
+  var msgC='cliente_docs';var msgL='lider_recordatorio';
+  if(est==='GRANDES NEGOCIOS')msgL='lider_nuevo';
+  else if(est==='PENDIENTE POR FIRMAR'){msgC='cliente_firma';msgL='lider_firma';}
+  else if(est==='DOCUMENTOS SOLICITADOS')msgC='cliente_recordatorio';
+  else if(est==='DOCUMENTOS RECIBIDOS')msgL='abogada_listo';
+  var uid='u'+Math.random().toString(36).slice(2,6);
+  var parts=[];
+  parts.push('<div class="sec-lbl" style="margin-top:14px">Contacto directo</div>');
+  parts.push('<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">');
+  if(nums.length>1){
+    parts.push('<select id="'+uid+'" class="fp-sel" style="width:100%;font-size:11px;margin-bottom:8px">');
+    nums.forEach(function(n){parts.push('<option value="'+n.v+'">'+n.l+'</option>');});
+    parts.push('</select>');
+  }else if(nums.length===1){parts.push('<div style="font-size:11px;color:var(--text2);margin-bottom:8px">Tel: '+nums[0].l+'</div>');}
+  parts.push('<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">');
+  if(nums.length>0){
+    var numVal=nums.length>1?"document.getElementById('"+uid+"').value":JSON.stringify(nums[0].v);
+        var waCliBtn='<button class="btn btn-g btn-sm" style="color:#25d366;border-color:#25d366;font-size:11px"';waCliBtn+=' onclick="openWA(\'+(typeof numVal==="string"?JSON.stringify(numVal):numVal)+\',getMsgWA(\''+msgC+'\',S.cur),S.cur,\'wac\')">WA Cliente</button>';parts.push(waCliBtn);
+  }
+  if(corrC){parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="segEmailBtn(S.cur,\''+msgC+'\',\''+corrC+'\')">Mail Cliente</button>');}
+  parts.push('</div>');
+  if(numL){
+    parts.push('<div style="display:flex;gap:6px;flex-wrap:wrap">');
+    parts.push('<button class="btn btn-g btn-sm" style="color:#3B82F6;border-color:#3B82F6;font-size:11px" onclick="openWA(\''+numL+'\',getMsgWA(\''+msgL+'\',S.cur),S.cur,\'wal\')">WA Lider</button>');
+    if(corrL){parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="segEmailBtn(S.cur,\''+msgL+'\',\''+corrL+'\')">Mail Lider</button>');}
+    parts.push('</div>');
+  }
+  if(WA_PRUEBA){parts.push('<div style="margin-top:8px;font-size:10px;color:var(--amber)">Modo prueba: WA va a +'+WA_NUM_PRUEBA+'</div>');}
+  parts.push('</div>');
+  return parts.join('');
+}
 function renderStBtns(r){
   const cur=(r['ESTATUS_LEGAL']||'').toUpperCase();
   const al=RT[S.rol]||[];const ci=SO.indexOf(cur);
@@ -1223,15 +1302,71 @@ function saveField(col,val){
 }
 
 function handleFile(input,col){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL para subir','err');return;}
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'subirDocumento',rif:S.cur['RIF'],nombre:S.cur['RAZON SOCIAL'],tipo:S.cur['TIPO_CLIENTE'],columna:col,fileBase64:e.target.result.split(',')[1],fileName:file.name,mimeType:file.type}),headers:{'Content-Type':'application/json'}});
-    const rs=await resp.json();
-    if(rs.ok){S.cur[col]=rs.url;toast('Documento subido ✓','ok');renderTabDocs(S.cur);}
-    else toast('Error al subir','err');
-  };reader.readAsDataURL(file);
+  var file=input.files[0];if(!file)return;
+  if(file.size>10*1024*1024){toast('Archivo muy grande (máx 10MB)','err');return;}
+  // Build descriptive filename: LABEL_RIF_RAZON_SOCIAL.ext
+  var docLabels={
+    'DOCUMENTOS_REPRESENTANTES':'Cedula_Rep1',
+    'DOCUMENTOS_REPRESENTANTES2':'Cedula_Rep2',
+    'DOCUMENTOS_REPRESENTANTES3':'Cedula_Rep3',
+    'DOCUMENTOS_REPRESENTANTES4':'Cedula_Rep4',
+    'ACTA CONSTITUTIVA':'Acta_Constitutiva',
+    'ACTA_ASAMBLEA_JUNTA':'Acta_Asamblea_1',
+    'ACTA_ASAMBLEA_JUNTA2':'Acta_Asamblea_2',
+    'ACTA_ASAMBLEA_JUNTA3':'Acta_Asamblea_3',
+    'ACTA_ASAMBLEA_JUNTA4':'Acta_Asamblea_4',
+    'RIF_VIGENTE':'RIF_Vigente',
+    'HABILITACION_CONATEL':'Habilitacion_CONATEL',
+    'CONTRATO':'Contrato',
+  };
+  var ext=file.name.split('.').pop();
+  var razonClean=(S.cur['RAZON SOCIAL']||'').replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
+  var docLabel=docLabels[col]||col.replace(/[^a-zA-Z0-9]/g,'_');
+  var fileName=docLabel+'_'+S.cur['RIF']+'_'+razonClean+'.'+ext;
+
+  // Show loading in the upload area
+  var parentDiv=input.closest('.doc-upload');
+  if(parentDiv)parentDiv.innerHTML='<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+
+  var reader=new FileReader();
+  reader.onload=function(e){
+    if(!APPS_SCRIPT_URL){toast('APPS_SCRIPT_URL no configurada','err');return;}
+    fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:JSON.stringify({
+        action:'subirDocumento',
+        rif:S.cur['RIF'],
+        nombre:S.cur['RAZON SOCIAL'],
+        tipo:S.cur['TIPO_CLIENTE'],
+        columna:col,
+        fileBase64:e.target.result.split(',')[1],
+        fileName:fileName,
+        mimeType:file.type
+      }),
+      headers:{'Content-Type':'application/json'}
+    })
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(rs.ok){
+        S.cur[col]=rs.url;
+        // Also update in S.all so the data persists in session
+        var inAll=S.all.find(function(r){return r['RIF']===S.cur['RIF'];});
+        if(inAll)inAll[col]=rs.url;
+        toast('Documento subido ✓','ok');
+        renderTabDocs(S.cur);
+        // Refresh status buttons in case estatus changed
+        renderStBtns(S.cur);
+      }else{
+        toast('Error: '+(rs.error||'No se pudo subir'),'err');
+        renderTabDocs(S.cur);// restore upload button
+      }
+    })
+    .catch(function(err){
+      toast('Error de conexión al subir','err');
+      renderTabDocs(S.cur);
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 function showTab(t){
@@ -1316,6 +1451,7 @@ function clearDashFilters(){
 function renderDashKPIs(){
   const d=dashFiltered.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
   const tot=d.length||0;
+  const totConPN=dashFiltered.length||0;
   const firm=d.filter(r=>r['ESTATUS_LEGAL']==='CONTRATO FIRMADO').length;
   const gn=d.filter(r=>r['ESTATUS_LEGAL']==='GRANDES NEGOCIOS').length;
   const pd=d.filter(r=>r['ESTATUS_LEGAL']==='PENDIENTE POR DOCUMENTOS').length;
@@ -1337,7 +1473,7 @@ function renderDashKPIs(){
   const pymes=d.filter(r=>r['TIPO_CLIENTE']==='PYMES').length;
   const ded=tot-pymes;
   const kpis=[
-    {cls:'k-total',lbl:'Total Cartera',val:tot,rows:[
+    {cls:'k-total',lbl:'Total Cartera',val:totConPN,rows:[
       {dot:'#3B82F6',name:'PYMES',n:pymes,pct:tot?Math.round(pymes/tot*100):0},
       {dot:'#A855F7',name:'Dedicados',n:ded,pct:tot?Math.round(ded/tot*100):0},
     ]},
@@ -1578,11 +1714,8 @@ function genWhatsApp(){
   const d=document.getElementById('rDesde').value;
   const h=document.getElementById('rHasta').value;
   const NL='\n';
-  const base=getBase().filter(r=>{
-    if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(dt){if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}else return false;}
-    return true;
-  });
-  if(!base.length){toast('No hay datos para ese rango de fechas','err');return;}
+  const base=S.rptData&&S.rptData.length?S.rptData:[];
+  if(!base.length){toast('Genera primero el reporte','err');return;}
   const fmtD=d?new Date(d).toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}):'inicio';
   const fmtH=h?new Date(h).toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}):'hoy';
   const tot=base.length;
@@ -1669,7 +1802,7 @@ function showView(v){
   if(mainEl){mainEl.scrollTop=0;setTimeout(function(){mainEl.scrollTop=0;},10);}
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+v)?.classList.add('active');
-  const lbs={clientes:'Contratos B2B · Clientes',dashboard:'Contratos B2B · Dashboard',reportes:'Contratos B2B · Reportes',seguimiento:'Contratos B2B · Seguimiento'};
+  const lbs={clientes:'Gestión Clientes B2B · Clientes',dashboard:'Gestión Clientes B2B · Dashboard',reportes:'Gestión Clientes B2B · Reportes',seguimiento:'Gestión Clientes B2B · Seguimiento'};
   document.getElementById('crumb').textContent=lbs[v]||v;
   if(v==='dashboard')renderDash();
   closeSidebar();
@@ -1736,7 +1869,7 @@ function refreshSeg(){try{renderSegTab();}catch(e){console.warn('seg:',e);}var p
 
 function getSegData(){var base=getBase();var lid=(document.getElementById('segLider')||{}).value||'';var data=[];if(segTab==='pend'){var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();if(nle==='SI'||nle==='HISTORICO')return false;var fd=parseDate(r['Fecha de Instalacion Cliente']);return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;});}else if(segTab==='sinmov'){data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30;});}else if(segTab==='firmar'){data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});}else{return null;}if(lid)data=data.filter(function(r){return r['EJECUTIVO']===lid;});data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});return data;}
 
-function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button></td></tr>';});tbl.innerHTML=html;}
+function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td style=\"display:flex;gap:4px\"><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button><button class=\"btn btn-g btn-sm\" onclick=\"segWAQuick('+i+')\" style=\"font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366\" title=\"WA\">WA</button></td></tr>';});tbl.innerHTML=html;}
 
 function renderSegLog(){var tbl=document.getElementById('segTbl');if(!tbl)return;if(!segLog.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin env\u00edos registrados</td></tr>';return;}var html='';segLog.forEach(function(l){html+='<tr><td></td><td>'+esc(l.cliente)+'</td><td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td><td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td><td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td><td>'+esc(l.dest)+'</td><td>\u2705</td></tr>';});tbl.innerHTML=html;}
 
@@ -1744,6 +1877,7 @@ function segToggleAll(el){var data=getSegData()||[];segSelected={};if(el.checked
 function segToggleOne(el){var rif=el.dataset.rif;if(el.checked)segSelected[rif]=true;else delete segSelected[rif];}
 function segSelectAll(){var data=getSegData()||[];data.forEach(function(r){segSelected[r['RIF']]=true;});var ca=document.getElementById('segCheckAll');if(ca)ca.checked=true;renderSegTab();toast(data.length+' seleccionados','ok');}
 
+function segWAQuick(idx){var data=getSegData()||[];if(idx<0||idx>=data.length)return;var r=data[idx];var est=(r['ESTATUS_LEGAL']||'').toUpperCase();var tipo='lider_recordatorio';if(est==='GRANDES NEGOCIOS')tipo='lider_nuevo';else if(est==='PENDIENTE POR FIRMAR')tipo='lider_firma';else if(segTab==='sinmov')tipo='lider_urgente';var num=getLiderWANum(r['EJECUTIVO'])||r['NUMERO_REPRESENTANTES']||r['TELEFONO_PROHAM']||'';openWA(num,getMsgWA(tipo,r),r,'WA rapido');toast(WA_PRUEBA?'WA prueba - va a tu numero':'WhatsApp abierto','ok');}
 function segActionByIdx(idx){var data=getSegData()||[];if(idx>=0&&idx<data.length)segBuildMsg([data[idx]]);}
 
 function segSendAll(){var rifs=Object.keys(segSelected);if(!rifs.length){toast('Selecciona al menos un cliente','err');return;}var base=getBase();var clients=base.filter(function(r){return segSelected[r['RIF']];});if(!clients.length){toast('No se encontraron','err');return;}segBuildMsg(clients);}
@@ -1946,6 +2080,15 @@ document.addEventListener('click',function(e){
   }
 });
 
+
+// WA ENGINE
+function formatWANumber(n){if(!n)return'';var s=String(n).replace(/[^0-9]/g,'');if(s.startsWith('58')&&s.length>=11)return s;if(s.startsWith('0')&&s.length===11)return'58'+s.slice(1);if(s.length===10)return'58'+s;return s;}
+function getLiderWANum(ejec){var f=(S.cfg||[]).find(function(x){return x.EJECUTIVO===ejec;});return f?formatWANumber(f.TELEFONO||f.Numero||''):'';}
+function openWA(numero,msg,r,tipo){var dest=WA_PRUEBA?WA_NUM_PRUEBA:formatWANumber(numero);if(dest){window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(msg),'_blank');}else{navigator.clipboard.writeText(msg).then(function(){toast('Sin numero - mensaje copiado','ok');}).catch(function(){toast('Sin numero para WA','err');});}if(r)regAccion(r,tipo||'WhatsApp',dest||'sin numero');}
+function openMailto(para,asunto,cuerpo,r,tipo){var dest=WA_PRUEBA?((S.cfg||[]).find(function(x){return x.ROL==='ADMIN';})||{}).CORREO||'':para;window.location.href='mailto:'+dest+'?cc='+encodeURIComponent(CC_CORP)+'&subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);if(r)regAccion(r,tipo||'Correo',dest);}
+function regAccion(r,canal,dest){var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],tipo:canal,fecha:new Date().toLocaleString('es-VE'),dest:dest};segLog.push(e);if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'registrarHistorial',rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],tipo:canal,nota:'Enviado a '+dest,usuario:S.user}),headers:{'Content-Type':'application/json'}}).catch(function(){});}}
+function getMsgWA(tipo,r){var N=String.fromCharCode(10);var nom=r?r['RAZON SOCIAL']||'':'';var rif=r?r['RIF']||'':'';var ejec=r?r['EJECUTIVO']||'':'';var est=r?r['ESTATUS_LEGAL']||'':'';var dy=r?(calcDays(r['Fecha de Instalacion Cliente'])||'?'):'?';var f=N+'------------------'+N+'Administracion de Contratos | Airtek'+N+CC_CORP;var m={lider_nuevo:'[Airtek] Nuevo cliente en tu cartera'+N+N+'Hola '+ejec+', tienes un nuevo cliente que requiere documentacion legal.'+N+N+'Empresa: '+nom+N+'RIF: '+rif+N+'Dias: '+dy+N+N+'Docs: cedula, RIF vigente, acta constitutiva, acta de asamblea.'+f,lider_recordatorio:'[Airtek] Recordatorio - Expediente pendiente'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin avance ('+est+').'+N+'Por favor gestiona a la brevedad.'+f,lider_urgente:'[Airtek] URGENTE - Sin respuesta'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin respuesta.'+N+'RIF: '+rif+' | '+est+N+N+'Contactalo hoy.'+f,lider_firma:'[Airtek] Contrato pendiente de firma'+N+N+'Hola '+ejec+', el cliente '+nom+' tiene el contrato pendiente de firma. Coordina a la brevedad.'+f,cliente_docs:'Estimado cliente,'+N+N+'Le contactamos de parte de Airtek - Ventas Corporativas.'+N+'Su expediente de '+nom+' requiere:'+N+'- Cedula del representante'+N+'- RIF vigente'+N+'- Acta constitutiva'+N+'- Acta de asamblea'+N+N+'Haganos llegar los documentos. Gracias.'+f,cliente_recordatorio:'[Airtek] Recordatorio'+N+N+'Estimado cliente de '+nom+', estan pendientes sus documentos para regularizar su expediente con Airtek.'+f,cliente_firma:'[Airtek] Su contrato esta listo'+N+N+'Estimado cliente de '+nom+', su contrato con Airtek esta pendiente de firma. Comuniquese con nosotros para coordinar.'+f,abogada_listo:'[Airtek Legal] Expediente listo'+N+N+'Hola Reina, el expediente de '+nom+' (RIF: '+rif+', Lider: '+ejec+') esta aprobado y listo para elaborar el contrato.'+f,abogada_firma:'[Airtek Legal] Coordinar firma'+N+N+'Hola Reina, el contrato de '+nom+' esta listo. El lider '+ejec+' coordina la firma.'+f};return m[tipo]||('Gestion - '+nom);}
+function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RAZON SOCIAL'],getMsgWA(tipoMsg,r),r,'Correo '+tipoMsg);}
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#111111',theme_color:'#111111',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
 const mb=new Blob([JSON.stringify(mf)],{type:'application/json'});const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(mb);document.head.appendChild(ml);
@@ -1954,4 +2097,3 @@ document.getElementById('loader').classList.add('off');
 </script>
 </body>
 </html>
-
