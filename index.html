@@ -127,6 +127,9 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 
 /* ══ MAIN ══════════════════════════════════════ */
 #main{margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));overflow-y:auto;height:calc(100vh - var(--topbar-h));transition:margin-left .25s}
+.est-opt{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text);transition:background .1s}
+.est-opt:hover{background:var(--surface2)}
+.est-opt input{margin:0;cursor:pointer;accent-color:var(--blue)}
 .view{display:none;padding:24px;animation:fadeIn .2s ease}
 .view.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -157,6 +160,11 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .fp-sel:focus{border-color:var(--blue)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip{padding:4px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;color:var(--text2);background:none;font-family:inherit;transition:all .15s}
+.seg-chip{padding:4px 10px;border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;color:var(--text2);background:none;font-family:inherit;transition:all .15s}
+.seg-dest-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;font-family:Inter,sans-serif;font-size:11px;cursor:pointer;border-radius:4px;transition:all .15s;white-space:nowrap}
+.seg-dest-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg-dest-btn:hover{border-color:var(--blue);color:var(--text)}
+
 .chip:hover{border-color:var(--border2);color:var(--text)}
 .chip.on{background:var(--surface3);color:var(--text);border-color:var(--border2)}
 .fp-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
@@ -302,6 +310,7 @@ tbody tr:hover td{background:var(--surface2)}
 .kpi-d.k-sindocs{border-left-color:#EF4444}
 .kpi-d.k-gestion{border-left-color:#F59E0B}
 .kpi-d.k-firmar{border-left-color:#F97316}
+.kpi-d.k-pn{border-left-color:#64748B}
 .kpi-d.k-mes{border-left-color:#A855F7}
 .dash-grid-charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 @media(max-width:800px){.dash-grid-charts{grid-template-columns:1fr}}
@@ -681,7 +690,27 @@ tbody tr:hover td{background:var(--surface2)}
         <div class="rpt-title">Filtros del reporte</div>
         <div class="rpt-grid">
           <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
-          <div class="fp-group"><label>Estatus (Ctrl+clic para varios)</label><select class="fp-sel" id="rEstatus" multiple size="4" style="min-height:90px"><option value="GRANDES NEGOCIOS">Grandes Negocios</option><option value="PENDIENTE POR DOCUMENTOS">Pend. Documentos</option><option value="DOCUMENTOS SOLICITADOS">Docs. Solicitados</option><option value="DOCUMENTOS EN REVISION">Docs. en Revisión</option><option value="DOCUMENTOS RECIBIDOS">Docs. Recibidos</option><option value="CONTRATO EN CURSO">Contrato en Curso</option><option value="PENDIENTE POR FIRMAR">Pend. por Firmar</option><option value="CONTRATO FIRMADO">Contrato Firmado</option></select></div>
+          <div class="fp-group" style="position:relative">
+  <label>Estatus</label>
+  <button id="rEstatusBtn" onclick="toggleEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <span id="rEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
+  </button>
+  <div id="rEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
+    <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
+      <button onclick="selectAllEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
+      <button onclick="clearEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
+    </div>
+    <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateEstatusLabel()"> Grandes Negocios</label>
+    <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateEstatusLabel()"> Pend. Documentos</label>
+    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateEstatusLabel()"> Docs. Solicitados</label>
+    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateEstatusLabel()"> Docs. en Revisión</label>
+    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateEstatusLabel()"> Docs. Recibidos</label>
+    <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateEstatusLabel()"> Contrato en Curso</label>
+    <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateEstatusLabel()"> Pend. por Firmar</label>
+    <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateEstatusLabel()"> Contrato Firmado</label>
+    <label class="est-opt"><input type="checkbox" value="PERSONA NATURAL" onchange="updateEstatusLabel()"> Persona Natural</label>
+  </div>
+</div>
           <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="rDesde"></div>
           <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
         </div>
@@ -711,12 +740,44 @@ tbody tr:hover td{background:var(--surface2)}
         </div>
       </div>
     </div>
-  </div>
+  
+
+    <div class="view" id="view-seguimiento">
+      <div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="seg-chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="seg-chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="seg-chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="seg-chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="rpt-title" style="margin-bottom:0">✉ Preparar notificación</div>
+            <button onclick="document.getElementById('segMsgPanel').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1">&times;</button>
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="sec-lbl" style="margin-bottom:8px">Destinatario</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px" id="segDestinatarioOpts"></div>
+            <input id="segCorreoCustom" placeholder="O escribe un correo personalizado..." style="margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none" oninput="segGenerateMsg()">
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="sec-lbl" style="margin-bottom:8px">Tipo de mensaje</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px" id="segTipoOpts"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <div class="sec-lbl" style="margin-bottom:4px">CC</div>
+              <input id="segCcInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
+            </div>
+            <div style="flex:2;min-width:200px">
+              <div class="sec-lbl" style="margin-bottom:4px">Asunto</div>
+              <input id="segMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
+            </div>
+          </div>
+          <textarea id="segMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:220px;outline:none"></textarea>
+          <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+            <button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button>
+            <button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar correo</button>
+          </div>
+        </div></div></div>
+</div>
 </div>
 
 
 
-    <div class="view" id="view-seguimiento" style="padding-top:16px"><div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div class="rpt-title" style="margin-bottom:0">✉ Vista previa</div><div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button><button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar</button></div></div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">Para: <strong id="segMsgTo"></strong> · CC: <strong id="segMsgCc"></strong></div><div style="font-size:11px;color:var(--text2);margin-bottom:8px">Asunto: <strong id="segMsgSubj"></strong></div><textarea id="segMsgBody" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:250px;outline:none"></textarea></div></div></div>
 
         <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
   <div class="drawer">
@@ -748,7 +809,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = '';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJgVHzYaNHh5iXHhRpyUKoeXym3jH_N3chru8ekY0cvIgkop_qJ5UnJBhSaLWmxKnnPg/exec';
 const PS = 40;
 
 const SI = {
@@ -873,36 +934,33 @@ document.addEventListener('keydown',e=>{
 
 // DATOS
 async function loadData(){
-  // Intenta Sheet real, cae a demo si falla
   try{
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),8000);
-    const[r1,r2]=await Promise.all([
-      fetch(`${BASE}?gid=977740412&single=true&output=csv&t=${Date.now()}`,{signal:controller.signal}),
-      fetch(`${BASE}?gid=943629637&single=true&output=csv&t=${Date.now()}`,{signal:controller.signal}),
-    ]);
+    const timeout=setTimeout(()=>{controller.abort();},5000);
+    const r1=await fetch(BASE+'?gid=977740412&single=true&output=csv&t='+Date.now(),{signal:controller.signal});
     clearTimeout(timeout);
-    if(!r1.ok||!r2.ok) throw new Error('fetch error');
+    if(!r1.ok) throw new Error('r1 error');
     const txt1=await r1.text();
-    const data=parseCSV(txt1).filter(r=>r['RAZON SOCIAL']&&r['RAZON SOCIAL'].trim());
-    if(data.length<5) throw new Error('datos insuficientes');
+    const data=parseCSV(txt1).filter(function(r){return r['RAZON SOCIAL']&&r['RAZON SOCIAL'].trim();});
+    if(data.length<5) throw new Error('pocos datos');
     S.all=data;
-    const txt2=await r2.text();
-    const cfg=parseCSV(txt2);
-    if(cfg.length>0) S.cfg=cfg;
-    console.log('Sheet cargado: '+S.all.length+' clientes');
+    try{
+      const r2=await fetch(BASE+'?gid=943629637&single=true&output=csv&t='+Date.now());
+      if(r2.ok){const cfg=parseCSV(await r2.text());if(cfg.length>0)S.cfg=cfg;}
+    }catch(e2){}
+    console.log('Sheet OK: '+S.all.length+' clientes');
   }catch(e){
-    console.warn('Sheet no disponible ('+e.message+'), usando datos demo');
+    console.warn('Demo mode: '+e.message);
     loadDemo();
   }
 }
 
 function loadDemo(){
   S.all=[
-    {'RAZON SOCIAL':'HOTEL KRISTOFF C.A','RIF':'70009691','EJECUTIVO':'Oriana Uzcategui','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'GRANDES NEGOCIOS','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'15/01/2025','Observacion':'','Carpeta_Drive_URL':'','CORREO_REPRESENTANTES':'ken@kristoff.com','NUMERO_REPRESENTANTES':'0414-1234567','DOCUMENTOS_REPRESENTANTES':'','ACTA CONSTITUTIVA':'','RIF_VIGENTE':'','HABILITACION_CONATEL':'','CONTRATO':''},
-    {'RAZON SOCIAL':'INVERSIONES COVAS PRAIA C.A','RIF':'500898568','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'PENDIENTE POR DOCUMENTOS','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'03/06/2025','Observacion':'Falta RIF vigente','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'cliente@gmail.com','NUMERO_REPRESENTANTES':'0424-1234567','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'','RIF_VIGENTE':'','HABILITACION_CONATEL':'','CONTRATO':''},
-    {'RAZON SOCIAL':'OPERADORA ZOLOFRA CA','RIF':'507548643','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'DEDICADO CORPORATIVO + PYME','ESTATUS_LEGAL':'DOCUMENTOS RECIBIDOS','Sucursal':'900 - DEDICADOS','Estado':'Habilitado','Fecha de Instalacion Cliente':'20/03/2025','Observacion':'Expediente completo','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'zolofra@gmail.com','NUMERO_REPRESENTANTES':'0416-5555555','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':''},
-    {'RAZON SOCIAL':'FRESH MARKET C.A','RIF':'309916360','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'PENDIENTE POR FIRMAR','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'06/03/2026','Observacion':'Contrato enviado','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'fresh@gmail.com','NUMERO_REPRESENTANTES':'0424-7777777','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':'https://drive.google.com'},
+    {'RAZON SOCIAL':'HOTEL KRISTOFF C.A','RIF':'70009691','EJECUTIVO':'Oriana Uzcategui','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'GRANDES NEGOCIOS','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'01/06/2026','Observacion':'','Carpeta_Drive_URL':'','CORREO_REPRESENTANTES':'ken@kristoff.com','NUMERO_REPRESENTANTES':'0414-1234567','DOCUMENTOS_REPRESENTANTES':'','ACTA CONSTITUTIVA':'','RIF_VIGENTE':'','HABILITACION_CONATEL':'','CONTRATO':'','NOTIF_LIDER_ENVIADA':'PENDIENTE'},
+    {'RAZON SOCIAL':'INVERSIONES COVAS PRAIA C.A','RIF':'500898568','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'PENDIENTE POR DOCUMENTOS','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'05/06/2026','Observacion':'Falta RIF vigente','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'cliente@gmail.com','NUMERO_REPRESENTANTES':'0424-1234567','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'','RIF_VIGENTE':'','HABILITACION_CONATEL':'','CONTRATO':'','NOTIF_LIDER_ENVIADA':'PENDIENTE'},
+    {'RAZON SOCIAL':'OPERADORA ZOLOFRA CA','RIF':'507548643','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'DEDICADO CORPORATIVO + PYME','ESTATUS_LEGAL':'DOCUMENTOS RECIBIDOS','Sucursal':'900 - DEDICADOS','Estado':'Habilitado','Fecha de Instalacion Cliente':'08/06/2026','Observacion':'Expediente completo','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'zolofra@gmail.com','NUMERO_REPRESENTANTES':'0416-5555555','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':'','NOTIF_LIDER_ENVIADA':'PENDIENTE'},
+    {'RAZON SOCIAL':'FRESH MARKET C.A','RIF':'309916360','EJECUTIVO':'Sayerlin Pineda','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'PENDIENTE POR FIRMAR','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'10/06/2026','Observacion':'Contrato enviado','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'fresh@gmail.com','NUMERO_REPRESENTANTES':'0424-7777777','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':'https://drive.google.com','NOTIF_LIDER_ENVIADA':'PENDIENTE'},
     {'RAZON SOCIAL':'DISTRIBUIDORA SPORT MAX CA','RIF':'307553952','EJECUTIVO':'Elinar Montiel','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'CONTRATO FIRMADO','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'06/12/2024','Observacion':'','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'sport@gmail.com','NUMERO_REPRESENTANTES':'0412-3333333','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':'https://drive.google.com'},
     {'RAZON SOCIAL':'CONSTRUCTORA BOLIVAR C.A','RIF':'400123456','EJECUTIVO':'Oriana Uzcategui','TIPO_CLIENTE':'DEDICADO CORPORATIVO','ESTATUS_LEGAL':'DOCUMENTOS SOLICITADOS','Sucursal':'824 - MARACAIBO','Estado':'Habilitado','Fecha de Instalacion Cliente':'10/08/2024','Observacion':'Sin respuesta desde hace 30 días','Carpeta_Drive_URL':'','CORREO_REPRESENTANTES':'bolivar@gmail.com','NUMERO_REPRESENTANTES':'0414-9876543','DOCUMENTOS_REPRESENTANTES':'','ACTA CONSTITUTIVA':'','RIF_VIGENTE':'','HABILITACION_CONATEL':'','CONTRATO':''},
     {'RAZON SOCIAL':'FARMACIA SALUDVIDA C.A','RIF':'501234567','EJECUTIVO':'Ninibeth Landino','TIPO_CLIENTE':'PYMES','ESTATUS_LEGAL':'CONTRATO FIRMADO','Sucursal':'261 - LAGUNILLAS','Estado':'Habilitado','Fecha de Instalacion Cliente':'15/05/2024','Observacion':'','Carpeta_Drive_URL':'https://drive.google.com','CORREO_REPRESENTANTES':'saludvida@gmail.com','NUMERO_REPRESENTANTES':'0416-1111111','DOCUMENTOS_REPRESENTANTES':'https://drive.google.com','ACTA CONSTITUTIVA':'https://drive.google.com','RIF_VIGENTE':'https://drive.google.com','HABILITACION_CONATEL':'','CONTRATO':'https://drive.google.com'},
@@ -987,7 +1045,7 @@ function applyFilters(){
   const t=document.getElementById('fTipo').value;
   const d=document.getElementById('fDesde').value;
   const h=document.getElementById('fHasta').value;
-  const ss=[...document.querySelectorAll('.chip.on')].map(c=>c.dataset.s);
+  const ss=[...document.querySelectorAll('#statusChips .chip.on')].map(c=>c.dataset.s).filter(Boolean);
   let act=0;if(l)act++;if(t)act++;if(d||h)act++;if(ss.length)act++;
   S.page=1;
   const badge=document.getElementById('fcBadge');badge.textContent=act;badge.style.display=act?'inline':'none';
@@ -1256,7 +1314,8 @@ function clearDashFilters(){
 }
 
 function renderDashKPIs(){
-  const d=dashFiltered;const tot=d.length||0;
+  const d=dashFiltered.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
+  const tot=d.length||0;
   const firm=d.filter(r=>r['ESTATUS_LEGAL']==='CONTRATO FIRMADO').length;
   const gn=d.filter(r=>r['ESTATUS_LEGAL']==='GRANDES NEGOCIOS').length;
   const pd=d.filter(r=>r['ESTATUS_LEGAL']==='PENDIENTE POR DOCUMENTOS').length;
@@ -1273,6 +1332,8 @@ function renderDashKPIs(){
     const fd=parseDate(r['Fecha de Instalacion Cliente']);
     return fd&&fd.getMonth()===now.getMonth()&&fd.getFullYear()===now.getFullYear();
   }).length;
+  const rawTot=dashFiltered.length||0;
+  const pn=d.filter(r=>r['TIPO_CLIENTE']==='PERSONA NATURAL').length;
   const pymes=d.filter(r=>r['TIPO_CLIENTE']==='PYMES').length;
   const ded=tot-pymes;
   const kpis=[
@@ -1298,6 +1359,10 @@ function renderDashKPIs(){
     ]},
     {cls:'k-mes',lbl:'Cierres este mes',val:cierresMes,rows:[
       {dot:'#A855F7',name:MONTHS_ES[now.getMonth()]+' '+now.getFullYear(),n:cierresMes,pct:firm?Math.round(cierresMes/firm*100):0},
+    ]},
+    {cls:'k-pn',lbl:'Persona Natural',val:pn,rows:[
+      {dot:'#64748B',name:'Sin contrato',n:pn,pct:rawTot?Math.round(pn/rawTot*100):0},
+      {dot:'#94A3B8',name:'Excluidos del flujo',n:pn,pct:100},
     ]},
   ];
   document.getElementById('dashKpiGrid').innerHTML=kpis.map(k=>`
@@ -1337,7 +1402,7 @@ function renderDashCharts(){
 
 function renderFunnelApp(){
   destroyDashChart('funnel');
-  const d=dashFiltered;const tot=d.length||1;
+  const d=dashFiltered.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});const tot=d.length||1;
   const counts=DASH_SO.map(s=>d.filter(r=>r['ESTATUS_LEGAL']===s).length);
   const labels=DASH_SO.map(s=>({
     'GRANDES NEGOCIOS':'Grandes Negocios','PENDIENTE POR DOCUMENTOS':'Pend. Docs',
@@ -1476,7 +1541,7 @@ function renderDash(){
 // REPORTES
 function genReport(){
   const l=document.getElementById('rLider').value;
-  const eSel=document.getElementById('rEstatus');const e=[...eSel.selectedOptions].map(o=>o.value);
+  const e=getSelectedEstatus();
   const d=document.getElementById('rDesde').value;
   const h=document.getElementById('rHasta').value;
   S.rptData=getBase().filter(r=>{
@@ -1600,6 +1665,8 @@ function copyWAMsg(){
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
+  var mainEl=document.getElementById('main');
+  if(mainEl){mainEl.scrollTop=0;setTimeout(function(){mainEl.scrollTop=0;},10);}
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+v)?.classList.add('active');
   const lbs={clientes:'Contratos B2B · Clientes',dashboard:'Contratos B2B · Dashboard',reportes:'Contratos B2B · Reportes',seguimiento:'Contratos B2B · Seguimiento'};
@@ -1663,11 +1730,11 @@ function exportPDF(){
 
 var segTab='pend';var segLog=[];var segSelected={};
 
-function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab)el.classList.add('on');else el.classList.remove('on');}});renderSegTab();}
+function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab){el.classList.add('on');el.classList.add('seg-chip');}else{el.classList.remove('on');}}});renderSegTab();}
 
 function refreshSeg(){try{renderSegTab();}catch(e){console.warn('seg:',e);}var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;var badge=document.getElementById('segBadge');if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}}
 
-function getSegData(){var base=getBase();var lid=(document.getElementById('segLider')||{}).value||'';var data=[];if(segTab==='pend'){var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();data=base.filter(function(r){var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();if(nle==='SI'||nle==='HISTORICO')return false;var fd=parseDate(r['Fecha de Instalacion Cliente']);return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;});}else if(segTab==='sinmov'){data=base.filter(function(r){if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30;});}else if(segTab==='firmar'){data=base.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});}else{return null;}if(lid)data=data.filter(function(r){return r['EJECUTIVO']===lid;});data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});return data;}
+function getSegData(){var base=getBase();var lid=(document.getElementById('segLider')||{}).value||'';var data=[];if(segTab==='pend'){var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();if(nle==='SI'||nle==='HISTORICO')return false;var fd=parseDate(r['Fecha de Instalacion Cliente']);return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;});}else if(segTab==='sinmov'){data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30;});}else if(segTab==='firmar'){data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});}else{return null;}if(lid)data=data.filter(function(r){return r['EJECUTIVO']===lid;});data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});return data;}
 
 function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button></td></tr>';});tbl.innerHTML=html;}
 
@@ -1681,18 +1748,203 @@ function segActionByIdx(idx){var data=getSegData()||[];if(idx>=0&&idx<data.lengt
 
 function segSendAll(){var rifs=Object.keys(segSelected);if(!rifs.length){toast('Selecciona al menos un cliente','err');return;}var base=getBase();var clients=base.filter(function(r){return segSelected[r['RIF']];});if(!clients.length){toast('No se encontraron','err');return;}segBuildMsg(clients);}
 
-function segBuildMsg(clients){var config=S.cfg||[];var isMasivo=clients.length>1;var lid=clients[0]['EJECUTIVO']||'';var correoLider='',correoAdmin='';config.forEach(function(c2){if(c2.EJECUTIVO===lid)correoLider=c2.CORREO||'';if(c2.ROL==='ADMIN'&&!correoAdmin)correoAdmin=c2.CORREO||'';});var para='',cc='',subj='',body='';var hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});var NL=String.fromCharCode(10);if(segTab==='pend'||segTab==='sinmov'){para=correoLider||lid;cc=correoAdmin;if(isMasivo){subj='[Airtek] Expedientes pendientes \u2014 Cartera al '+hoy;body='Estimado/a '+lid+','+NL+NL+'Expedientes que requieren tu gestion:'+NL+NL;clients.forEach(function(r,i){var dy=calcDays(r['Fecha de Instalacion Cliente']);body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL+'   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' | '+dy+' dias':'')+NL;if(r['Observacion'])body+='   Obs: '+r['Observacion']+NL;body+=NL;});body+='Total: '+clients.length+' clientes.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}else{var r=clients[0];subj='[Airtek] '+(segTab==='pend'?'Nuevo cliente requiere documentacion':'Recordatorio expediente pendiente')+' \u2014 '+r['RAZON SOCIAL'];body='Estimado/a '+lid+','+NL+NL+(segTab==='pend'?'Nuevo cliente en tu cartera:':'Cliente sin avance:')+NL+NL+'Razon Social: '+r['RAZON SOCIAL']+NL+'RIF: '+r['RIF']+NL+'Tipo: '+r['TIPO_CLIENTE']+NL+'Estatus: '+r['ESTATUS_LEGAL']+NL;var dy2=calcDays(r['Fecha de Instalacion Cliente']);if(dy2!==null)body+='Dias: '+dy2+NL;if(r['Observacion'])body+='Obs: '+r['Observacion']+NL;body+=NL+'Administracion de Contratos \u2014 Airtek';}}else if(segTab==='firmar'){var r0=clients[0];var corrCliente=r0['CORREO_EMPRESA']||r0['CORREO_REPRESENTANTES']||'';if(isMasivo){para=correoLider||lid;cc=correoAdmin;subj='[Airtek] Contratos pendientes de firma \u2014 '+hoy;body='Estimado/a '+lid+','+NL+NL+'Contratos pendientes de firma:'+NL+NL;clients.forEach(function(r,i){body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL;});body+=NL+'Coordina la firma a la brevedad.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}else{para=corrCliente||correoLider||lid;cc=correoAdmin+(corrCliente&&correoLider?', '+correoLider:'');subj='[Airtek] Contrato pendiente de firma \u2014 '+r0['RAZON SOCIAL'];body='Estimado cliente,'+NL+NL+'Su contrato con Airtek esta pendiente de firma.'+NL+NL+'Empresa: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+NL+'Coordine la firma a la brevedad.'+NL+NL+'Administracion de Contratos \u2014 Airtek';}}document.getElementById('segMsgTo').textContent=para;document.getElementById('segMsgCc').textContent=cc;document.getElementById('segMsgSubj').textContent=subj;document.getElementById('segMsgBody').value=body;document.getElementById('segMsgPanel').style.display='block';document.getElementById('segMsgPanel').scrollIntoView({behavior:'smooth'});}
+function segBuildMsg(clients){
+  var config=S.cfg||[];
+  window._segClients=clients;
+  var isMasivo=clients.length>1;
+  var lid=clients[0]['EJECUTIVO']||'';
+  var correoLider='',correoAdmin='',correoAbogado='',correoCliente='';
+  config.forEach(function(cf){
+    if(cf.EJECUTIVO===lid&&cf.ROL==='LIDER')correoLider=cf.CORREO||'';
+    if(cf.ROL==='ADMIN'&&!correoAdmin)correoAdmin=cf.CORREO||'';
+    if(cf.ROL==='ABOGADO')correoAbogado=cf.CORREO||'';
+  });
+  if(!isMasivo)correoCliente=clients[0]['CORREO_EMPRESA']||clients[0]['CORREO_REPRESENTANTES']||'';
+  window._segConfig={lid:lid,correoLider:correoLider,correoAdmin:correoAdmin,correoAbogado:correoAbogado,correoCliente:correoCliente,isMasivo:isMasivo};
 
-function copySegMsg(){var txt=document.getElementById('segMsgBody').value;navigator.clipboard.writeText(txt).then(function(){toast('Copiado','ok');}).catch(function(){document.getElementById('segMsgBody').select();});}
+  // Destinatario options
+  var dests=[];
+  if(correoLider)dests.push({label:'👤 Líder: '+lid,val:correoLider});
+  if(correoAbogado)dests.push({label:'⚖ Abogada: Reina',val:correoAbogado});
+  if(correoCliente&&!isMasivo)dests.push({label:'🏢 Cliente',val:correoCliente});
+  dests.push({label:'⚙ Admin (yo)',val:correoAdmin});
+  document.getElementById('segDestinatarioOpts').innerHTML=dests.map(function(d,i){
+    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" onclick="segSelDest(this)">'+d.label+'</button>';
+  }).join('');
 
-function sendSegEmail(){if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL','err');return;}toast('Enviando...','');fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'enviarSeguimiento',para:document.getElementById('segMsgTo').textContent,cc:document.getElementById('segMsgCc').textContent,asunto:document.getElementById('segMsgSubj').textContent,cuerpo:document.getElementById('segMsgBody').value}),headers:{'Content-Type':'application/json'}}).then(function(){toast('Correo enviado','ok');segSelected={};document.getElementById('segMsgPanel').style.display='none';renderSegTab();}).catch(function(){toast('Error al enviar','err');});}
+  // Tipo options
+  var tipos=[];
+  if(segTab==='pend'||segTab==='sinmov'){
+    tipos=[
+      {label:(segTab==='pend'?'📄 Aviso cliente nuevo':'⏰ Sin avance'),key:'aviso'},
+      {label:'⚠ Recordatorio urgente',key:'urgente'},
+      {label:'📝 Mensaje libre',key:'libre'},
+    ];
+  }else if(segTab==='firmar'){
+    tipos=[
+      {label:'🏢 Solicitud al cliente',key:'firma_cliente'},
+      {label:'👤 Aviso al líder',key:'firma_lider'},
+      {label:'⚖ Coordinar con abogada',key:'firma_abogado'},
+      {label:'📝 Mensaje libre',key:'libre'},
+    ];
+  }else{
+    tipos=[{label:'📝 Mensaje libre',key:'libre'}];
+  }
+  document.getElementById('segTipoOpts').innerHTML=tipos.map(function(t,i){
+    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-key="'+t.key+'" onclick="segSelTipo(this)">'+t.label+'</button>';
+  }).join('');
+
+  document.getElementById('segCcInput').value=correoAdmin;
+  document.getElementById('segCorreoCustom').value='';
+  segGenerateMsg();
+  document.getElementById('segMsgPanel').style.display='block';
+  document.getElementById('segMsgPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function segSelDest(btn){document.querySelectorAll('#segDestinatarioOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGenerateMsg();}
+function segSelTipo(btn){document.querySelectorAll('#segTipoOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGenerateMsg();}
+
+function segGenerateMsg(){
+  var cfg=window._segConfig||{};var clients=window._segClients||[];
+  if(!clients.length)return;
+  var NL=String.fromCharCode(10);
+  var hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var lid=cfg.lid||'';var isMasivo=cfg.isMasivo;
+  var activeTipo=document.querySelector('#segTipoOpts .seg-dest-btn.active');
+  var tipoKey=activeTipo?activeTipo.dataset.key:'libre';
+  var subj='',body='';
+
+  if(tipoKey==='aviso'||tipoKey==='urgente'){
+    var esNuevo=segTab==='pend';var esUrg=tipoKey==='urgente';
+    var prefix=esNuevo?'Nuevo cliente requiere documentación':esUrg?'URGENTE - Expediente sin respuesta':'Recordatorio expediente pendiente';
+    if(isMasivo){
+      subj='[Airtek] '+prefix+' — '+hoy;
+      body='Estimado/a '+lid+','+NL+NL+(esNuevo?'Nuevos clientes que requieren documentación:':'Clientes con expedientes pendientes:')+NL+NL;
+      clients.forEach(function(r,i){var dy=calcDays(r['Fecha de Instalacion Cliente']);body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL+'   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' | '+dy+' días':'')+NL;if(r['Observacion'])body+='   Obs: '+r['Observacion']+NL;body+=NL;});
+      body+='Total: '+clients.length+' clientes.'+NL+NL+'Administración de Contratos — Airtek';
+    }else{
+      var r=clients[0];var dy2=calcDays(r['Fecha de Instalacion Cliente']);
+      subj='[Airtek] '+prefix+' — '+r['RAZON SOCIAL'];
+      body='Estimado/a '+lid+','+NL+NL+(esNuevo?'Nuevo cliente en tu cartera que requiere gestión legal:':esUrg?'El siguiente cliente no ha tenido respuesta y requiere atención urgente:':'El siguiente expediente lleva '+dy2+' días sin avance:')+NL+NL;
+      body+='Razón Social: '+r['RAZON SOCIAL']+NL+'RIF: '+r['RIF']+NL+'Estatus: '+r['ESTATUS_LEGAL']+NL;
+      if(dy2!==null)body+='Días: '+dy2+NL;
+      if(r['Observacion'])body+='Observación: '+r['Observacion']+NL;
+      if(esNuevo)body+=NL+'Documentos requeridos: cédula del representante, RIF vigente, acta constitutiva y acta de asamblea.';
+      body+=NL+NL+'Administración de Contratos — Airtek';
+    }
+  }else if(tipoKey==='firma_cliente'){
+    var r0=clients[0];
+    subj='[Airtek] Contrato pendiente de firma — '+r0['RAZON SOCIAL'];
+    body='Estimado cliente,'+NL+NL+'Le informamos que su contrato de servicio con Airtek se encuentra elaborado y pendiente de su firma.'+NL+NL+'Empresa: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+NL+'Le agradecemos coordinar la entrega del contrato a la brevedad.'+NL+NL+'Administración de Contratos — Airtek'+NL+'ventascorporativas@airtek.com.ve';
+  }else if(tipoKey==='firma_lider'){
+    subj='[Airtek] Contratos pendientes de firma — '+hoy;
+    body='Estimado/a '+lid+','+NL+NL+(isMasivo?'Los siguientes clientes tienen contrato pendiente de firma:'+NL+NL:'El siguiente cliente tiene contrato pendiente de firma:'+NL+NL);
+    clients.forEach(function(r,i){body+=(isMasivo?(i+1)+'. ':'')+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL;});
+    body+=NL+'Por favor coordina la firma con el cliente a la brevedad.'+NL+NL+'Administración de Contratos — Airtek';
+  }else if(tipoKey==='firma_abogado'){
+    var r0=clients[0];
+    subj='[Airtek Legal] Coordinación firma — '+r0['RAZON SOCIAL'];
+    body='Estimada Reina,'+NL+NL+'El siguiente cliente tiene el contrato elaborado y pendiente de firma. Por favor coordinar con el líder la entrega al cliente.'+NL+NL+'Razón Social: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+'Líder: '+lid+NL+NL+'Administración de Contratos — Airtek';
+  }else{
+    // libre
+    subj='[Airtek] Gestión — '+(isMasivo?hoy:clients[0]['RAZON SOCIAL']);
+    body='Estimado/a,'+NL+NL;
+  }
+  document.getElementById('segMsgSubj').value=subj;
+  document.getElementById('segMsgBody').value=body;
+}
+
+function copySegMsg(){
+  var subj=document.getElementById('segMsgSubj').value;
+  var body=document.getElementById('segMsgBody').value;
+  var full='Asunto: '+subj+String.fromCharCode(10)+String.fromCharCode(10)+body;
+  navigator.clipboard.writeText(full).then(function(){toast('Mensaje copiado ✓','ok');}).catch(function(){document.getElementById('segMsgBody').select();});
+}
+
+function sendSegEmail(){
+  if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL primero','err');return;}
+  var activeDest=document.querySelector('#segDestinatarioOpts .seg-dest-btn.active');
+  var customCorreo=document.getElementById('segCorreoCustom').value.trim();
+  var para=customCorreo||(activeDest?activeDest.dataset.val:'');
+  if(!para){toast('Selecciona un destinatario','err');return;}
+  var cc=document.getElementById('segCcInput').value.trim();
+  var subj=document.getElementById('segMsgSubj').value.trim();
+  var body=document.getElementById('segMsgBody').value.trim();
+  if(!subj||!body){toast('El asunto y mensaje no pueden estar vacíos','err');return;}
+  toast('Enviando...','');
+  var rifs=Object.keys(segSelected);
+  fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    body:JSON.stringify({action:'enviarSeguimiento',para:para,cc:cc,asunto:subj,cuerpo:body,
+      cliente:_segClients.length===1?_segClients[0]['RAZON SOCIAL']:'Múltiples clientes',
+      ejecutivo:_segConfig.lid||'',
+      rif:_segClients.length===1?_segClients[0]['RIF']:''}),
+    headers:{'Content-Type':'application/json'}
+  }).then(function(){
+    toast('Correo enviado ✓','ok');
+    segSelected={};
+    document.getElementById('segMsgPanel').style.display='none';
+    document.getElementById('segCorreoCustom').value='';
+    renderSegTab();
+  }).catch(function(){toast('Error al enviar — verifica tu conexión','err');});
+}
 
 function renderTabSeg(r){var rif=r['RIF']||'';var logs=segLog.filter(function(l){return l.rif===rif;});var h='<div style="padding:12px 0"><div class="sec-lbl">Registrar gestion</div><div class="fg full"><div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel"><option>Llamada realizada</option><option>Correo enviado</option><option>WhatsApp enviado</option><option>Docs solicitados</option><option>Cliente no contesta</option><option>Cliente confirma entrega</option><option>Otro</option></select></div><div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle..." style="min-height:60px"></textarea></div></div><button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-top:8px">+ Registrar</button><div class="sec-lbl" style="margin-top:20px">Historial</div>';if(logs.length){h+='<div style="display:flex;flex-direction:column;gap:8px">';logs.forEach(function(l){h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span><span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';});h+='</div>';}else{h+='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Sin gestiones registradas</div>';}h+='</div>';document.getElementById('tab-seguimiento_cli').innerHTML=h;}
 
-function addSegEntry(){var tipo=(document.getElementById('seg_tipo')||{}).value||'';var nota=(document.getElementById('seg_nota')||{}).value||'';if(!S.cur)return;segLog.push({cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,fecha:new Date().toLocaleTimeString('es-VE'),dest:nota||tipo});toast('Registrado','ok');renderTabSeg(S.cur);}
+function addSegEntry(){
+  var tipo=(document.getElementById('seg_tipo')||{}).value||'';
+  var nota=(document.getElementById('seg_nota')||{}).value||'';
+  if(!S.cur)return;
+  var entry={cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,fecha:new Date().toLocaleString('es-VE'),dest:nota||tipo};
+  segLog.push(entry);
+  // Save to sheet via Apps Script if available
+  if(APPS_SCRIPT_URL){
+    fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:JSON.stringify({action:'registrarHistorial',rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user}),
+      headers:{'Content-Type':'application/json'}
+    }).catch(function(){});// Silent fail - log stays in memory
+  }
+  toast('Gestión registrada ✓','ok');
+  if(document.getElementById('seg_nota'))document.getElementById('seg_nota').value='';
+  renderTabSeg(S.cur);
+}
 
 function initSeg(){var lid=document.getElementById('segLider');if(!lid)return;var lids=[];getBase().forEach(function(r){if(r['EJECUTIVO']&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);});lids.sort();lid.innerHTML='<option value="">Todos</option>';lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;lid.appendChild(o);});try{refreshSeg();}catch(e){console.warn('initSeg:',e);}}
 
+
+// ESTATUS MULTISELECT
+function toggleEstatusDD(){
+  var dd=document.getElementById('rEstatusDD');
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+function getSelectedEstatus(){
+  var boxes=document.querySelectorAll('#rEstatusDD input[type=checkbox]:checked');
+  return Array.from(boxes).map(function(b){return b.value;});
+}
+function updateEstatusLabel(){
+  var sel=getSelectedEstatus();
+  var lbl=document.getElementById('rEstatusLabel');
+  if(!sel.length)lbl.textContent='Todos';
+  else if(sel.length===1)lbl.textContent=sel[0].split(' ').slice(0,2).join(' ');
+  else lbl.textContent=sel.length+' seleccionados';
+}
+function selectAllEstatus(){
+  document.querySelectorAll('#rEstatusDD input[type=checkbox]').forEach(function(b){b.checked=false;});
+  updateEstatusLabel();
+  document.getElementById('rEstatusDD').style.display='none';
+}
+function clearEstatus(){
+  document.querySelectorAll('#rEstatusDD input[type=checkbox]').forEach(function(b){b.checked=false;});
+  updateEstatusLabel();
+}
+document.addEventListener('click',function(e){
+  var dd=document.getElementById('rEstatusDD');
+  var btn=document.getElementById('rEstatusBtn');
+  if(dd&&btn&&!dd.contains(e.target)&&!btn.contains(e.target)){
+    dd.style.display='none';
+  }
+});
 
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#111111',theme_color:'#111111',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
