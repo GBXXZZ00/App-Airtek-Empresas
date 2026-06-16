@@ -465,7 +465,7 @@ tbody tr:hover td{background:var(--surface2)}
         <span class="nav-icon">📊</span> Dashboard
       </button>
       <button class="nav-item" id="nav-reportes" onclick="showView('reportes')">
-        <span class="nav-icon">📄</span> Reportes
+        <span class="nav-icon">📊</span> Gestión & Reportes
       </button>
       <button class="nav-item" id="nav-seguimiento" onclick="showView('seguimiento')">
         <span class="nav-icon">📬</span> Seguimiento
@@ -744,7 +744,18 @@ tbody tr:hover td{background:var(--surface2)}
   
 
     <div class="view" id="view-seguimiento">
-      <div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="seg-chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="seg-chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="seg-chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="seg-chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Enviar seleccionados</button><button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
+      <div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="seg-chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="seg-chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="seg-chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="seg-chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+<div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div>
+<div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
+<div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab()"></div>
+<div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab()"></div>
+<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
+<button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Notificar seleccionados</button>
+<button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button>
+<button class="btn btn-g btn-sm" onclick="exportSegCSV()" title="Exportar CSV">⬇ CSV</button>
+<button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar filtros">✕</button>
+</div></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
             <div class="rpt-title" style="margin-bottom:0">✉ Preparar notificación</div>
             <button onclick="document.getElementById('segMsgPanel').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1">&times;</button>
@@ -810,7 +821,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJgVHzYaNHh5iXHhRpyUKoeXym3jH_N3chru8ekY0cvIgkop_qJ5UnJBhSaLWmxKnnPg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJd4hJKLxw3j2Z9wl3DanfMqOFz8ziuHrkKrS5xGXChkTZF8JQYHkStCrfh_w5xr0R4w/exec';
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -940,7 +951,7 @@ document.addEventListener('keydown',e=>{
 async function loadData(){
   try{
     const controller=new AbortController();
-    const timeout=setTimeout(()=>{controller.abort();},5000);
+    const timeout=setTimeout(()=>{controller.abort();},20000);
     const r1=await fetch(BASE+'?gid=977740412&single=true&output=csv&t='+Date.now(),{signal:controller.signal});
     clearTimeout(timeout);
     if(!r1.ok) throw new Error('r1 error');
@@ -1006,13 +1017,20 @@ function parseCSV(t){
   const hd=parseLine(ln[0]);
   return ln.slice(1).filter(l=>l.trim()).map(l=>{
     const v=parseLine(l);const o={};
-    hd.forEach((h,i)=>o[h.trim()]=(v[i]||'').trim());return o;
+    hd.forEach(function(h,i){
+      var val=(v[i]||'').trim();
+      // Limpiar valores NaN, #N/A y errores del Sheet
+      if(val==='NaN'||val==='#N/A'||val==='#REF!'||val==='#VALUE!')val='';
+      o[h.trim()]=val;
+    });
+    return o;
   });
 }
 function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
 
 // FILTROS
-function getBase(){if(S.rol==='LIDER')return S.all.filter(r=>r['EJECUTIVO']?.toLowerCase()===S.user?.toLowerCase());return S.all;}
+function normalizeStr(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function getBase(){if(S.rol==='LIDER')return S.all.filter(r=>normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user));return S.all;}
 
 function populateFilters(){
   const b=getBase();
@@ -1120,7 +1138,7 @@ function countReps(r){let n=1;if(r['CORREO_REPRESENTANTES2']||r['NUMERO_REPRESEN
 function renderTabDatos(r){
   const dy=calcDays(r['Fecha de Instalacion Cliente']);
   const dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
-  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class=\"field\"><label>Tel. Proham</label><input id=\"f_tel_proham\" value=\"\'+esc(r[\'TELEFONO_PROHAM\']||\'\')+\'\"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
+  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class="field"><label>Tel. Proham</label><input id="f_tel_proham" value="'+esc(r['TELEFONO_PROHAM']||'')+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
   h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación</label><textarea id="f_obs">'+esc(r['Observacion']||'')+'</textarea></div></div>';
   h+='<div class="sec-lbl">Representantes Legales</div><div id="repsC">';
   for(let i=1;i<=S.nReps;i++) h+=buildRep(i,r);
@@ -1168,25 +1186,30 @@ function renderTabDocs(r){
     {col:'CONTRATO',            lbl:'Contrato'},
   ];
   const allDocs=[...repDocs,...empDocs];
-  const loaded=allDocs.filter(d=>r[d.col]&&r[d.col].startsWith('http')).length;
-  const ckOk=r['DOCUMENTOS_REPRESENTANTES']&&r['ACTA CONSTITUTIVA']&&r['RIF_VIGENTE']&&r['CORREO_REPRESENTANTES']&&r['NUMERO_REPRESENTANTES']&&(!esISP||r['HABILITACION_CONATEL']);
+  const loaded=allDocs.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
+  const ckOk=cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES']).startsWith('http')&&cleanDocUrl(r['ACTA CONSTITUTIVA']).startsWith('http')&&cleanDocUrl(r['RIF_VIGENTE']).startsWith('http')&&(r['CORREO_REPRESENTANTES']||'').trim()&&(r['NUMERO_REPRESENTANTES']||'').trim()&&(!esISP||cleanDocUrl(r['HABILITACION_CONATEL']).startsWith('http'));
   let h='<div style="font-size:12px;color:var(--text2);margin-bottom:16px"><strong style="color:var(--text)">'+loaded+'</strong> de '+allDocs.length+' documentos cargados · ';
   h+=ckOk?'<span style="color:var(--green);font-weight:600">✓ Checklist completo</span>':'<span style="color:var(--amber)">⚠ Checklist incompleto</span>';
   h+='</div>';
   // Rep docs
-  h+='<div class="doc-section"><div class="doc-section-title">Documentos de Representantes <span style="font-size:10px;color:var(--text3);font-weight:400">'+repDocs.filter(d=>r[d.col]&&r[d.col].startsWith('http')).length+'/'+repDocs.length+' cargados</span></div><div class="doc-grid">';
+  h+='<div class="doc-section"><div class="doc-section-title">Documentos de Representantes <span style="font-size:10px;color:var(--text3);font-weight:400">'+repDocs.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length+'/'+repDocs.length+' cargados</span></div><div class="doc-grid">';
   repDocs.forEach(d=>{h+=docField(d,r);});
   h+='</div></div>';
   // Empresa docs
-  h+='<div class="doc-section"><div class="doc-section-title">Documentos de la Empresa <span style="font-size:10px;color:var(--text3);font-weight:400">'+empDocs.filter(d=>r[d.col]&&r[d.col].startsWith('http')).length+'/'+empDocs.length+' cargados</span></div><div class="doc-grid">';
+  h+='<div class="doc-section"><div class="doc-section-title">Documentos de la Empresa <span style="font-size:10px;color:var(--text3);font-weight:400">'+empDocs.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length+'/'+empDocs.length+' cargados</span></div><div class="doc-grid">';
   empDocs.forEach(d=>{h+=docField(d,r);});
   h+='</div></div>';
   document.getElementById('tab-documentos').innerHTML=h;
 }
 
+function cleanDocUrl(v){
+  v=(v||'').trim();
+  if(v==='NaN'||v==='#N/A'||v==='#REF!'||v==='#VALUE!'||v==='null'||v==='undefined')return '';
+  return v;
+}
 function docField(d,r){
-  var url=r[d.col]||'';
-  var hasDoc=url&&(url.startsWith('http')||url.startsWith('https'));
+  var url=cleanDocUrl(r[d.col]);
+  var hasDoc=url.startsWith('http');
   if(hasDoc){
     return (
       '<div class="doc-item doc-item-ok">'
@@ -1206,7 +1229,7 @@ function docField(d,r){
       +'<div class="doc-lbl">'+d.lbl+'</div>'
       +'<div class="doc-upload">'
       +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,\''+d.col+'\')">'+
-      +'<div class="doc-upload-txt">PDF / Imagen · Máx 10MB</div>'
+      +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div><div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div>'
       +'</div>'
       +'</div>'
     );
@@ -1223,7 +1246,28 @@ function replaceDoc(btn,col){
 }
 
 function renderTabHist(r){
-  document.getElementById('tab-historial').innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:40px 0"><div style="font-size:24px;margin-bottom:8px">📋</div>El historial de cambios se activará cuando el Apps Script esté desplegado.</div>';
+  var el=document.getElementById('tab-historial');
+  el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">Cargando historial...</div>';
+  if(!APPS_SCRIPT_URL){el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">Apps Script no configurado</div>';return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarHistorial',rif:r['RIF']||''})})
+  .then(function(res){return res.json();})
+  .then(function(data){
+    if(!data.ok||!data.registros||!data.registros.length){
+      el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:30px 0"><div style="font-size:24px;margin-bottom:8px">📋</div>Sin gestiones registradas</div>';return;
+    }
+    var h='<div style="display:flex;flex-direction:column;gap:8px">';
+    data.registros.forEach(function(log){
+      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(log.tipo||'Gestión')+'</span><span style="font-size:10px;color:var(--text3)">'+esc(log.fecha||'')+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(log.nota||log.usuario||'')+'</div></div>';
+    });
+    el.innerHTML=h+'</div>';
+  })
+  .catch(function(){
+    var logs=segLog.filter(function(l){return l.rif===r['RIF'];});
+    if(!logs.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:30px 0"><div style="font-size:24px;margin-bottom:8px">📋</div>Sin historial en sesión</div>';return;}
+    var h='<div style="color:var(--amber);font-size:11px;margin-bottom:10px">⚠ Solo sesión actual</div><div style="display:flex;flex-direction:column;gap:8px">';
+    logs.forEach(function(l){h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span><span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';});
+    el.innerHTML=h+'</div>';
+  });
 }
 
 function renderDrawerComm(r){
@@ -1264,16 +1308,45 @@ function renderDrawerComm(r){
     parts.push('</div>');
   }
   if(WA_PRUEBA){parts.push('<div style="margin-top:8px;font-size:10px;color:var(--amber)">Modo prueba: WA va a +'+WA_NUM_PRUEBA+'</div>');}
+  // Campo para número adicional de contacto
+  parts.push('<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">');
+  parts.push('<div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Número adicional de contacto</div>');
+  parts.push('<div style="display:flex;gap:6px;align-items:center">');
+  parts.push('<input id="numAdicional" placeholder="+584121234567" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">');
+  parts.push('<button class="btn btn-g btn-sm" style="color:#25d366;border-color:#25d366;font-size:11px" onclick="openWAAdicional()">WA</button>');
+  parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="copyNumAdicional()">Copiar</button>');
+  parts.push('</div></div>');
   parts.push('</div>');
   return parts.join('');
+}
+
+function openWAAdicional(){
+  var num=document.getElementById('numAdicional')&&document.getElementById('numAdicional').value||'';
+  if(!num){toast('Ingresa un número primero','err');return;}
+  var msg=S.cur?getMsgWA('cliente_docs',S.cur):'';
+  var dest=WA_PRUEBA?WA_NUM_PRUEBA:formatWANumber(num);
+  window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(msg),'_blank');
+  if(S.cur)regAccion(S.cur,'WA adicional',dest);
+}
+
+function copyNumAdicional(){
+  var num=document.getElementById('numAdicional')&&document.getElementById('numAdicional').value||'';
+  if(!num){toast('Ingresa un número primero','err');return;}
+  navigator.clipboard.writeText(formatWANumber(num)).then(function(){toast('Número copiado','ok');}).catch(function(){toast('No se pudo copiar','err');});
 }
 function renderStBtns(r){
   const cur=(r['ESTATUS_LEGAL']||'').toUpperCase();
   const al=RT[S.rol]||[];const ci=SO.indexOf(cur);
-  document.getElementById('drawerStBtns').innerHTML=al.filter(s=>s!==cur).map(s=>{
+  const container=document.getElementById('drawerStBtns');
+  container.innerHTML=al.filter(s=>s!==cur).map(s=>{
     const si=SO.indexOf(s);const cls=si>ci?'up':si<ci?'dn':'';
-    return '<button class="st-btn '+cls+'" onclick="changeStatus('+s+'">→ '+s+'</button>';
+    return '<button class="st-btn '+cls+'" data-st="'+s+'">→ '+s+'</button>';
   }).join('');
+  // Event delegation - un solo listener para todos los botones de estatus
+  container.onclick=function(e){
+    const btn=e.target.closest('[data-st]');
+    if(btn) changeStatus(btn.dataset.st);
+  };
 }
 
 function changeStatus(ns){
@@ -1297,8 +1370,23 @@ function saveExp(){
 }
 
 function saveField(col,val){
-  if(!APPS_SCRIPT_URL)return;
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateField',rif:S.cur['RIF'],col,val}),headers:{'Content-Type':'application/json'}}).catch(console.error);
+  if(!APPS_SCRIPT_URL||!S.cur)return;
+  if(col==='ESTATUS_LEGAL'){
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'cambiarEstatus',rif:S.cur['RIF'],estatus:val,
+      observacion:S.cur['Observacion']||''
+    })})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(rs.ok){toast('Estatus guardado \u2713','ok');}
+      else{toast('Error: '+(rs.error||''),'err');}
+    }).catch(function(){toast('Sin conexi\u00f3n','err');});
+  } else {
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'registrarHistorial',rif:S.cur['RIF'],
+      cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],
+      tipo:'Actualizaci\u00f3n '+col,nota:String(val).slice(0,200),usuario:S.user
+    })}).catch(function(){});
+  }
 }
 
 function handleFile(input,col){
@@ -1342,8 +1430,7 @@ function handleFile(input,col){
         fileBase64:e.target.result.split(',')[1],
         fileName:fileName,
         mimeType:file.type
-      }),
-      headers:{'Content-Type':'application/json'}
+      })
     })
     .then(function(r){return r.json();})
     .then(function(rs){
@@ -1370,7 +1457,7 @@ function handleFile(input,col){
 }
 
 function showTab(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['datos','documentos','historial'][i]===t));
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['datos','documentos','seguimiento_cli','historial'][i]===t));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
 }
@@ -1705,7 +1792,7 @@ function exportCSV(){
 function sendReport(){
   if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL','err');return;}
   toast('Enviando...','');
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'enviarReporte',lider:document.getElementById('rLider').value||'admin',filas:S.rptData}),headers:{'Content-Type':'application/json'}}).then(()=>toast('Correo enviado ✓','ok')).catch(()=>toast('Error','err'));
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'enviarReporteLider',lider:document.getElementById('rLider').value||'admin',filas:S.rptData})}).then(()=>toast('Correo enviado ✓','ok')).catch(()=>toast('Error','err'));
 }
 
 // WHATSAPP RESUMEN
@@ -1867,7 +1954,47 @@ function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','
 
 function refreshSeg(){try{renderSegTab();}catch(e){console.warn('seg:',e);}var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;var badge=document.getElementById('segBadge');if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}}
 
-function getSegData(){var base=getBase();var lid=(document.getElementById('segLider')||{}).value||'';var data=[];if(segTab==='pend'){var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();if(nle==='SI'||nle==='HISTORICO')return false;var fd=parseDate(r['Fecha de Instalacion Cliente']);return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;});}else if(segTab==='sinmov'){data=base.filter(function(r){if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30;});}else if(segTab==='firmar'){data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});}else{return null;}if(lid)data=data.filter(function(r){return r['EJECUTIVO']===lid;});data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});return data;}
+function getSegData(){
+  var base=getBase();
+  var lid=(document.getElementById('segLider')||{}).value||'';
+  var tipo=(document.getElementById('segTipoFil')||{}).value||'';
+  var desde=(document.getElementById('segDesde')||{}).value||'';
+  var hasta=(document.getElementById('segHasta')||{}).value||'';
+  var data=[];
+  if(segTab==='pend'){
+    var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();
+    data=base.filter(function(r){
+      if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
+      var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();
+      if(nle==='SI'||nle==='HISTORICO')return false;
+      var fd=parseDate(r['Fecha de Instalacion Cliente']);
+      return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;
+    });
+  } else if(segTab==='sinmov'){
+    data=base.filter(function(r){
+      if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
+      if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;
+      var dy=calcDays(r['Fecha de Instalacion Cliente']);
+      return dy!==null&&dy>30;
+    });
+  } else if(segTab==='firmar'){
+    data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});
+  } else {return null;}
+  // Filtros adicionales
+  if(lid) data=data.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
+  if(tipo) data=data.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
+  if(desde||hasta){
+    data=data.filter(function(r){
+      var fd=parseDate(r['Fecha de Instalacion Cliente']);
+      if(!fd)return false;
+      if(desde&&fd<new Date(desde))return false;
+      if(hasta&&fd>new Date(hasta))return false;
+      return true;
+    });
+  }
+  data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});
+  return data;
+}
 
 function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td style=\"display:flex;gap:4px\"><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button><button class=\"btn btn-g btn-sm\" onclick=\"segWAQuick('+i+')\" style=\"font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366\" title=\"WA\">WA</button></td></tr>';});tbl.innerHTML=html;}
 
@@ -1898,12 +2025,20 @@ function segBuildMsg(clients){
 
   // Destinatario options
   var dests=[];
-  if(correoLider)dests.push({label:'👤 Líder: '+lid,val:correoLider});
-  if(correoAbogado)dests.push({label:'⚖ Abogada: Reina',val:correoAbogado});
-  if(correoCliente&&!isMasivo)dests.push({label:'🏢 Cliente',val:correoCliente});
-  dests.push({label:'⚙ Admin (yo)',val:correoAdmin});
+  if(correoLider)dests.push({label:'👤 Líder: '+lid,val:correoLider,tipo:'correo'});
+  if(correoAbogado)dests.push({label:'⚖ Abogada: Reina',val:correoAbogado,tipo:'correo'});
+  if(correoCliente&&!isMasivo)dests.push({label:'🏢 Cliente (correo)',val:correoCliente,tipo:'correo'});
+  dests.push({label:'⚙ Admin (yo)',val:correoAdmin,tipo:'correo'});
+  // Opciones de WhatsApp
+  var numLider=getLiderWANum(lid);
+  if(numLider)dests.push({label:'📱 WA Líder: '+lid.split(' ')[0],val:numLider,tipo:'wa'});
+  if(!isMasivo){
+    var c0=clients[0];
+    var numCli=formatWANumber(c0['NUMERO_REPRESENTANTES']||'')||formatWANumber(c0['TELEFONO_PROHAM']||'')||formatWANumber(c0['NUMERO_REPRESENTANTES2']||'');
+    if(numCli)dests.push({label:'📱 WA Cliente',val:numCli,tipo:'wa'});
+  }
   document.getElementById('segDestinatarioOpts').innerHTML=dests.map(function(d,i){
-    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" onclick="segSelDest(this)">'+d.label+'</button>';
+    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" data-tipo="'+(d.tipo||'correo')+'" onclick="segSelDest(this)">'+d.label+'</button>';
   }).join('');
 
   // Tipo options
@@ -1995,12 +2130,48 @@ function copySegMsg(){
   navigator.clipboard.writeText(full).then(function(){toast('Mensaje copiado ✓','ok');}).catch(function(){document.getElementById('segMsgBody').select();});
 }
 
+function clearSegFilters(){
+  ['segLider','segTipoFil','segDesde','segHasta'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  renderSegTab();
+}
+
+function exportSegCSV(){
+  var data=getSegData()||[];
+  if(!data.length){toast('Sin datos para exportar','err');return;}
+  var h=['RAZON SOCIAL','RIF','EJECUTIVO','TIPO_CLIENTE','ESTATUS_LEGAL','Fecha de Instalacion Cliente','Observacion'];
+  var rows=data.map(function(r){return h.map(function(k){return '"'+(r[k]||'').toString().replace(/"/g,'""')+'"';}).join(',');});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+[h.join(',')].concat(rows).join('\n')],{type:'text/csv'}));
+  a.download='seguimiento_airtek_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('CSV exportado','ok');
+}
+
 function sendSegEmail(){
-  if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL primero','err');return;}
   var activeDest=document.querySelector('#segDestinatarioOpts .seg-dest-btn.active');
-  var customCorreo=document.getElementById('segCorreoCustom').value.trim();
+  var customCorreo=(document.getElementById('segCorreoCustom')||{value:''}).value.trim();
   var para=customCorreo||(activeDest?activeDest.dataset.val:'');
+  var tipoEnvio=(activeDest&&!customCorreo)?activeDest.dataset.tipo:'correo';
   if(!para){toast('Selecciona un destinatario','err');return;}
+  var subj=(document.getElementById('segMsgSubj')||{}).value||'';
+  var body=(document.getElementById('segMsgBody')||{}).value||'';
+  if(!subj||!body){toast('El asunto y mensaje no pueden estar vacíos','err');return;}
+  // Si es WA, abrir WhatsApp directamente
+  if(tipoEnvio==='wa'){
+    var num=formatWANumber(para);
+    var dest=WA_PRUEBA?WA_NUM_PRUEBA:num;
+    if(!dest){toast('Número no válido para WhatsApp','err');return;}
+    window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(body),'_blank');
+    var rifs=Object.keys(segSelected);
+    if(rifs.length===1){
+      var cl=getBase().filter(function(r){return segSelected[r['RIF']];});
+      if(cl.length)regAccion(cl[0],'WhatsApp desde Seguimiento',dest);
+    }
+    toast(WA_PRUEBA?'WA prueba enviado':'WhatsApp abierto','ok');
+    return;
+  }
+  // Correo via Apps Script
+  if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL primero','err');return;}
   var cc=document.getElementById('segCcInput').value.trim();
   var subj=document.getElementById('segMsgSubj').value.trim();
   var body=document.getElementById('segMsgBody').value.trim();
@@ -2012,8 +2183,7 @@ function sendSegEmail(){
     body:JSON.stringify({action:'enviarSeguimiento',para:para,cc:cc,asunto:subj,cuerpo:body,
       cliente:_segClients.length===1?_segClients[0]['RAZON SOCIAL']:'Múltiples clientes',
       ejecutivo:_segConfig.lid||'',
-      rif:_segClients.length===1?_segClients[0]['RIF']:''}),
-    headers:{'Content-Type':'application/json'}
+      rif:_segClients.length===1?_segClients[0]['RIF']:''})
   }).then(function(){
     toast('Correo enviado ✓','ok');
     segSelected={};
@@ -2035,8 +2205,7 @@ function addSegEntry(){
   if(APPS_SCRIPT_URL){
     fetch(APPS_SCRIPT_URL,{
       method:'POST',
-      body:JSON.stringify({action:'registrarHistorial',rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user}),
-      headers:{'Content-Type':'application/json'}
+      body:JSON.stringify({action:'registrarHistorial',rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user})
     }).catch(function(){});// Silent fail - log stays in memory
   }
   toast('Gestión registrada ✓','ok');
@@ -2044,7 +2213,26 @@ function addSegEntry(){
   renderTabSeg(S.cur);
 }
 
-function initSeg(){var lid=document.getElementById('segLider');if(!lid)return;var lids=[];getBase().forEach(function(r){if(r['EJECUTIVO']&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);});lids.sort();lid.innerHTML='<option value="">Todos</option>';lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;lid.appendChild(o);});try{refreshSeg();}catch(e){console.warn('initSeg:',e);}}
+function initSeg(){
+  var lid=document.getElementById('segLider');
+  if(!lid)return;
+  // Si es LIDER, usar S.all para ver TODOS sus clientes (no solo getBase que ya filtra)
+  var source = S.rol==='LIDER' ? S.all : S.all;
+  var lids=[];
+  source.forEach(function(r){
+    if(r['EJECUTIVO']&&r['EJECUTIVO']!=='Pendiente'&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);
+  });
+  lids.sort();
+  lid.innerHTML='<option value="">Todos</option>';
+  lids.forEach(function(l){
+    var o=document.createElement('option');
+    o.value=l;o.textContent=l;
+    // Si es LIDER, pre-seleccionar su nombre
+    if(S.rol==='LIDER'&&normalizeStr(l)===normalizeStr(S.user))o.selected=true;
+    lid.appendChild(o);
+  });
+  try{refreshSeg();}catch(e){console.warn('initSeg:',e);}
+}
 
 
 // ESTATUS MULTISELECT
@@ -2086,7 +2274,7 @@ function formatWANumber(n){if(!n)return'';var s=String(n).replace(/[^0-9]/g,'');
 function getLiderWANum(ejec){var f=(S.cfg||[]).find(function(x){return x.EJECUTIVO===ejec;});return f?formatWANumber(f.TELEFONO||f.Numero||''):'';}
 function openWA(numero,msg,r,tipo){var dest=WA_PRUEBA?WA_NUM_PRUEBA:formatWANumber(numero);if(dest){window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(msg),'_blank');}else{navigator.clipboard.writeText(msg).then(function(){toast('Sin numero - mensaje copiado','ok');}).catch(function(){toast('Sin numero para WA','err');});}if(r)regAccion(r,tipo||'WhatsApp',dest||'sin numero');}
 function openMailto(para,asunto,cuerpo,r,tipo){var dest=WA_PRUEBA?((S.cfg||[]).find(function(x){return x.ROL==='ADMIN';})||{}).CORREO||'':para;window.location.href='mailto:'+dest+'?cc='+encodeURIComponent(CC_CORP)+'&subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);if(r)regAccion(r,tipo||'Correo',dest);}
-function regAccion(r,canal,dest){var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],tipo:canal,fecha:new Date().toLocaleString('es-VE'),dest:dest};segLog.push(e);if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'registrarHistorial',rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],tipo:canal,nota:'Enviado a '+dest,usuario:S.user}),headers:{'Content-Type':'application/json'}}).catch(function(){});}}
+function regAccion(r,canal,dest){var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],tipo:canal,fecha:new Date().toLocaleString('es-VE'),dest:dest};segLog.push(e);if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'registrarHistorial',rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],tipo:canal,nota:'Enviado a '+dest,usuario:S.user})}).catch(function(){});}}
 function getMsgWA(tipo,r){var N=String.fromCharCode(10);var nom=r?r['RAZON SOCIAL']||'':'';var rif=r?r['RIF']||'':'';var ejec=r?r['EJECUTIVO']||'':'';var est=r?r['ESTATUS_LEGAL']||'':'';var dy=r?(calcDays(r['Fecha de Instalacion Cliente'])||'?'):'?';var f=N+'------------------'+N+'Administracion de Contratos | Airtek'+N+CC_CORP;var m={lider_nuevo:'[Airtek] Nuevo cliente en tu cartera'+N+N+'Hola '+ejec+', tienes un nuevo cliente que requiere documentacion legal.'+N+N+'Empresa: '+nom+N+'RIF: '+rif+N+'Dias: '+dy+N+N+'Docs: cedula, RIF vigente, acta constitutiva, acta de asamblea.'+f,lider_recordatorio:'[Airtek] Recordatorio - Expediente pendiente'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin avance ('+est+').'+N+'Por favor gestiona a la brevedad.'+f,lider_urgente:'[Airtek] URGENTE - Sin respuesta'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin respuesta.'+N+'RIF: '+rif+' | '+est+N+N+'Contactalo hoy.'+f,lider_firma:'[Airtek] Contrato pendiente de firma'+N+N+'Hola '+ejec+', el cliente '+nom+' tiene el contrato pendiente de firma. Coordina a la brevedad.'+f,cliente_docs:'Estimado cliente,'+N+N+'Le contactamos de parte de Airtek - Ventas Corporativas.'+N+'Su expediente de '+nom+' requiere:'+N+'- Cedula del representante'+N+'- RIF vigente'+N+'- Acta constitutiva'+N+'- Acta de asamblea'+N+N+'Haganos llegar los documentos. Gracias.'+f,cliente_recordatorio:'[Airtek] Recordatorio'+N+N+'Estimado cliente de '+nom+', estan pendientes sus documentos para regularizar su expediente con Airtek.'+f,cliente_firma:'[Airtek] Su contrato esta listo'+N+N+'Estimado cliente de '+nom+', su contrato con Airtek esta pendiente de firma. Comuniquese con nosotros para coordinar.'+f,abogada_listo:'[Airtek Legal] Expediente listo'+N+N+'Hola Reina, el expediente de '+nom+' (RIF: '+rif+', Lider: '+ejec+') esta aprobado y listo para elaborar el contrato.'+f,abogada_firma:'[Airtek Legal] Coordinar firma'+N+N+'Hola Reina, el contrato de '+nom+' esta listo. El lider '+ejec+' coordina la firma.'+f};return m[tipo]||('Gestion - '+nom);}
 function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RAZON SOCIAL'],getMsgWA(tipoMsg,r),r,'Correo '+tipoMsg);}
 // PWA
