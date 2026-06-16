@@ -1136,7 +1136,7 @@ function renderTable(){
     const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
     const dy=calcDays(r['Fecha de Instalacion Cliente']);
     const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
-    return '<tr onclick="openExp('+( st+i)+')" style="cursor:pointer"><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td><td style="font-size:11px;color:var(--text2)">'+esc(r['RIF'])+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(r['TIPO_CLIENTE'])+'</td><td><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td><td style="font-size:12px;color:var(--text2)">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td></tr>';
+    return '<tr onclick="openExp('+( st+i)+')" data-rif="'+esc(r['RIF'])+'" style="cursor:pointer"><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td><td style="font-size:11px;color:var(--text2)">'+esc(r['RIF'])+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(r['TIPO_CLIENTE'])+'</td><td><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td><td style="font-size:12px;color:var(--text2)">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td></tr>';
   }).join('');
   document.getElementById('cardsMobile').innerHTML=pg.map((r,i)=>{
     const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};const dy=calcDays(r['Fecha de Instalacion Cliente']);const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
@@ -1545,19 +1545,14 @@ function changeStatus(ns){
   S.cur['ESTATUS_LEGAL']=ns;
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
   if(inAll)inAll['ESTATUS_LEGAL']=ns;
-  // Re-render table row badge without full reload
-  var rows=document.querySelectorAll('#clTbody tr');
-  rows.forEach(function(row){
-    var rifCell=row.cells&&row.cells[1];
-    if(rifCell&&rifCell.textContent.trim()===S.cur['RIF']){
-      var badge=row.querySelector('.badge');
-      if(badge){
-        var si=SI[ns]||{c:'b-gn'};
-        badge.className='badge '+si.c;
-        badge.textContent=ns;
-      }
-    }
-  });
+  // Re-render table row badge via data-rif (reliable)
+  var rif=(S.cur['RIF']||'').toString().trim();
+  var si2=SI[ns]||{c:'b-gn'};
+  var tr2=document.querySelector('#clTbody tr[data-rif="'+rif+'"]');
+  if(tr2){
+    var badge2=tr2.querySelector('.badge');
+    if(badge2){badge2.className='badge '+si2.c;badge2.textContent=ns;}
+  }
   if(APPS_SCRIPT_URL)saveField('ESTATUS_LEGAL',ns);
 }
 
@@ -1589,17 +1584,23 @@ function saveExp(){
 }
 
 function refreshTableRow(r){
-  // Find and update the row matching this RIF without re-rendering the full table
-  var rows=document.querySelectorAll('#clTbody tr');
+  // Use data-rif attribute for reliable lookup (no whitespace issues)
+  var rif=(r['RIF']||'').toString().trim();
   var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
+  // Try data-rif first (main table)
+  var tr=document.querySelector('#clTbody tr[data-rif="'+rif+'"]');
+  if(tr){
+    var badge=tr.querySelector('.badge');
+    if(badge){badge.className='badge '+si.c;badge.textContent=r['ESTATUS_LEGAL']||'';}
+    return;
+  }
+  // Fallback: scan all rows by cells[1] text
+  var rows=document.querySelectorAll('#clTbody tr');
   rows.forEach(function(row){
     var cells=row.cells;
-    if(cells&&cells[1]&&cells[1].textContent.trim()===r['RIF']){
-      // Update badge
+    if(cells&&cells[1]&&cells[1].textContent.trim()===rif){
       var badge=row.querySelector('.badge');
       if(badge){badge.className='badge '+si.c;badge.textContent=r['ESTATUS_LEGAL']||'';}
-      // Update ejecutivo
-      if(cells[2])cells[2].textContent=r['EJECUTIVO']||'';
     }
   });
 }
@@ -2165,7 +2166,7 @@ document.addEventListener('touchend',function(e){
   var rows=Array.from(document.querySelectorAll('#clTbody tr'));
   var idx=rows.indexOf(tr);
   if(idx>=0){
-    var st=(S.page-1)*PAGE_SIZE;
+    var st=(S.page-1)*PS;
     e.preventDefault();
     openExp(st+idx);
   }
