@@ -46,7 +46,7 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 
 /* SCREEN 0 — Team select */
 .team-select-box{width:380px;text-align:center}
-.ts-logo{margin:0 auto 32px;display:block;max-height:56px;max-width:85vw;width:auto;filter:invert(1) brightness(2)}
+.ts-logo{display:block;margin:0 auto 32px;width:min(260px,80vw);height:auto;filter:invert(1) brightness(2)}
 [data-theme="light"] .ts-logo{filter:none}
 .ts-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px}
 .ts-sub{font-size:13px;color:var(--text2);margin-bottom:36px}
@@ -66,7 +66,7 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 
 /* SCREEN 1 — Login */
 .login-box{background:var(--surface);border:1px solid var(--border);padding:36px 32px;width:360px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.login-logo{display:block;max-height:40px;max-width:80vw;width:auto;margin:0 auto 24px;filter:invert(1) brightness(2)}
+.login-logo{display:block;width:min(200px,75vw);height:auto;margin:0 auto 24px;filter:invert(1) brightness(2)}
 [data-theme="light"] .login-logo{filter:none}
 .login-back{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:20px;background:none;border:none;font-family:inherit;padding:0;transition:color .15s}
 .login-back:hover{color:var(--text)}
@@ -1570,8 +1570,38 @@ function saveExp(){
     if(document.getElementById('fc'+i))S.cur[ck]=document.getElementById('fc'+i).value;
     if(document.getElementById('fn'+i))S.cur[nk]=document.getElementById('fn'+i).value;
   }
-  toast('Cambios guardados','ok');
+  // Sync S.all so table reflects the change without full reload
+  var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
+  if(inAll)Object.assign(inAll,{
+    'Observacion':S.cur['Observacion'],
+    'CORREO_REPRESENTANTES':S.cur['CORREO_REPRESENTANTES'],
+    'NUMERO_REPRESENTANTES':S.cur['NUMERO_REPRESENTANTES'],
+    'CORREO_REPRESENTANTES2':S.cur['CORREO_REPRESENTANTES2'],
+    'NUMERO_REPRESENTANTES2':S.cur['NUMERO_REPRESENTANTES2'],
+    'ESTATUS_LEGAL':S.cur['ESTATUS_LEGAL']
+  });
+  // Refresh just this row's badge in the table
+  refreshTableRow(S.cur);
+  toast('Cambios guardados ✓','ok');
   if(APPS_SCRIPT_URL)saveField('Observacion',S.cur['Observacion']);
+  // Close drawer after short delay so toast is visible
+  setTimeout(closeDrawer, 900);
+}
+
+function refreshTableRow(r){
+  // Find and update the row matching this RIF without re-rendering the full table
+  var rows=document.querySelectorAll('#clTbody tr');
+  var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
+  rows.forEach(function(row){
+    var cells=row.cells;
+    if(cells&&cells[1]&&cells[1].textContent.trim()===r['RIF']){
+      // Update badge
+      var badge=row.querySelector('.badge');
+      if(badge){badge.className='badge '+si.c;badge.textContent=r['ESTATUS_LEGAL']||'';}
+      // Update ejecutivo
+      if(cells[2])cells[2].textContent=r['EJECUTIVO']||'';
+    }
+  });
 }
 
 function saveField(col,val){
