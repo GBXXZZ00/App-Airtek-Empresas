@@ -46,7 +46,7 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 
 /* SCREEN 0 — Team select */
 .team-select-box{width:380px;text-align:center}
-.ts-logo{margin:0 auto 32px;display:block;max-height:56px;filter:invert(1) brightness(2)}
+.ts-logo{margin:0 auto 32px;display:block;max-height:56px;max-width:85vw;width:auto;filter:invert(1) brightness(2)}
 [data-theme="light"] .ts-logo{filter:none}
 .ts-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px}
 .ts-sub{font-size:13px;color:var(--text2);margin-bottom:36px}
@@ -66,7 +66,7 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 
 /* SCREEN 1 — Login */
 .login-box{background:var(--surface);border:1px solid var(--border);padding:36px 32px;width:360px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.login-logo{display:block;max-height:40px;margin:0 auto 24px;filter:invert(1) brightness(2)}
+.login-logo{display:block;max-height:40px;max-width:80vw;width:auto;margin:0 auto 24px;filter:invert(1) brightness(2)}
 [data-theme="light"] .login-logo{filter:none}
 .login-back{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:20px;background:none;border:none;font-family:inherit;padding:0;transition:color .15s}
 .login-back:hover{color:var(--text)}
@@ -1049,9 +1049,8 @@ function parseCSV(t){
     hd.forEach(function(h,i){
       var val=(v[i]||'').trim();
       // Limpiar valores NaN, #N/A y errores del Sheet (string y numérico)
-      if(val==='NaN'||val==='NaN'||val==='#N/A'||val==='#REF!'||val==='#VALUE!'||val==='null'||val==='undefined')val='';
-      // También limpiar si el valor parseado como número da NaN siendo string
-      if(val&&val.trim()==='NaN')val='';
+      if(val==='NaN'||val==='nan'||val==='#N/A'||val==='#REF!'||val==='#VALUE!'||val==='null'||val==='undefined'||val===undefined||val===null)val='';
+      if(val&&val.trim().toUpperCase()==='NAN')val='';
       o[h.trim()]=val;
     });
     return o;
@@ -1137,7 +1136,7 @@ function renderTable(){
     const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
     const dy=calcDays(r['Fecha de Instalacion Cliente']);
     const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
-    return '<tr onclick="openExp('+( st+i)+')"><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td><td style="font-size:11px;color:var(--text2)">'+esc(r['RIF'])+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(r['TIPO_CLIENTE'])+'</td><td><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td><td style="font-size:12px;color:var(--text2)">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td></tr>';
+    return '<tr onclick="openExp('+( st+i)+')" style="cursor:pointer"><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td><td style="font-size:11px;color:var(--text2)">'+esc(r['RIF'])+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(r['TIPO_CLIENTE'])+'</td><td><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td><td style="font-size:12px;color:var(--text2)">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td></tr>';
   }).join('');
   document.getElementById('cardsMobile').innerHTML=pg.map((r,i)=>{
     const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};const dy=calcDays(r['Fecha de Instalacion Cliente']);const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
@@ -1246,11 +1245,11 @@ function renderTabDocs(r){
   const empDocsBase=[
     {col:'RIF_VIGENTE',         lbl:'RIF Vigente'},
     {col:'ACTA CONSTITUTIVA',   lbl:'Acta Constitutiva'},
-    {col:'ACTA_ASAMBLEA_JUNTA', lbl:'Acta de Asamblea 1'},
     ...(esISP?[{col:'HABILITACION_CONATEL',lbl:'Habilitación CONATEL'}]:[]),
   ];
-  // Actas adicionales (colapsables)
+  // Todas las actas de asamblea (colapsables)
   const empDocsAcatasExtra=[
+    {col:'ACTA_ASAMBLEA_JUNTA', lbl:'Acta de Asamblea 1'},
     {col:'ACTA_ASAMBLEA_JUNTA2',lbl:'Acta de Asamblea 2'},
     {col:'ACTA_ASAMBLEA_JUNTA3',lbl:'Acta de Asamblea 3'},
     {col:'ACTA_ASAMBLEA_JUNTA4',lbl:'Acta de Asamblea 4'},
@@ -1542,6 +1541,23 @@ function changeStatus(ns){
   if(!confirm('¿Cambiar estatus a "'+ns+'"?'))return;
   S.cur['ESTATUS_LEGAL']=ns;renderStBtns(S.cur);
   toast('Estatus → '+ns,'ok');
+  // Update local data immediately for responsive UI
+  S.cur['ESTATUS_LEGAL']=ns;
+  var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
+  if(inAll)inAll['ESTATUS_LEGAL']=ns;
+  // Re-render table row badge without full reload
+  var rows=document.querySelectorAll('#clTbody tr');
+  rows.forEach(function(row){
+    var rifCell=row.cells&&row.cells[1];
+    if(rifCell&&rifCell.textContent.trim()===S.cur['RIF']){
+      var badge=row.querySelector('.badge');
+      if(badge){
+        var si=SI[ns]||{c:'b-gn'};
+        badge.className='badge '+si.c;
+        badge.textContent=ns;
+      }
+    }
+  });
   if(APPS_SCRIPT_URL)saveField('ESTATUS_LEGAL',ns);
 }
 
@@ -2111,6 +2127,19 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('op
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOverlay').classList.remove('open');}
 function toggleUserMenu(){document.getElementById('userMenu').classList.toggle('open');}
 document.addEventListener('click',e=>{if(!document.getElementById('avatarBtn').contains(e.target))document.getElementById('userMenu').classList.remove('open');});
+
+// Mobile touch fix: delegate touchend on table body for row opens
+document.addEventListener('touchend',function(e){
+  var tr=e.target.closest('#clTbody tr');
+  if(!tr)return;
+  var rows=Array.from(document.querySelectorAll('#clTbody tr'));
+  var idx=rows.indexOf(tr);
+  if(idx>=0){
+    var st=(S.page-1)*PAGE_SIZE;
+    e.preventDefault();
+    openExp(st+idx);
+  }
+},{passive:false});
 
 // UTILS
 function calcDays(s){const d=parseDate(s);return d?Math.floor((Date.now()-d.getTime())/86400000):null;}
