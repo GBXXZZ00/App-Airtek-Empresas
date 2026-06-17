@@ -1140,7 +1140,7 @@ function renderTable(){
   }).join('');
   document.getElementById('cardsMobile').innerHTML=pg.map((r,i)=>{
     const si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};const dy=calcDays(r['Fecha de Instalacion Cliente']);const dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
-    return '<div class="client-card" onclick="openExp('+(st+i)+'" style="animation:popIn '+(0.08+i*0.04).toFixed(2)+'s var(--ease-out) both"><div class="cc-name">'+esc(r['RAZON SOCIAL'])+'</div><div class="cc-rif">'+esc(r['RIF'])+' · '+esc(r['TIPO_CLIENTE'])+'</div><div class="cc-row"><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'')+'</div><div class="cc-row" style="margin-top:6px"><span>'+esc(r['EJECUTIVO'])+'</span><span>'+fmtDate(r['Fecha de Instalacion Cliente'])+'</span></div></div>';
+    return '<div class="client-card" onclick="openExp('+(st+i)+')" style="animation:popIn '+(0.08+i*0.04).toFixed(2)+'s var(--ease-out) both"><div class="cc-name">'+esc(r['RAZON SOCIAL'])+'</div><div class="cc-rif">'+esc(r['RIF'])+' · '+esc(r['TIPO_CLIENTE'])+'</div><div class="cc-row"><span class="badge '+si.c+'">'+esc(r['ESTATUS_LEGAL'])+'</span>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'')+'</div><div class="cc-row" style="margin-top:6px"><span>'+esc(r['EJECUTIVO'])+'</span><span>'+fmtDate(r['Fecha de Instalacion Cliente'])+'</span></div></div>';
   }).join('');
   const tot=data.length;const pgs=Math.ceil(tot/PS)||1;
   document.getElementById('pagInfo').textContent=(st+1)+'–'+Math.min(st+PS,tot)+' de '+tot.toLocaleString('es-VE');
@@ -1548,7 +1548,7 @@ function changeStatus(ns){
   // Re-render table row badge via data-rif (reliable)
   var rif=(S.cur['RIF']||'').toString().trim();
   var si2=SI[ns]||{c:'b-gn'};
-  var tr2=document.querySelector('#clTbody tr[data-rif="'+rif+'"]');
+  var tr2=document.querySelector('#tblBody tr[data-rif="'+rif+'"]');
   if(tr2){
     var badge2=tr2.querySelector('.badge');
     if(badge2){badge2.className='badge '+si2.c;badge2.textContent=ns;}
@@ -1588,14 +1588,14 @@ function refreshTableRow(r){
   var rif=(r['RIF']||'').toString().trim();
   var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
   // Try data-rif first (main table)
-  var tr=document.querySelector('#clTbody tr[data-rif="'+rif+'"]');
+  var tr=document.querySelector('#tblBody tr[data-rif="'+rif+'"]');
   if(tr){
     var badge=tr.querySelector('.badge');
     if(badge){badge.className='badge '+si.c;badge.textContent=r['ESTATUS_LEGAL']||'';}
     return;
   }
   // Fallback: scan all rows by cells[1] text
-  var rows=document.querySelectorAll('#clTbody tr');
+  var rows=document.querySelectorAll('#tblBody tr');
   rows.forEach(function(row){
     var cells=row.cells;
     if(cells&&cells[1]&&cells[1].textContent.trim()===rif){
@@ -2159,16 +2159,22 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 function toggleUserMenu(){document.getElementById('userMenu').classList.toggle('open');}
 document.addEventListener('click',e=>{if(!document.getElementById('avatarBtn').contains(e.target))document.getElementById('userMenu').classList.remove('open');});
 
-// Mobile touch fix: delegate touchend on table body for row opens
+// Mobile touch: handle .client-card taps (mobile grid view)
 document.addEventListener('touchend',function(e){
-  var tr=e.target.closest('#clTbody tr');
-  if(!tr)return;
-  var rows=Array.from(document.querySelectorAll('#clTbody tr'));
-  var idx=rows.indexOf(tr);
-  if(idx>=0){
-    var st=(S.page-1)*PS;
-    e.preventDefault();
-    openExp(st+idx);
+  // Desktop table row
+  var tr=e.target.closest('#tblBody tr');
+  if(tr){
+    var rows=Array.from(document.querySelectorAll('#tblBody tr'));
+    var idx=rows.indexOf(tr);
+    if(idx>=0){var st=(S.page-1)*PS;e.preventDefault();openExp(st+idx);}
+    return;
+  }
+  // Mobile card
+  var card=e.target.closest('#cardsMobile .client-card');
+  if(card){
+    var cards=Array.from(document.querySelectorAll('#cardsMobile .client-card'));
+    var idx2=cards.indexOf(card);
+    if(idx2>=0){var st2=(S.page-1)*PS;e.preventDefault();openExp(st2+idx2);}
   }
 },{passive:false});
 
