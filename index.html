@@ -162,7 +162,12 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .kpi-lbl{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
 .kpi-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
-.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.qf-bar{display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.qf-btn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:all .12s ease;white-space:nowrap;letter-spacing:.02em}
+.qf-btn:hover{border-color:var(--accent);color:var(--text)}
+.qf-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.qf-sep{width:1px;height:16px;background:var(--border);flex-shrink:0;margin:0 2px}
 .search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);padding:0 12px;flex:1;min-width:200px;border-radius:6px;transition:border-color .15s ease}
 .search-box:focus-within{border-color:var(--accent)}
 .search-box input{background:none;border:none;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;padding:8px 0;width:100%}
@@ -309,8 +314,12 @@ tbody tr:hover td{background:var(--surface2)}
 .drawer-status-bar{padding:10px 20px 8px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .dsb-current{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .dsb-current-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
-.dsb-track{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.dsb-track::-webkit-scrollbar{display:none}
+.dsb-track{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;-webkit-overflow-scrolling:touch}
+.dsb-track::-webkit-scrollbar{height:3px}
+.dsb-track::-webkit-scrollbar-track{background:transparent}
+.dsb-track::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.dsb-track::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+@media(max-width:768px){.dsb-track{scrollbar-width:none}.dsb-track::-webkit-scrollbar{display:none}}
 .st-btn{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:background .12s ease,color .12s ease,border-color .12s ease,transform .1s ease;letter-spacing:.02em;white-space:nowrap}
 .st-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--accent)}
 .st-btn:active{transform:scale(0.95)}
@@ -562,6 +571,12 @@ tbody tr:hover td{background:var(--surface2)}
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filtros <span class="fc" id="fcBadge" style="display:none">0</span>
         </button>
+      </div>
+      <div class="qf-bar" id="qfBar">
+        <button class="qf-btn active" id="qfRecent" onclick="qfSetRecent()">📅 Últimos 6 meses</button>
+        <button class="qf-btn" id="qfAll" onclick="qfSetAll()">Ver todos</button>
+        <div class="qf-sep" id="qfEjeSep" style="display:none"></div>
+        <div id="qfEjeChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
       <div class="filter-panel" id="filterPanel">
         <div class="fp-grid">
@@ -982,7 +997,7 @@ async function doLogin(){
   if(S.rol==='ABOGADO'){
     document.getElementById('nav-reportes').style.display='none';
   }
-  populateFilters();initChips();applyFilters();renderDash();initSeg();
+  populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();
   document.getElementById('loader').classList.add('off');
 }
 
@@ -1088,6 +1103,47 @@ function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if
 function normalizeStr(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 function getBase(){if(S.rol==='LIDER')return S.all.filter(r=>normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user));return S.all;}
 
+// ── Quick filters ────────────────────────────────────────────────────────────
+var S_qfRecent=true; // default: last 6 months for everyone
+
+function qfSetRecent(){
+  S_qfRecent=true;
+  document.getElementById('qfRecent').classList.add('active');
+  document.getElementById('qfAll').classList.remove('active');
+  applyFilters();
+}
+function qfSetAll(){
+  S_qfRecent=false;
+  document.getElementById('qfAll').classList.add('active');
+  document.getElementById('qfRecent').classList.remove('active');
+  applyFilters();
+}
+
+function initQfEjeChips(){
+  // Show executive chips for ADMIN/ABOGADO (not LIDER — they only see their own)
+  var sep=document.getElementById('qfEjeSep');
+  var wrap=document.getElementById('qfEjeChips');
+  if(!sep||!wrap)return;
+  if(S.rol==='LIDER'){sep.style.display='none';wrap.innerHTML='';return;}
+  var execs=[...new Set(S.all.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
+  if(!execs.length){sep.style.display='none';wrap.innerHTML='';return;}
+  sep.style.display='block';
+  wrap.innerHTML=execs.map(function(e){
+    return '<button class="qf-btn" data-eje="'+e+'" onclick="qfToggleEje(this)">'+e+'</button>';
+  }).join('');
+}
+
+function qfToggleEje(btn){
+  var isActive=btn.classList.contains('active');
+  // Deselect all, then activate clicked (single-select)
+  document.querySelectorAll('#qfEjeChips .qf-btn').forEach(function(b){b.classList.remove('active');});
+  if(!isActive){btn.classList.add('active');}
+  // Sync to the hidden fLider select so applyFilters works unchanged
+  var sel=document.getElementById('fLider');
+  if(sel)sel.value=isActive?'':btn.dataset.eje;
+  applyFilters();
+}
+
 function populateFilters(){
   const b=getBase();
   const ls=[...new Set(b.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
@@ -1114,6 +1170,8 @@ function clearFilters(){
   ['searchInp','fDesde','fHasta'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['fLider','fTipo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  // Clear executive chips
+  document.querySelectorAll('#qfEjeChips .qf-btn').forEach(function(b){b.classList.remove('active');});
   applyFilters();
 }
 
@@ -1127,13 +1185,26 @@ function applyFilters(){
   let act=0;if(l)act++;if(t)act++;if(d||h)act++;if(ss.length)act++;
   S.page=1;
   const badge=document.getElementById('fcBadge');badge.textContent=act;badge.style.display=act?'inline':'none';
+  // 6-month quick filter cutoff
+  var cutoff6m=null;
+  if(S_qfRecent){var now=new Date();cutoff6m=new Date(now.getFullYear(),now.getMonth()-6,now.getDate());}
+
   S.filtered=getBase().filter(r=>{
     if(q&&!r['RAZON SOCIAL'].toLowerCase().includes(q)&&!r['RIF'].toLowerCase().includes(q))return false;
     if(l&&r['EJECUTIVO']!==l)return false;
     if(t&&r['TIPO_CLIENTE']!==t)return false;
     if(ss.length&&!ss.includes(r['ESTATUS_LEGAL']))return false;
     if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt)return false;if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}
+    // Quick filter: last 6 months (only when no manual date range set)
+    if(cutoff6m&&!d&&!h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt||dt<cutoff6m)return false;}
     return true;
+  });
+  // Sort: newest first (descending by install date)
+  S.filtered.sort(function(a,b){
+    var da=parseDate(a['Fecha de Instalacion Cliente']);
+    var db=parseDate(b['Fecha de Instalacion Cliente']);
+    if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;
+    return db-da;
   });
   renderKPIs();renderTable();
   const sin=S.filtered.filter(r=>['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL'])).length;
