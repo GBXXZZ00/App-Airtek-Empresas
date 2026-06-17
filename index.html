@@ -937,7 +937,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyx5UBS8bBpcceA_OTvhz7kzA5T6bJ72uGdU5WNCwcNdPgx3Hmu1Y9ZZJ1J3QAZEh68Pg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBVBHmTtCWhSCaCT_RZHAkEPDsQLjxp0YvXSWa6NzkZgRsCzRJtovHR7aJVApR56dzSw/exec;
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -3087,7 +3087,18 @@ function regHistorial(r,campo,anterior,nuevo){
       action:'registrarCambio',
       rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],
       campo:campo,anterior:anterior,nuevo:nuevo,usuario:S.user
-    })}).catch(function(){});
+    })})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(!rs.ok){
+        console.error('[HISTORIAL_LOG] GAS rechazó registrarCambio:',rs.error);
+        // Si el GAS no reconoce la acción es porque el script desplegado es anterior al v3.0
+        if(rs.error&&rs.error.indexOf('no reconocida')>=0){
+          toast('⚠ GAS desactualizado — redesplegar gas_v3_1.js','err');
+        }
+      }
+    })
+    .catch(function(err){console.warn('[HISTORIAL_LOG] red error:',err);});
   }
 }
 function getMsgWA(tipo,r){
