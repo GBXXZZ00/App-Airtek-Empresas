@@ -329,6 +329,19 @@ tbody tr:hover td{background:var(--surface2)}
 .comm-lider{color:#3B82F6;border-color:#3B82F6}
 .comm-lider:hover{background:rgba(59,130,246,.12);color:#3B82F6}
 
+/* FALTANTES PANEL */
+.falt-panel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:8px}
+.falt-title{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.falt-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.falt-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.falt-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.falt-item label{cursor:pointer;color:var(--text2);flex:1}
+.falt-item.done label{color:var(--text3);text-decoration:line-through}
+.falt-item.done .falt-auto{color:var(--green);font-size:10px}
+.falt-detail{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none;resize:vertical;min-height:48px;margin-top:4px}
+.falt-detail:focus{border-color:var(--accent)}
+.falt-detail::placeholder{color:var(--text3)}
+
 /* STATUS BAR */
 .drawer-status-bar{padding:10px 20px 8px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .dsb-current{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -1122,8 +1135,13 @@ function parseCSV(t){
     const v=parseLine(l);const o={};
     hd.forEach(function(h,i){
       var val=(v[i]||'').trim();
-      // Limpiar valores NaN, #N/A y errores del Sheet (string y numérico)
-      if(val==='NaN'||val==='nan'||val==='#N/A'||val==='#REF!'||val==='#VALUE!'||val==='null'||val==='undefined'||val===undefined||val===null)val='';
+      // Limpiar TODOS los valores corruptos del Sheet antes de que lleguen al DOM
+      if(val===undefined||val===null)val='';
+      else{
+        var vs=String(val).trim();
+        var badVals=['NaN','nan','#N/A','#REF!','#VALUE!','#NAME?','#DIV/0!','null','undefined','FALSE','false'];
+        if(badVals.indexOf(vs)>=0||vs.toLowerCase()==='nan')val='';
+      }
       if(val&&val.trim().toUpperCase()==='NAN')val='';
       o[h.trim()]=val;
     });
@@ -1353,7 +1371,44 @@ function renderTabDatos(r){
   const dy=calcDays(r['Fecha de Instalacion Cliente']);
   const dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
   let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class="field"><label>Tel. Proham</label><input id="f_tel_proham" value="'+esc(r['TELEFONO_PROHAM']||'')+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
-  h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación</label><textarea id="f_obs">'+esc(r['Observacion']||'')+'</textarea></div></div>';
+  // Parse faltantes from Observacion
+  var obsRaw=r['Observacion']||'';
+  var faltMatch=obsRaw.match(/\[FALTANTES:([^\]]*?)\]/);
+  var detMatch=obsRaw.match(/\[DETALLE:([^\]]*?)\]/);
+  var faltItems=faltMatch?faltMatch[1].split(',').map(function(x){return x.trim();}).filter(Boolean):[];
+  var detText=detMatch?detMatch[1]:'';
+  var obsClean=obsRaw.replace(/\[FALTANTES:[^\]]*\]/g,'').replace(/\[DETALLE:[^\]]*\]/g,'').trim();
+  var esISPd=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
+  var allFaltItems=[
+    {k:'CEDULA_REP',      lbl:'Cédula del Representante Legal',     autoCol:'DOCUMENTOS_REPRESENTANTES'},
+    {k:'RIF_REP',         lbl:'RIF personal del Representante Legal',autoCol:'DOCUMENTOS_REPRESENTANTES2'},
+    {k:'RIF_EMPRESA',     lbl:'RIF vigente de la empresa',           autoCol:'RIF_VIGENTE'},
+    {k:'ACTA_CONST',      lbl:'Acta Constitutiva',                   autoCol:'ACTA CONSTITUTIVA'},
+    {k:'ACTA_ASAMBLEA',   lbl:'Acta de Asamblea',                    autoCol:''},
+    ...(esISPd?[{k:'CONATEL',lbl:'Habilitación CONATEL',             autoCol:'HABILITACION_CONATEL'}]:[]),
+  ];
+
+  h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación general</label><textarea id="f_obs" placeholder="Notas del ejecutivo...">'+esc(obsClean)+'</textarea></div></div>';
+
+  // Faltantes panel — only visible for ADMIN
+  if(S.rol==='ADMIN'||S.rol==='ABOGADO'){
+    h+='<div class="falt-panel">';
+    h+='<div class="falt-title">📋 Documentos faltantes <span style="font-size:9px;font-weight:400;color:var(--text3)">(para el mensaje al cliente)</span></div>';
+    h+='<div class="falt-list">';
+    allFaltItems.forEach(function(item){
+      var autoLoaded=item.autoCol?cleanDocUrl(r[item.autoCol]||'').startsWith('http'):false;
+      var checked=autoLoaded||(faltItems.indexOf(item.k)<0&&faltItems.length>0)?false:faltItems.indexOf(item.k)>=0;
+      // If auto-loaded, show as done automatically
+      if(autoLoaded){
+        h+='<div class="falt-item done"><input type="checkbox" disabled checked><label>'+item.lbl+'</label><span class="falt-auto">✓ cargado</span></div>';
+      } else {
+        h+='<div class="falt-item"><input type="checkbox" id="falt_'+item.k+'" '+(checked?'checked':'')+' onchange="saveFaltantes()"><label for="falt_'+item.k+'">'+item.lbl+'</label></div>';
+      }
+    });
+    h+='</div>';
+    h+='<textarea class="falt-detail" id="falt_detail" placeholder="Detalle específico: ej. Acta de Ratificación de Junta Directiva 2024, cédula vencida..." onchange="saveFaltantes()">'+esc(detText)+'</textarea>';
+    h+='</div>';
+  }
   h+='<div class="sec-lbl">Representantes Legales</div><div id="repsC">';
   for(let i=1;i<=S.nReps;i++) h+=buildRep(i,r);
   h+='</div>';
@@ -1660,7 +1715,7 @@ function renderDrawerComm(r){
   if(nP){
     parts.push('<div class="comm-row">');
     parts.push('<span class="comm-lbl">Proham</span>');
-    parts.push('<span class="comm-val">'+esc(formatWANumber(nP))+'</span>');
+    parts.push('<input class="comm-input" readonly value="'+esc(formatWANumber(nP))+'" style="color:var(--text2)">');
     parts.push('<button class="comm-btn comm-wa" onclick="openWA(\''+formatWANumber(nP)+'\',getMsgWA(\''+msgC+'\',S.cur),S.cur,\'wac\')">WA</button>');
     parts.push('</div>');
   }
@@ -1821,11 +1876,39 @@ function changeStatus(ns){
   if(APPS_SCRIPT_URL)saveField('ESTATUS_LEGAL',ns);
 }
 
+function saveFaltantes(){
+  if(!S.cur)return;
+  // Collect checked items
+  var items=[];
+  document.querySelectorAll('.falt-list input[type=checkbox]:not(:disabled)').forEach(function(cb){
+    if(cb.checked&&cb.id){items.push(cb.id.replace('falt_',''));}
+  });
+  var detail=(document.getElementById('falt_detail')||{}).value||'';
+  // Build structured observacion
+  var baseObs=(document.getElementById('f_obs')||{}).value||'';
+  var structured='';
+  if(items.length)structured+='[FALTANTES:'+items.join(',')+']';
+  if(detail.trim())structured+=(structured?'\n':'')+'[DETALLE:'+detail.trim()+']';
+  var full=(structured?(structured+'\n'):'')+(baseObs||'');
+  S.cur['Observacion']=full;
+  if(APPS_SCRIPT_URL)saveField('Observacion',full);
+  // Visual feedback
+  var det=document.getElementById('falt_detail');
+  if(det){det.style.borderColor='var(--green)';setTimeout(function(){det.style.borderColor='';},1200);}
+}
+
 function saveExp(){
   if(!S.cur)return;
+  // Merge faltantes into observacion before saving
+  saveFaltantes();
   var oldObs=S.cur['Observacion']||'';
   var newObs=document.getElementById('f_obs')?.value||'';
-  S.cur['Observacion']=newObs;
+  // Preserve structured parts
+  var faltMatch=oldObs.match(/\[FALTANTES:[^\]]*\]/);
+  var detMatch=oldObs.match(/\[DETALLE:[^\]]*\]/);
+  var prefix=(faltMatch?faltMatch[0]:'')+(detMatch?('\n'+detMatch[0]):'');
+  var full=(prefix?(prefix+'\n'):'')+(newObs||'');
+  S.cur['Observacion']=full;
   for(let i=1;i<=S.nReps;i++){
     const ck=i===1?'CORREO_REPRESENTANTES':'CORREO_REPRESENTANTES'+i;
     const nk=i===1?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES'+i;
@@ -2974,7 +3057,166 @@ function regHistorial(r,campo,anterior,nuevo){
     })}).catch(function(){});
   }
 }
-function getMsgWA(tipo,r){var N=String.fromCharCode(10);var nom=r?r['RAZON SOCIAL']||'':'';var rif=r?r['RIF']||'':'';var ejec=r?r['EJECUTIVO']||'':'';var est=r?r['ESTATUS_LEGAL']||'':'';var dy=r?(calcDays(r['Fecha de Instalacion Cliente'])||'?'):'?';var f=N+'------------------'+N+'Administracion de Contratos | Airtek'+N+CC_CORP;var m={lider_nuevo:'[Airtek] Nuevo cliente en tu cartera'+N+N+'Hola '+ejec+', tienes un nuevo cliente que requiere documentacion legal.'+N+N+'Empresa: '+nom+N+'RIF: '+rif+N+'Dias: '+dy+N+N+'Docs: cedula, RIF vigente, acta constitutiva, acta de asamblea.'+f,lider_recordatorio:'[Airtek] Recordatorio - Expediente pendiente'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin avance ('+est+').'+N+'Por favor gestiona a la brevedad.'+f,lider_urgente:'[Airtek] URGENTE - Sin respuesta'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin respuesta.'+N+'RIF: '+rif+' | '+est+N+N+'Contactalo hoy.'+f,lider_firma:'[Airtek] Contrato pendiente de firma'+N+N+'Hola '+ejec+', el cliente '+nom+' tiene el contrato pendiente de firma. Coordina a la brevedad.'+f,cliente_docs:'Estimado cliente,'+N+N+'Le contactamos de parte de Airtek - Ventas Corporativas.'+N+'Su expediente de '+nom+' requiere:'+N+'- Cedula del representante'+N+'- RIF vigente'+N+'- Acta constitutiva'+N+'- Acta de asamblea'+N+N+'Haganos llegar los documentos. Gracias.'+f,cliente_recordatorio:'[Airtek] Recordatorio'+N+N+'Estimado cliente de '+nom+', estan pendientes sus documentos para regularizar su expediente con Airtek.'+f,cliente_firma:'[Airtek] Su contrato esta listo'+N+N+'Estimado cliente de '+nom+', su contrato con Airtek esta pendiente de firma. Comuniquese con nosotros para coordinar.'+f,abogada_listo:'[Airtek Legal] Expediente listo'+N+N+'Hola Reina, el expediente de '+nom+' (RIF: '+rif+', Lider: '+ejec+') esta aprobado y listo para elaborar el contrato.'+f,abogada_firma:'[Airtek Legal] Coordinar firma'+N+N+'Hola Reina, el contrato de '+nom+' esta listo. El lider '+ejec+' coordina la firma.'+f};return m[tipo]||('Gestion - '+nom);}
+function getMsgWA(tipo,r){
+  var N=String.fromCharCode(10);
+  var nom=r?r['RAZON SOCIAL']||'':'';
+  var rif=r?r['RIF']||'':'';
+  var suc=r?r['Sucursal']||'':'';
+  var ejec=r?r['EJECUTIVO']||'':'';
+  var est=r?r['ESTATUS_LEGAL']||'':'';
+  var dy=r?(calcDays(r['Fecha de Instalacion Cliente'])||'?'):'?';
+  var appLink='https://gbxxzz00.github.io/App-Airtek-Empresas/?rif='+rif;
+
+  // Dynamic signature based on role
+  var cargo=S.rol==='ADMIN'?'Administrador de Contratos':S.rol==='ABOGADO'?'Consultor(a) Legal':'Líder de Ventas';
+  var firma=N+'------------------'+N+(S.user||'Airtek')+N+cargo+' | Airtek Ventas Corporativas'+N+CC_CORP;
+  var firmaAdmin=N+'------------------'+N+'Administración de Contratos | Airtek'+N+CC_CORP;
+
+  // Parse faltantes from observacion
+  var obs=r?r['Observacion']||'':'';
+  var faltMatch=obs.match(/\[FALTANTES:([^\]]*?)\]/);
+  var detMatch=obs.match(/\[DETALLE:([^\]]*?)\]/);
+  var faltKeys=faltMatch?faltMatch[1].split(',').map(function(x){return x.trim();}).filter(Boolean):[];
+  var detText=detMatch?detMatch[1].trim():'';
+
+  var faltLabels={
+    'CEDULA_REP':   'Cédula de identidad vigente del Representante Legal',
+    'RIF_REP':      'RIF personal vigente del Representante Legal',
+    'RIF_EMPRESA':  'RIF vigente de la empresa',
+    'ACTA_CONST':   'Acta Constitutiva',
+    'ACTA_ASAMBLEA':'Acta de Asamblea'+( detText?' — '+detText:''),
+    'CONATEL':      'Habilitación CONATEL'
+  };
+
+  // Build faltantes list for client messages
+  var listaFalt='';
+  if(faltKeys.length){
+    faltKeys.forEach(function(k){
+      if(faltLabels[k])listaFalt+='  • '+faltLabels[k]+N;
+    });
+  } else {
+    // Default full list if no faltantes marked
+    listaFalt='  • Cédula de identidad vigente del o los Representantes Legales'+N+
+               '  • RIF personal vigente del o los Representantes Legales'+N+
+               '  • RIF vigente de la empresa'+N+
+               '  • Acta Constitutiva'+N+
+               '  • Acta de Asamblea'+N;
+  }
+
+  var m={
+    // ── CLIENTE ──────────────────────────────────────────────────────────
+    cliente_docs:
+      'Estimado cliente de '+nom+','+N+N+
+      'Le saludamos cordialmente desde Airtek — Ventas Corporativas.'+N+N+
+      'Nos comunicamos con usted con el propósito de dar inicio al proceso '+
+      'de regularización de su expediente legal, paso necesario para la '+
+      'elaboración de su contrato de servicio y garantizar la continuidad '+
+      'de los beneficios que le ofrece Airtek Empresas.'+N+N+
+      'Para continuar, requerimos los siguientes documentos:'+N+N+
+      listaFalt+N+
+      'Puede hacernos llegar los documentos por este medio o al correo '+
+      CC_CORP+' — quedamos atentos a su respuesta.'+
+      firma,
+
+    cliente_recordatorio:
+      'Estimado cliente de '+nom+','+N+N+
+      'Por medio del presente, le recordamos respetuosamente que su '+
+      'expediente legal en Airtek aún se encuentra incompleto.'+N+N+
+      'Luego de la revisión realizada por nuestro equipo, los documentos '+
+      'pendientes son los siguientes:'+N+N+
+      listaFalt+N+
+      'Le instamos a gestionar el envío a la brevedad posible, ya que '+
+      'de ello depende la elaboración de su contrato de servicio y la '+
+      'plena regularización de su relación comercial con Airtek Empresas.'+N+N+
+      'Llevamos '+dy+' días a la espera. Puede enviarnos los documentos '+
+      'por este medio o al correo '+CC_CORP+' — quedamos atentos.'+
+      firma,
+
+    cliente_firma:
+      'Estimado representante legal de '+nom+','+N+N+
+      'Nos complace informarle que el contrato de servicios con Airtek '+
+      'Empresas correspondiente a su empresa ha sido elaborado y se '+
+      'encuentra listo para su revisión y firma.'+N+N+
+      'En breve recibirá el documento en el correo registrado en su '+
+      'expediente. De no haberlo recibido o si surge alguna duda, '+
+      'le pedimos nos escriba por este medio o al correo '+
+      CC_CORP+' para gestionar el reenvío a la brevedad.'+N+N+
+      'Agradecemos su confianza en Airtek Empresas.'+
+      firma,
+
+    // ── LÍDER ────────────────────────────────────────────────────────────
+    lider_nuevo:
+      '[Airtek] Nuevo cliente en tu cartera'+N+N+
+      'Hola '+ejec+','+N+N+
+      'Se ha registrado un nuevo cliente en tu cartera que requiere '+
+      'gestión inmediata para el inicio del proceso de documentación legal.'+N+N+
+      '  Empresa:   '+nom+N+
+      '  RIF:       '+rif+N+
+      '  Sucursal:  '+suc+N+
+      '  Días:      '+dy+' días desde la instalación'+N+N+
+      'Recuerda solicitar al cliente los documentos necesarios:'+N+
+      '  • Cédula del representante legal'+N+
+      '  • RIF personal del representante legal'+N+
+      '  • RIF vigente de la empresa'+N+
+      '  • Acta Constitutiva y Acta de Asamblea'+N+N+
+      'Por favor gestiona a la brevedad.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+
+    lider_recordatorio:
+      '[Airtek] Recordatorio — Expediente sin avance'+N+N+
+      'Hola '+ejec+','+N+N+
+      'Te escribo para recordarte que el expediente del cliente '+
+      nom+' lleva '+dy+' días sin avance.'+N+N+
+      '  Estatus actual:  '+est+N+
+      (listaFalt?('  Documentos pendientes:'+N+listaFalt):'')+N+
+      'Te solicito gestionar este caso a la brevedad y actualizar '+
+      'el expediente con cualquier novedad en la plataforma.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+
+    lider_urgente:
+      '[Airtek] ATENCIÓN — Cliente sin respuesta'+N+N+
+      'Hola '+ejec+','+N+N+
+      'El cliente '+nom+' lleva '+dy+' días sin respuesta ni avance '+
+      'en su expediente.'+N+N+
+      '  RIF:     '+rif+N+
+      '  Estatus: '+est+N+N+
+      'Este caso requiere atención inmediata. Por favor intenta '+
+      'contactar al cliente hoy mismo y registra la gestión en la plataforma.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+
+    lider_firma:
+      '[Airtek] Contrato pendiente de firma'+N+N+
+      'Hola '+ejec+','+N+N+
+      'El cliente '+nom+' tiene el contrato listo y pendiente de firma. '+
+      'Por favor coordina con el cliente a la brevedad.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+
+    // ── ABOGADA ──────────────────────────────────────────────────────────
+    abogada_listo:
+      '[Airtek Legal] Expediente listo para contrato'+N+N+
+      'Estimada Reina,'+N+N+
+      'Te informo que el expediente del cliente '+nom+
+      ' (RIF: '+rif+', Líder: '+ejec+') ha sido revisado, se encuentra '+
+      'completo y aprobado para proceder con la elaboración del '+
+      'contrato de servicio.'+N+N+
+      'Por favor procede con la elaboración a la brevedad.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+
+    abogada_firma:
+      '[Airtek Legal] Coordinar firma'+N+N+
+      'Estimada Reina,'+N+N+
+      'El contrato del cliente '+nom+' está listo para firma. '+
+      'El líder '+ejec+' está coordinando con el cliente.'+N+N+
+      '🔗 Ver expediente: '+appLink+
+      firmaAdmin,
+  };
+  return m[tipo]||('Gestión — '+nom);
+}
 function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RAZON SOCIAL'],getMsgWA(tipoMsg,r),r,'Correo '+tipoMsg);}
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
