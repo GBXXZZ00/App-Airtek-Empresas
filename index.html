@@ -1124,16 +1124,23 @@ function applyFilters(){
 
 // KPIs
 function renderKPIs(){
-  const d=S.filtered;const firm=d.filter(r=>r['ESTATUS_LEGAL']==='CONTRATO FIRMADO').length;
+  const d=S.filtered;
+  const cnt=function(st){return d.filter(function(r){return r['ESTATUS_LEGAL']===st;}).length;};
+  const firm=cnt('CONTRATO FIRMADO');
   const pct=d.length?Math.round(firm/d.length*100):0;
-  const sinD=d.filter(r=>['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL'])).length;
-  const pF=d.filter(r=>r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR').length;
+  const sinD=d.filter(function(r){return['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL']);}).length;
   document.getElementById('kpiRow').innerHTML=[
-    {v:d.length.toLocaleString('es-VE'),l:'Clientes',s:'en filtro actual'},
-    {v:firm+' · '+pct+'%',l:'Contratos Firmados',s:'expedientes blindados'},
-    {v:sinD.toLocaleString('es-VE'),l:'Sin Documentación',s:'Grandes Neg. + Pend. Docs'},
-    {v:pF.toLocaleString('es-VE'),l:'Pendientes de Firma',s:'contrato elaborado'},
-  ].map(k=>'<div class="kpi"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-sub">'+k.s+'</div></div>').join('');
+    {v:d.length.toLocaleString('es-VE'),          l:'Total Clientes',        s:'en filtro actual',          a:'--accent'},
+    {v:sinD.toLocaleString('es-VE'),               l:'Sin Documentación',  s:'Grandes Neg. + Pend. Docs', a:'var(--red)'},
+    {v:cnt('DOCUMENTOS SOLICITADOS').toLocaleString('es-VE'),  l:'Docs Solicitados',  s:'pendiente de entrega',      a:'var(--yellow)'},
+    {v:cnt('DOCUMENTOS EN REVISION').toLocaleString('es-VE'),  l:'Docs en Revisión',l2:'',s:'análisis legal',           a:'#388BFD'},
+    {v:cnt('DOCUMENTOS RECIBIDOS').toLocaleString('es-VE'),    l:'Docs Recibidos',    s:'listos para contrato',       a:'#8957E5'},
+    {v:cnt('CONTRATO EN CURSO').toLocaleString('es-VE'),       l:'Contrato en Curso', s:'elaboración',              a:'var(--orange)'},
+    {v:cnt('PENDIENTE POR FIRMAR').toLocaleString('es-VE'),    l:'Pendiente Firma',   s:'contrato elaborado',         a:'#F97316'},
+    {v:firm+' · '+pct+'%',                      l:'Contratos Firmados',    s:'expedientes blindados',      a:'var(--green)'},
+  ].map(function(k){
+    return '<div class="kpi" style="border-top-color:'+k.a+'"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-sub">'+k.s+'</div></div>';
+  }).join('');
 }
 
 // TABLA
@@ -1548,7 +1555,35 @@ function renderStBtns(r){
     const btn=e.target.closest('[data-st]');
     if(btn)changeStatus(btn.dataset.st);
   };
+  // Mouse drag-to-scroll on desktop
+  (function(){
+    var el=container,isDown=false,startX,scrollLeft;
+    el.addEventListener('mousedown',function(e){
+      isDown=true;el.style.cursor='grabbing';
+      startX=e.pageX-el.offsetLeft;scrollLeft=el.scrollLeft;
+      e.preventDefault();
+    });
+    el.addEventListener('mouseleave',function(){isDown=false;el.style.cursor='grab';});
+    el.addEventListener('mouseup',function(){isDown=false;el.style.cursor='grab';});
+    el.addEventListener('mousemove',function(e){
+      if(!isDown)return;
+      var x=e.pageX-el.offsetLeft;
+      el.scrollLeft=scrollLeft-(x-startX)*1.2;
+    });
+    el.style.cursor='grab';
+  })();
 }
+
+// Mouse wheel → horizontal scroll on status chips (desktop)
+document.addEventListener('wheel',function(e){
+  var track=document.getElementById('drawerStBtns');
+  if(!track)return;
+  var rect=track.getBoundingClientRect();
+  if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
+    e.preventDefault();
+    track.scrollLeft+=e.deltaY*0.8;
+  }
+},{passive:false});
 
 function changeStatus(ns){
   if(!confirm('¿Cambiar estatus a "'+ns+'"?'))return;
