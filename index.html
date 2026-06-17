@@ -174,8 +174,11 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .search-box input::placeholder{color:var(--text3)}
 /* filter strip — always visible */
 .filter-strip{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-.fs-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:30px}
-.fs-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);width:46px;flex-shrink:0}
+.fs-row{display:flex;align-items:center;gap:6px;min-height:30px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.fs-row::-webkit-scrollbar{height:2px}
+.fs-row::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.fs-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);width:46px;min-width:46px;flex-shrink:0}
+@media(max-width:768px){.filter-strip{gap:4px}.fs-row{flex-wrap:nowrap}.fs-lbl{font-size:9px;width:36px;min-width:36px}}
 .fc{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px}
 
 /* fp-grid removed — now using filter-strip */
@@ -1329,6 +1332,8 @@ function openExp(idx){
   showTab('datos');
   const bg=document.getElementById('drawerBg');
   bg.classList.add('open');
+  // Clear any lingering card selection
+  if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
   // Scroll drawer content to top
   setTimeout(()=>{
     const panel=document.querySelector('.tab-panel.active');
@@ -1524,8 +1529,9 @@ function addRepDocs(){
 }
 
 function cleanDocUrl(v){
-  v=(v||'').trim();
-  if(v==='NaN'||v==='#N/A'||v==='#REF!'||v==='#VALUE!'||v==='null'||v==='undefined')return '';
+  v=(v||'').toString().trim();
+  var bad=['NaN','nan','#N/A','#REF!','#VALUE!','#NAME?','#DIV/0!','null','undefined','0','FALSE','false'];
+  if(!v||bad.indexOf(v)>=0||v.toLowerCase()==='nan')return '';
   return v;
 }
 function docField(d,r){
@@ -1630,6 +1636,7 @@ function renderDrawerComm(r){
   parts.push('<div class="comm-panel">');
 
   // ── Bloque cliente ───────────────────────────────────────────────────────
+  var nP=r['TELEFONO_PROHAM']||'';
   parts.push('<div class="comm-block">');
   parts.push('<div class="comm-block-title">📱 Cliente</div>');
 
@@ -1646,6 +1653,15 @@ function renderDrawerComm(r){
     parts.push('<span class="comm-lbl">Rep.2</span>');
     parts.push('<input id="numRep2" class="comm-input" value="'+esc(n2)+'" placeholder="+58..." oninput="commInputChanged(this,\'NUMERO_REPRESENTANTES2\')">');
     parts.push('<button class="comm-btn comm-wa" onclick="commWAClick(\'numRep2\',\''+msgC+'\')">WA</button>');
+    parts.push('</div>');
+  }
+
+  // Proham number (if exists)
+  if(nP){
+    parts.push('<div class="comm-row">');
+    parts.push('<span class="comm-lbl">Proham</span>');
+    parts.push('<span class="comm-val">'+esc(formatWANumber(nP))+'</span>');
+    parts.push('<button class="comm-btn comm-wa" onclick="openWA(\''+formatWANumber(nP)+'\',getMsgWA(\''+msgC+'\',S.cur),S.cur,\'wac\')">WA</button>');
     parts.push('</div>');
   }
 
