@@ -582,7 +582,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.2-ui</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.18</div>
     </div>
   </div>
 
@@ -1128,27 +1128,30 @@ async function reloadData(){
   toast('Datos actualizados','ok');
 }
 
+// ── Función nuclear de limpieza: único punto de verdad para valores del Sheet ─
+function cleanVal(v){
+  if(v===undefined||v===null)return '';
+  var s=String(v).trim();
+  // Eliminar caracteres invisibles (zero-width spaces, BOM, etc.)
+  s=s.replace(/[\u200b\u200c\u200d\uFEFF\u00AD]/g,'').trim();
+  if(!s)return '';
+  var sl=s.toLowerCase();
+  var bad=['nan','#n/a','#ref!','#value!','#name?','#div/0!','null','undefined','false','#error!','n/a','error'];
+  if(bad.indexOf(sl)>=0)return '';
+  return s;
+}
 function parseCSV(t){
   const ln=t.split('\n');if(!ln.length)return[];
   const hd=parseLine(ln[0]);
   return ln.slice(1).filter(l=>l.trim()).map(l=>{
     const v=parseLine(l);const o={};
     hd.forEach(function(h,i){
-      var val=(v[i]||'').trim();
-      // Limpiar TODOS los valores corruptos del Sheet antes de que lleguen al DOM
-      if(val===undefined||val===null)val='';
-      else{
-        var vs=String(val).trim();
-        var badVals=['NaN','nan','#N/A','#REF!','#VALUE!','#NAME?','#DIV/0!','null','undefined','FALSE','false'];
-        if(badVals.indexOf(vs)>=0||vs.toLowerCase()==='nan')val='';
-      }
-      if(val&&val.trim().toUpperCase()==='NAN')val='';
-      o[h.trim()]=val;
+      o[h.trim()]=cleanVal(v[i]);
     });
     return o;
   });
 }
-function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
+function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='\"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
 
 // FILTROS
 function normalizeStr(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
@@ -1397,7 +1400,8 @@ function renderTabDatos(r){
     h+='<div class="falt-list">';
     allFaltItems.forEach(function(item){
       var autoLoaded=item.autoCol?cleanDocUrl(r[item.autoCol]||'').startsWith('http'):false;
-      var checked=autoLoaded||(faltItems.indexOf(item.k)<0&&faltItems.length>0)?false:faltItems.indexOf(item.k)>=0;
+      // Explicitly: checked if item.k is in faltItems (and not autoLoaded)
+      var checked=(!autoLoaded)&&(faltItems.indexOf(item.k)>=0);
       // If auto-loaded, show as done automatically
       if(autoLoaded){
         h+='<div class="falt-item done"><input type="checkbox" disabled checked><label>'+item.lbl+'</label><span class="falt-auto">✓ cargado</span></div>';
@@ -1584,19 +1588,18 @@ function addRepDocs(){
 }
 
 function cleanDocUrl(v){
-  v=(v||'').toString().trim();
-  var bad=['NaN','nan','#N/A','#REF!','#VALUE!','#NAME?','#DIV/0!','null','undefined','0','FALSE','false'];
-  if(!v||bad.indexOf(v)>=0||v.toLowerCase()==='nan')return '';
-  return v;
+  // Usa cleanVal primero, luego verifica que sea un URL o quede vacío
+  var s=cleanVal(v);
+  if(!s)return '';
+  // Descartar valores que no son URL: números solos, 'TRUE', 'FALSE', '0', etc.
+  if(s==='0'||s==='1'||s.toLowerCase()==='true'||s.toLowerCase()==='false')return '';
+  return s;
 }
 function docField(d,r){
-  // Triple safety: kill NaN/corrupt values at render time
-  var raw=r[d.col];
-  if(raw!==undefined&&raw!==null){
-    var rs=String(raw).trim().toLowerCase();
-    if(rs==='nan'||rs==='#n/a'||rs==='#ref!'||rs==='#value!'||rs==='null'||rs==='false'||rs==='0')raw='';
-  }
-  var url=cleanDocUrl(raw);
+  // Nuclear safety: usa cleanVal primero, luego cleanDocUrl
+  var rawVal=r[d.col];
+  // console.log('[docField DEBUG] col='+d.col+' raw='+JSON.stringify(rawVal)+' type='+typeof rawVal);
+  var url=cleanDocUrl(rawVal);
   var hasDoc=url.startsWith('http');
   if(hasDoc){
     return (
@@ -1897,10 +1900,33 @@ function saveFaltantes(){
   if(detail.trim())structured+=(structured?'\n':'')+'[DETALLE:'+detail.trim()+']';
   var full=(structured?(structured+'\n'):'')+(baseObs||'');
   S.cur['Observacion']=full;
-  if(APPS_SCRIPT_URL)saveField('Observacion',full);
+  // Persiste la observacion en DB_ANALISTAS via cambiarEstatus (misma accion, mismo estatus)
+  // Se usa el estatus actual para no cambiarlo; GAS v3 escribe Observacion si viene en el payload.
+  persistObs(full);
   // Visual feedback
   var det=document.getElementById('falt_detail');
   if(det){det.style.borderColor='var(--green)';setTimeout(function(){det.style.borderColor='';},1200);}
+}
+
+function persistObs(obsValue){
+  // Guarda la observacion en DB_ANALISTAS usando cambiarEstatus con el estatus actual.
+  // Solución al bug: saveField(Observacion) solo llamaba registrarHistorial (solo log, no escribe al Sheet).
+  if(!APPS_SCRIPT_URL||!S.cur)return;
+  var estActual=S.cur['ESTATUS_LEGAL']||'';
+  if(!estActual)return; // Sin estatus no podemos llamar cambiarEstatus
+  // Usamos '__SOLO_OBS__' como sentinel para que el GAS sepa que solo actualiza Observacion
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'cambiarEstatus',
+    rif:S.cur['RIF'],
+    estatus:estActual,
+    observacion:obsValue===''?' ':obsValue, // ' ' fuerza escritura aunque sea vacío
+    soloObs:true,
+    usuario:S.user||'app'
+  })}).then(function(r){return r.json();}).then(function(rs){
+    if(!rs.ok)console.warn('[persistObs] GAS error:',rs.error);
+  }).catch(function(err){
+    console.warn('[persistObs] red error:',err);
+  });
 }
 
 function saveExp(){
@@ -1935,7 +1961,8 @@ function saveExp(){
   });
   refreshTableRow(S.cur);
   toast('Cambios guardados ✓','ok');
-  if(APPS_SCRIPT_URL)saveField('Observacion',S.cur['Observacion']);
+  // Persistir observacion en DB_ANALISTAS (faltantes + texto)
+  persistObs(S.cur['Observacion']||'');
   setTimeout(closeDrawer, 900);
 }
 
