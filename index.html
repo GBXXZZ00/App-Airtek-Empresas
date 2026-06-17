@@ -1349,7 +1349,7 @@ function openExp(idx){
   const r=S.filtered[idx];if(!r)return;
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
-  renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSeg(r);renderStBtns(r);
+  renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
   showTab('datos');
   const bg=document.getElementById('drawerBg');
   bg.classList.add('open');
@@ -1874,8 +1874,9 @@ function changeStatus(ns){
   S.cur['ESTATUS_LEGAL']=ns;
   renderStBtns(S.cur);
   toast('Estatus → '+ns,'ok');
-  // Register change in historial
-  regHistorial(S.cur,'ESTATUS_LEGAL',anterior,ns);
+  // Solo registro local para la vista en sesión (el GAS registra en HISTORIAL_LOG internamente)
+  histLog.push({rif:S.cur['RIF'],campo:'ESTATUS_LEGAL',anterior:anterior,nuevo:ns,
+    fecha:new Date().toLocaleString('es-VE'),usuario:S.user});
   // Update local data immediately for responsive UI
   S.cur['ESTATUS_LEGAL']=ns;
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
@@ -2091,6 +2092,8 @@ function showTab(t){
   if(t==='seguimiento_cli'&&S.cur)renderTabSegFromGAS(S.cur);
 }
 function closeDrawer(){
+  // Limpiar selección móvil al cerrar
+  if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
   const bg=document.getElementById('drawerBg');
   const drawer=bg.querySelector('.drawer');
   if(drawer){
