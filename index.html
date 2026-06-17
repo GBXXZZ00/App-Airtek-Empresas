@@ -172,15 +172,13 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .search-box:focus-within{border-color:var(--accent)}
 .search-box input{background:none;border:none;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;padding:8px 0;width:100%}
 .search-box input::placeholder{color:var(--text3)}
-.btn-filter{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:8px 12px;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border-radius:6px;transition:all .15s var(--ease-out);white-space:nowrap}
-.btn-filter:hover,.btn-filter.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
-.btn-filter:active{transform:scale(0.97)}
+/* filter strip — always visible */
+.filter-strip{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.fs-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:30px}
+.fs-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);width:46px;flex-shrink:0}
 .fc{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px}
 
-.filter-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;display:none;animation:fadeIn .15s var(--ease-out)}
-.filter-panel.on{display:block}
-.fp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px}
-.fp-group label{display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+/* fp-grid removed — now using filter-strip */
 .fp-sel{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:'Inter',sans-serif;font-size:12px;outline:none;border-radius:6px;cursor:pointer;transition:border-color .15s ease}
 .fp-sel:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,132,255,.1)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -290,6 +288,24 @@ tbody tr:hover td{background:var(--surface2)}
 .doc-ok span{font-size:11px;color:var(--green)}
 .doc-ok a{font-size:11px;color:var(--green);text-decoration:none}
 .doc-ok a:hover{text-decoration:underline}
+
+/* TIMELINE */
+.tl{display:flex;flex-direction:column;gap:0;padding:4px 0}
+.tl-entry{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.tl-entry:last-child{border-bottom:none}
+.tl-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.tl-ic-seg{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3)}
+.tl-ic-hist{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3)}
+.tl-ic-wa{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3)}
+.tl-ic-mail{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3)}
+.tl-ic-est{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3)}
+.tl-body{flex:1;min-width:0}
+.tl-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px}
+.tl-tipo{font-size:11px;font-weight:600;color:var(--text)}
+.tl-ts{font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap}
+.tl-nota{font-size:12px;color:var(--text2);line-height:1.4;margin-bottom:2px}
+.tl-by{font-size:10px;color:var(--text3)}
+.tl-empty{text-align:center;padding:24px 0;color:var(--text3);font-size:12px}
 
 /* COMM PANEL */
 .comm-panel{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
@@ -562,33 +578,47 @@ tbody tr:hover td{background:var(--surface2)}
         <button class="btn btn-g btn-sm" onclick="reloadData()">↻ Actualizar</button>
       </div>
       <div class="kpi-grid" id="kpiRow"></div>
+      <!-- Search bar -->
       <div class="toolbar">
-        <div class="search-box">
+        <div class="search-box" style="flex:1">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="searchInp" placeholder="Buscar por nombre, RIF..." oninput="applyFilters()">
         </div>
-        <button class="btn-filter" id="filterBtn" onclick="toggleFP()">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-          Filtros <span class="fc" id="fcBadge" style="display:none">0</span>
-        </button>
+        <button class="btn btn-g btn-sm" onclick="clearFilters()" title="Limpiar filtros">✕ Limpiar</button>
       </div>
-      <div class="qf-bar" id="qfBar">
-        <button class="qf-btn active" id="qfRecent" onclick="qfSetRecent()">📅 Últimos 6 meses</button>
-        <button class="qf-btn" id="qfAll" onclick="qfSetAll()">Ver todos</button>
-        <div class="qf-sep" id="qfEjeSep" style="display:none"></div>
-        <div id="qfEjeChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      </div>
-      <div class="filter-panel" id="filterPanel">
-        <div class="fp-grid">
-          <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="fLider" onchange="applyFilters()"><option value="">Todos</option></select></div>
-          <div class="fp-group"><label>Tipo de cliente</label><select class="fp-sel" id="fTipo" onchange="applyFilters()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
-          <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="fDesde" onchange="applyFilters()"></div>
-          <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="fHasta" onchange="applyFilters()"></div>
+      <!-- Hidden selects kept for JS compatibility -->
+      <select id="fLider" style="display:none" onchange="applyFilters()"><option value="">Todos</option></select>
+      <select id="fTipo" style="display:none" onchange="applyFilters()"><option value="">Todos</option></select>
+      <input type="date" id="fDesde" style="display:none" onchange="applyFilters()">
+      <input type="date" id="fHasta" style="display:none" onchange="applyFilters()">
+      <!-- Always-visible filter strips -->
+      <div class="filter-strip" id="filterStrip">
+        <!-- Row 1: period + executives -->
+        <div class="fs-row">
+          <span class="fs-lbl">Período</span>
+          <button class="qf-btn active" id="qfRecent" onclick="qfSetRecent()">📅 Últimos 6 meses</button>
+          <button class="qf-btn" id="qfAll" onclick="qfSetAll()">Ver todos</button>
+          <div class="qf-sep" id="qfEjeSep" style="display:none"></div>
+          <div id="qfEjeChips" style="display:contents"></div>
         </div>
-        <div class="fp-group" style="margin-top:12px"><label>Estatus Legal</label><div class="chips" id="statusChips"></div></div>
-        <div class="fp-actions">
-          <button class="btn btn-g btn-sm" onclick="clearFilters()">Limpiar</button>
-          <button class="btn btn-p btn-sm" onclick="toggleFP()">Aplicar</button>
+        <!-- Row 2: client type (grouped) -->
+        <div class="fs-row" id="fsTipoRow">
+          <span class="fs-lbl">Tipo</span>
+          <button class="qf-btn" data-tipo="PYMES" onclick="qfToggleTipo(this)">PYMES</button>
+          <button class="qf-btn" data-tipo="CORPORATIVO" onclick="qfToggleTipo(this)">Corporativo</button>
+          <button class="qf-btn" data-tipo="ISP" onclick="qfToggleTipo(this)">ISP</button>
+        </div>
+        <!-- Row 3: status chips -->
+        <div class="fs-row" id="fsStatusRow">
+          <span class="fs-lbl">Estatus</span>
+          <div class="chips" id="statusChips" style="display:contents"></div>
+        </div>
+        <!-- Row 4: date range (compact) -->
+        <div class="fs-row" id="fsDateRow">
+          <span class="fs-lbl">Fecha</span>
+          <input type="date" class="fp-sel" id="fDesdeVis" onchange="syncDateFilter('desde',this.value)" style="width:130px;font-size:11px;padding:4px 8px">
+          <span style="color:var(--text3);font-size:11px">→</span>
+          <input type="date" class="fp-sel" id="fHastaVis" onchange="syncDateFilter('hasta',this.value)" style="width:130px;font-size:11px;padding:4px 8px">
         </div>
       </div>
       <div class="tbl-wrap">
@@ -1133,6 +1163,11 @@ function initQfEjeChips(){
   }).join('');
 }
 
+function qfToggleStatus(btn){
+  btn.classList.toggle('active');
+  applyFilters();
+}
+
 function qfToggleEje(btn){
   var isActive=btn.classList.contains('active');
   // Deselect all, then activate clicked (single-select)
@@ -1156,22 +1191,45 @@ function populateFilters(){
 }
 
 function initChips(){
-  document.getElementById('statusChips').innerHTML=SO.map(s=>
-    `<button class="chip" data-s="${s}" onclick="this.classList.toggle('on');applyFilters()">${s}</button>`
-  ).join('');
+  var sc=document.getElementById('statusChips');
+  if(!sc)return;
+  sc.innerHTML=SO.map(function(s){
+    return '<button class="qf-btn" data-s="'+s+'" onclick="qfToggleStatus(this)">'+s+'</button>';
+  }).join('');
 }
 
-function toggleFP(){
-  const p=document.getElementById('filterPanel');const b=document.getElementById('filterBtn');
-  p.classList.toggle('on');b.classList.toggle('on',p.classList.contains('on'));
+// toggleFP removed — filters are always visible
+
+// Tipo filter: PYMES | Corporativo | ISP (inclusive — matches combined types too)
+var S_qfTipo = null; // null = all, 'PYMES', 'CORPORATIVO', 'ISP'
+
+function qfToggleTipo(btn){
+  var t=btn.dataset.tipo;
+  var wasActive=btn.classList.contains('active');
+  document.querySelectorAll('#fsTipoRow .qf-btn').forEach(function(b){b.classList.remove('active');});
+  S_qfTipo = wasActive ? null : t;
+  if(!wasActive) btn.classList.add('active');
+  applyFilters();
+}
+
+function syncDateFilter(which, val){
+  // Sync visible date input to hidden one used by applyFilters
+  var hiddenId = which==='desde' ? 'fDesde' : 'fHasta';
+  var el = document.getElementById(hiddenId);
+  if(el) el.value = val;
+  // If date is set manually, switch to "Ver todos" mode
+  if(val) qfSetAll();
+  applyFilters();
 }
 
 function clearFilters(){
   ['searchInp','fDesde','fHasta'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['fDesdeVis','fHastaVis'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['fLider','fTipo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  // Clear executive chips
+  document.querySelectorAll('#statusChips .qf-btn').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('#qfEjeChips .qf-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('#fsTipoRow .qf-btn').forEach(function(b){b.classList.remove('active');});
+  S_qfTipo=null;
   applyFilters();
 }
 
@@ -1181,10 +1239,8 @@ function applyFilters(){
   const t=document.getElementById('fTipo').value;
   const d=document.getElementById('fDesde').value;
   const h=document.getElementById('fHasta').value;
-  const ss=[...document.querySelectorAll('#statusChips .chip.on')].map(c=>c.dataset.s).filter(Boolean);
-  let act=0;if(l)act++;if(t)act++;if(d||h)act++;if(ss.length)act++;
+  const ss=[...document.querySelectorAll('#statusChips .qf-btn.active')].map(c=>c.dataset.s).filter(Boolean);
   S.page=1;
-  const badge=document.getElementById('fcBadge');badge.textContent=act;badge.style.display=act?'inline':'none';
   // 6-month quick filter cutoff
   var cutoff6m=null;
   if(S_qfRecent){var now=new Date();cutoff6m=new Date(now.getFullYear(),now.getMonth()-6,now.getDate());}
@@ -1193,6 +1249,13 @@ function applyFilters(){
     if(q&&!r['RAZON SOCIAL'].toLowerCase().includes(q)&&!r['RIF'].toLowerCase().includes(q))return false;
     if(l&&r['EJECUTIVO']!==l)return false;
     if(t&&r['TIPO_CLIENTE']!==t)return false;
+    // Tipo chip group filter (inclusive: PYMES matches PYMES and PYMES+X)
+    if(S_qfTipo){
+      var tc=(r['TIPO_CLIENTE']||'').toUpperCase();
+      if(S_qfTipo==='PYMES'&&!tc.includes('PYME'))return false;
+      if(S_qfTipo==='CORPORATIVO'&&!tc.includes('CORPORATIVO'))return false;
+      if(S_qfTipo==='ISP'&&!tc.includes('ISP'))return false;
+    }
     if(ss.length&&!ss.includes(r['ESTATUS_LEGAL']))return false;
     if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt)return false;if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}
     // Quick filter: last 6 months (only when no manual date range set)
@@ -1506,60 +1569,46 @@ function replaceDoc(btn,col){
 function renderTabHist(r){
   var el=document.getElementById('tab-historial');
   var rif=(r['RIF']||'').toString().trim();
-  el.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:16px 0">Cargando historial...</div>';
-  if(!APPS_SCRIPT_URL){
-    el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">Apps Script no configurado</div>';
-    return;
+  el.innerHTML='<div class="tl-empty" style="padding:20px 0">⏳ Cargando historial...</div>';
+  // Always show local session changes first
+  var local=histLog.filter(function(l){return l.rif===rif;});
+  function renderEntries(remote,fromSession){
+    var h='<div style="padding:10px 0">';
+    h+='<div class="sec-lbl" style="margin-bottom:6px">Cambios al expediente</div>';
+    var all=remote.concat(local.map(function(l){
+      return{tipo:'Cambio: '+l.campo,nota:l.anterior+' → '+l.nuevo,fecha:l.fecha,usuario:l.usuario};
+    }));
+    if(!all.length){
+      h+='<div class="tl-empty">📋 Sin cambios registrados</div>';
+    } else {
+      h+='<div class="tl">';
+      all.forEach(function(log){
+        var ic=tlIcon(log.tipo);
+        h+='<div class="tl-entry">'+
+          '<div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'+
+          '<div class="tl-body">'+
+            '<div class="tl-header">'+
+              '<span class="tl-tipo">'+esc(log.tipo||'Cambio')+'</span>'+
+              '<span class="tl-ts">'+esc(log.fecha||'')+'</span>'+
+            '</div>'+
+            (log.nota?'<div class="tl-nota">'+esc(log.nota)+'</div>':'')+
+            (log.usuario?'<div class="tl-by">por '+esc(log.usuario)+'</div>':'')+
+          '</div>'+
+        '</div>';
+      });
+      h+='</div>';
+    }
+    if(fromSession){h+='<div style="font-size:10px;color:var(--amber);margin-top:8px;text-align:center">⚠ Sin conexión — mostrando solo esta sesión</div>';}
+    h+='</div>';
+    el.innerHTML=h;
   }
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarHistorial',rif:rif})})
+  if(!APPS_SCRIPT_URL){renderEntries([],false);return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarCambios',rif:rif})})
   .then(function(res){return res.json();})
   .then(function(data){
-    // Debug banner — muestra qué respondió el GAS
-    var debug='<div style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:10px;color:var(--text3);margin-bottom:10px">'+
-      'RIF consultado: <strong style="color:var(--text2)">'+esc(rif)+'</strong> · '+
-      'Respuesta: <strong style="color:'+(data.ok?'var(--green)':'var(--red)')+'">'+
-      (data.ok?'ok':'error: '+(data.error||'?'))+'</strong>'+
-      (data.registros?' · '+data.registros.length+' registros':'')+
-      '</div>';
-    if(!data.ok||!data.registros||!data.registros.length){
-      el.innerHTML=debug+'<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">'+
-        '<div style="font-size:24px;margin-bottom:8px">📋</div>Sin gestiones registradas para este RIF</div>';
-      return;
-    }
-    var h=debug+'<div style="display:flex;flex-direction:column;gap:8px">';
-    data.registros.forEach(function(log){
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px">'+
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'+
-        '<span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(log.tipo||'Gestión')+'</span>'+
-        '<span style="font-size:10px;color:var(--text3);flex-shrink:0;margin-left:8px">'+esc(log.fecha||'')+'</span>'+
-        '</div>'+
-        (log.nota?'<div style="font-size:12px;color:var(--text2);margin-bottom:2px">'+esc(log.nota)+'</div>':'')+
-        (log.usuario?'<div style="font-size:10px;color:var(--text3)">por '+esc(log.usuario)+'</div>':'')+
-        '</div>';
-    });
-    el.innerHTML=h+'</div>';
+    renderEntries(data.ok&&data.registros?data.registros:[],false);
   })
-  .catch(function(err){
-    // Fallback: mostrar lo de sesión actual + error
-    var errMsg=err&&err.message?err.message:'Sin conexión';
-    var logs=segLog.filter(function(l){return l.rif===rif;});
-    var debug='<div style="background:var(--red-dim);border:1px solid var(--red);border-radius:4px;padding:6px 10px;font-size:10px;color:var(--red);margin-bottom:10px">'+
-      'Error de conexión: '+esc(errMsg)+' · RIF: '+esc(rif)+'</div>';
-    if(!logs.length){
-      el.innerHTML=debug+'<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0">Sin historial en sesión actual</div>';
-      return;
-    }
-    var h=debug+'<div style="color:var(--amber);font-size:11px;margin-bottom:8px">⚠ Mostrando solo sesión actual</div>'+
-      '<div style="display:flex;flex-direction:column;gap:8px">';
-    logs.forEach(function(l){
-      h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
-        '<span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span>'+
-        '<span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span>'+
-        '</div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';
-    });
-    el.innerHTML=h+'</div>';
-  });
+  .catch(function(){renderEntries([],true);});
 }
 
 function renderDrawerComm(r){
@@ -1741,9 +1790,12 @@ function renderStBtns(r){
 
 function changeStatus(ns){
   if(!confirm('¿Cambiar estatus a "'+ns+'"?'))return;
+  var anterior=S.cur['ESTATUS_LEGAL']||'';
   S.cur['ESTATUS_LEGAL']=ns;
   renderStBtns(S.cur);
   toast('Estatus → '+ns,'ok');
+  // Register change in historial
+  regHistorial(S.cur,'ESTATUS_LEGAL',anterior,ns);
   // Update local data immediately for responsive UI
   S.cur['ESTATUS_LEGAL']=ns;
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
@@ -1755,14 +1807,18 @@ function changeStatus(ns){
 
 function saveExp(){
   if(!S.cur)return;
-  S.cur['Observacion']=document.getElementById('f_obs')?.value||'';
+  var oldObs=S.cur['Observacion']||'';
+  var newObs=document.getElementById('f_obs')?.value||'';
+  S.cur['Observacion']=newObs;
   for(let i=1;i<=S.nReps;i++){
     const ck=i===1?'CORREO_REPRESENTANTES':'CORREO_REPRESENTANTES'+i;
     const nk=i===1?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES'+i;
     if(document.getElementById('fc'+i))S.cur[ck]=document.getElementById('fc'+i).value;
     if(document.getElementById('fn'+i))S.cur[nk]=document.getElementById('fn'+i).value;
   }
-  // Sync S.all so table reflects the change without full reload
+  // Register changes in historial
+  if(newObs!==oldObs)regHistorial(S.cur,'Observacion',oldObs,newObs);
+  // Sync S.all
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
   if(inAll)Object.assign(inAll,{
     'Observacion':S.cur['Observacion'],
@@ -1772,11 +1828,9 @@ function saveExp(){
     'NUMERO_REPRESENTANTES2':S.cur['NUMERO_REPRESENTANTES2'],
     'ESTATUS_LEGAL':S.cur['ESTATUS_LEGAL']
   });
-  // Refresh just this row's badge in the table
   refreshTableRow(S.cur);
   toast('Cambios guardados ✓','ok');
   if(APPS_SCRIPT_URL)saveField('Observacion',S.cur['Observacion']);
-  // Close drawer after short delay so toast is visible
   setTimeout(closeDrawer, 900);
 }
 
@@ -1902,6 +1956,7 @@ function showTab(t){
   panel.style.animation='';
   panel.classList.add('active');
   if(t==='historial'&&S.cur)renderTabHist(S.cur);
+  if(t==='seguimiento_cli'&&S.cur)renderTabSegFromGAS(S.cur);
 }
 function closeDrawer(){
   const bg=document.getElementById('drawerBg');
@@ -2461,7 +2516,7 @@ function exportPDF(){
   w.document.write(html);w.document.close();setTimeout(function(){w.print();},500);
 }
 
-var segTab='pend';var segLog=[];var segSelected={};
+var segTab='pend';var segLog=[];var histLog=[];var segSelected={};
 
 function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab){el.classList.add('on');el.classList.add('seg-chip');}else{el.classList.remove('on');}}});renderSegTab();}
 
@@ -2706,24 +2761,113 @@ function sendSegEmail(){
   }).catch(function(){toast('Error al enviar — verifica tu conexión','err');});
 }
 
-function renderTabSeg(r){var rif=r['RIF']||'';var logs=segLog.filter(function(l){return l.rif===rif;});var h='<div style="padding:12px 0"><div class="sec-lbl">Registrar gestion</div><div class="fg full"><div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel"><option>Llamada realizada</option><option>Correo enviado</option><option>WhatsApp enviado</option><option>Docs solicitados</option><option>Cliente no contesta</option><option>Cliente confirma entrega</option><option>Otro</option></select></div><div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle..." style="min-height:60px"></textarea></div></div><button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-top:8px">+ Registrar</button><div class="sec-lbl" style="margin-top:20px">Historial</div>';if(logs.length){h+='<div style="display:flex;flex-direction:column;gap:8px">';logs.forEach(function(l){h+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 14px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;color:var(--text)">'+esc(l.tipo)+'</span><span style="font-size:10px;color:var(--text3)">'+l.fecha+'</span></div><div style="font-size:12px;color:var(--text2)">'+esc(l.dest)+'</div></div>';});h+='</div>';}else{h+='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">Sin gestiones registradas</div>';}h+='</div>';document.getElementById('tab-seguimiento_cli').innerHTML=h;}
+// ── Timeline helpers ─────────────────────────────────────────────────────────
+function tlIcon(tipo){
+  var t=(tipo||'').toLowerCase();
+  if(t.includes('whatsapp')||t.includes('wa'))return{cls:'tl-ic-wa',ico:'💬'};
+  if(t.includes('correo')||t.includes('mail'))return{cls:'tl-ic-mail',ico:'✉️'};
+  if(t.includes('estatus')||t.includes('cambio'))return{cls:'tl-ic-est',ico:'🔄'};
+  if(t.includes('llamada'))return{cls:'tl-ic-seg',ico:'📞'};
+  if(t.includes('visita'))return{cls:'tl-ic-seg',ico:'🤝'};
+  if(t.includes('doc'))return{cls:'tl-ic-seg',ico:'📄'};
+  return{cls:'tl-ic-seg',ico:'📝'};
+}
+
+function buildTLEntry(entry){
+  var ic=tlIcon(entry.tipo);
+  return '<div class="tl-entry">'+
+    '<div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'+
+    '<div class="tl-body">'+
+      '<div class="tl-header">'+
+        '<span class="tl-tipo">'+esc(entry.tipo||'Gestión')+'</span>'+
+        '<span class="tl-ts">'+esc(entry.fecha||'')+'</span>'+
+      '</div>'+
+      (entry.nota||entry.dest?'<div class="tl-nota">'+esc(entry.nota||entry.dest||'')+'</div>':'')+
+      (entry.usuario||entry.ejecutivo?'<div class="tl-by">por '+esc(entry.usuario||entry.ejecutivo||'')+'</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function renderTabSeg(r){
+  var rif=r['RIF']||'';
+  var logs=segLog.filter(function(l){return l.rif===rif;});
+  var h='<div style="padding:10px 0">';
+  // Form to register new entry
+  h+='<div class="sec-lbl" style="margin-bottom:8px">Registrar contacto</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+  h+='<div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel">';
+  ['Llamada realizada','Visita al cliente','WhatsApp enviado','Correo enviado','Docs solicitados','Cliente no contesta','Cliente confirma entrega','Reunión agendada','Otro'].forEach(function(o){h+='<option>'+o+'</option>';});
+  h+='</select></div>';
+  h+='<div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle del contacto..." style="min-height:52px;resize:vertical"></textarea></div>';
+  h+='</div>';
+  h+='<button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-bottom:16px">+ Registrar contacto</button>';
+  // Timeline of contacts
+  h+='<div class="sec-lbl" style="margin-bottom:6px">Contactos registrados</div>';
+  if(logs.length){
+    h+='<div class="tl">';
+    logs.forEach(function(l){h+=buildTLEntry(l);});
+    h+='</div>';
+  }else{
+    h+='<div class="tl-empty">📞 Sin contactos registrados aún</div>';
+  }
+  h+='</div>';
+  document.getElementById('tab-seguimiento_cli').innerHTML=h;
+}
 
 function addSegEntry(){
   var tipo=(document.getElementById('seg_tipo')||{}).value||'';
   var nota=(document.getElementById('seg_nota')||{}).value||'';
   if(!S.cur)return;
-  var entry={cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,fecha:new Date().toLocaleString('es-VE'),dest:nota||tipo};
+  if(!tipo){toast('Selecciona el tipo de contacto','err');return;}
+  var entry={
+    cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],
+    tipo:tipo,nota:nota,fecha:new Date().toLocaleString('es-VE'),
+    usuario:S.user,dest:nota||tipo
+  };
   segLog.push(entry);
-  // Save to sheet via Apps Script if available
   if(APPS_SCRIPT_URL){
-    fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      body:JSON.stringify({action:'registrarHistorial',rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user})
-    }).catch(function(){});// Silent fail - log stays in memory
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'registrarSeguimiento',
+      rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],
+      ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user
+    })}).catch(function(){});
   }
-  toast('Gestión registrada ✓','ok');
+  toast('Contacto registrado ✓','ok');
   if(document.getElementById('seg_nota'))document.getElementById('seg_nota').value='';
   renderTabSeg(S.cur);
+}
+
+function renderTabSegFromGAS(r){
+  var rif=(r['RIF']||'').toString().trim();
+  if(!APPS_SCRIPT_URL){renderTabSeg(r);return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimiento',rif:rif})})
+  .then(function(res){return res.json();})
+  .then(function(data){
+    if(data.ok&&data.registros&&data.registros.length){
+      // Merge GAS records with local session (avoid duplicates by using GAS as source of truth)
+      var local=segLog.filter(function(l){return l.rif===rif&&l._new;});
+      var all=data.registros.concat(local);
+      var el=document.getElementById('tab-seguimiento_cli');
+      if(!el)return;
+      var h='<div style="padding:10px 0">';
+      h+='<div class="sec-lbl" style="margin-bottom:8px">Registrar contacto</div>';
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+      h+='<div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel">';
+      ['Llamada realizada','Visita al cliente','WhatsApp enviado','Correo enviado','Docs solicitados','Cliente no contesta','Cliente confirma entrega','Reunión agendada','Otro'].forEach(function(o){h+='<option>'+o+'</option>';});
+      h+='</select></div>';
+      h+='<div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle del contacto..." style="min-height:52px;resize:vertical"></textarea></div>';
+      h+='</div>';
+      h+='<button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-bottom:16px">+ Registrar contacto</button>';
+      h+='<div class="sec-lbl" style="margin-bottom:6px">Contactos registrados</div>';
+      h+='<div class="tl">';
+      all.forEach(function(l){h+=buildTLEntry(l);});
+      h+='</div></div>';
+      el.innerHTML=h;
+    } else {
+      renderTabSeg(r); // fallback to local-only view
+    }
+  })
+  .catch(function(){renderTabSeg(r);});
 }
 
 function initSeg(){
@@ -2787,7 +2931,33 @@ function formatWANumber(n){if(!n)return'';var s=String(n).replace(/[^0-9]/g,'');
 function getLiderWANum(ejec){var f=(S.cfg||[]).find(function(x){return x.EJECUTIVO===ejec;});return f?formatWANumber(f.TELEFONO||f.Numero||''):'';}
 function openWA(numero,msg,r,tipo){var dest=WA_PRUEBA?WA_NUM_PRUEBA:formatWANumber(numero);if(dest){window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(msg),'_blank');}else{navigator.clipboard.writeText(msg).then(function(){toast('Sin numero - mensaje copiado','ok');}).catch(function(){toast('Sin numero para WA','err');});}if(r)regAccion(r,tipo||'WhatsApp',dest||'sin numero');}
 function openMailto(para,asunto,cuerpo,r,tipo){var dest=WA_PRUEBA?((S.cfg||[]).find(function(x){return x.ROL==='ADMIN';})||{}).CORREO||'':para;window.location.href='mailto:'+dest+'?cc='+encodeURIComponent(CC_CORP)+'&subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);if(r)regAccion(r,tipo||'Correo',dest);}
-function regAccion(r,canal,dest){var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],tipo:canal,fecha:new Date().toLocaleString('es-VE'),dest:dest};segLog.push(e);if(APPS_SCRIPT_URL){fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'registrarHistorial',rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],tipo:canal,nota:'Enviado a '+dest,usuario:S.user})}).catch(function(){});}}
+function regAccion(r,canal,dest){
+  var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],
+         tipo:canal,nota:'Enviado a '+dest,fecha:new Date().toLocaleString('es-VE'),
+         usuario:S.user,dest:dest};
+  segLog.push(e);
+  if(APPS_SCRIPT_URL){
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'registrarSeguimiento',
+      rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],
+      tipo:canal,nota:'Enviado a '+dest,usuario:S.user
+    })}).catch(function(){});
+  }
+}
+
+function regHistorial(r,campo,anterior,nuevo){
+  var e={rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],
+         campo:campo,anterior:anterior,nuevo:nuevo,
+         fecha:new Date().toLocaleString('es-VE'),usuario:S.user};
+  histLog.push(e);
+  if(APPS_SCRIPT_URL){
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'registrarCambio',
+      rif:r['RIF'],cliente:r['RAZON SOCIAL'],ejecutivo:r['EJECUTIVO'],
+      campo:campo,anterior:anterior,nuevo:nuevo,usuario:S.user
+    })}).catch(function(){});
+  }
+}
 function getMsgWA(tipo,r){var N=String.fromCharCode(10);var nom=r?r['RAZON SOCIAL']||'':'';var rif=r?r['RIF']||'':'';var ejec=r?r['EJECUTIVO']||'':'';var est=r?r['ESTATUS_LEGAL']||'':'';var dy=r?(calcDays(r['Fecha de Instalacion Cliente'])||'?'):'?';var f=N+'------------------'+N+'Administracion de Contratos | Airtek'+N+CC_CORP;var m={lider_nuevo:'[Airtek] Nuevo cliente en tu cartera'+N+N+'Hola '+ejec+', tienes un nuevo cliente que requiere documentacion legal.'+N+N+'Empresa: '+nom+N+'RIF: '+rif+N+'Dias: '+dy+N+N+'Docs: cedula, RIF vigente, acta constitutiva, acta de asamblea.'+f,lider_recordatorio:'[Airtek] Recordatorio - Expediente pendiente'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin avance ('+est+').'+N+'Por favor gestiona a la brevedad.'+f,lider_urgente:'[Airtek] URGENTE - Sin respuesta'+N+N+'Hola '+ejec+', el cliente '+nom+' lleva '+dy+' dias sin respuesta.'+N+'RIF: '+rif+' | '+est+N+N+'Contactalo hoy.'+f,lider_firma:'[Airtek] Contrato pendiente de firma'+N+N+'Hola '+ejec+', el cliente '+nom+' tiene el contrato pendiente de firma. Coordina a la brevedad.'+f,cliente_docs:'Estimado cliente,'+N+N+'Le contactamos de parte de Airtek - Ventas Corporativas.'+N+'Su expediente de '+nom+' requiere:'+N+'- Cedula del representante'+N+'- RIF vigente'+N+'- Acta constitutiva'+N+'- Acta de asamblea'+N+N+'Haganos llegar los documentos. Gracias.'+f,cliente_recordatorio:'[Airtek] Recordatorio'+N+N+'Estimado cliente de '+nom+', estan pendientes sus documentos para regularizar su expediente con Airtek.'+f,cliente_firma:'[Airtek] Su contrato esta listo'+N+N+'Estimado cliente de '+nom+', su contrato con Airtek esta pendiente de firma. Comuniquese con nosotros para coordinar.'+f,abogada_listo:'[Airtek Legal] Expediente listo'+N+N+'Hola Reina, el expediente de '+nom+' (RIF: '+rif+', Lider: '+ejec+') esta aprobado y listo para elaborar el contrato.'+f,abogada_firma:'[Airtek Legal] Coordinar firma'+N+N+'Hola Reina, el contrato de '+nom+' esta listo. El lider '+ejec+' coordina la firma.'+f};return m[tipo]||('Gestion - '+nom);}
 function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RAZON SOCIAL'],getMsgWA(tipoMsg,r),r,'Correo '+tipoMsg);}
 // PWA
