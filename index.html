@@ -937,7 +937,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBVBHmTtCWhSCaCT_RZHAkEPDsQLjxp0YvXSWa6NzkZgRsCzRJtovHR7aJVApR56dzSw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzOa5PuKfVdy6OWzfMk55PPS5a0kzhXFYP-NKaOwA41lJB4c_PVvE_2v4ci6upE__Uiw/exec';
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -2002,10 +2002,11 @@ function saveField(col,val){
       else{toast('Error: '+(rs.error||''),'err');}
     }).catch(function(){toast('Sin conexi\u00f3n','err');});
   } else {
+    // Campos de datos (teléfono, correo, etc.) → HISTORIAL_LOG via registrarCambio
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-      action:'registrarHistorial',rif:S.cur['RIF'],
-      cliente:S.cur['RAZON SOCIAL'],ejecutivo:S.cur['EJECUTIVO'],
-      tipo:'Actualizaci\u00f3n '+col,nota:String(val).slice(0,200),usuario:S.user
+      action:'registrarCambio',rif:S.cur['RIF'],
+      cliente:S.cur['RAZON SOCIAL'],
+      campo:col,anterior:'',nuevo:String(val).slice(0,200),usuario:S.user
     })}).catch(function(){});
   }
 }
@@ -2899,12 +2900,19 @@ function sendSegEmail(){
 // ── Timeline helpers ─────────────────────────────────────────────────────────
 function tlIcon(tipo){
   var t=(tipo||'').toLowerCase();
-  if(t.includes('whatsapp')||t.includes('wa'))return{cls:'tl-ic-wa',ico:'💬'};
-  if(t.includes('correo')||t.includes('mail'))return{cls:'tl-ic-mail',ico:'✉️'};
-  if(t.includes('estatus')||t.includes('cambio'))return{cls:'tl-ic-est',ico:'🔄'};
+  if(t.includes('whatsapp')||t.includes('wa')||t==='wal')return{cls:'tl-ic-wa',ico:'💬'};
+  if(t.includes('correo')||t.includes('mail')||t.includes('cliente_firma')||t.includes('cliente_docs')||t.includes('cliente_recordatorio'))return{cls:'tl-ic-mail',ico:'✉️'};
+  if(t.includes('contrato_firmado'))return{cls:'tl-ic-est',ico:'✅'};
+  if(t.includes('pend_firmar')||t.includes('pendiente por firmar'))return{cls:'tl-ic-est',ico:'✍️'};
+  if(t.includes('docs_recibidos')||t.includes('documentos recibidos'))return{cls:'tl-ic-seg',ico:'📥'};
+  if(t.includes('cliente_nuevo'))return{cls:'tl-ic-est',ico:'🆕'};
+  if(t.includes('reporte'))return{cls:'tl-ic-mail',ico:'📊'};
+  if(t.includes('abogad')||t.includes('legal'))return{cls:'tl-ic-seg',ico:'⚖️'};
+  if(t.includes('estatus')||t.includes('cambio')||t.includes('estatus_legal'))return{cls:'tl-ic-est',ico:'🔄'};
   if(t.includes('llamada'))return{cls:'tl-ic-seg',ico:'📞'};
   if(t.includes('visita'))return{cls:'tl-ic-seg',ico:'🤝'};
   if(t.includes('doc'))return{cls:'tl-ic-seg',ico:'📄'};
+  if(t.includes('notif')||t.includes('app_seg'))return{cls:'tl-ic-mail',ico:'🔔'};
   return{cls:'tl-ic-seg',ico:'📝'};
 }
 
@@ -2975,7 +2983,7 @@ function addSegEntry(){
 function renderTabSegFromGAS(r){
   var rif=(r['RIF']||'').toString().trim();
   if(!APPS_SCRIPT_URL){renderTabSeg(r);return;}
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimiento',rif:rif})})
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
   .then(function(res){return res.json();})
   .then(function(data){
     if(data.ok&&data.registros&&data.registros.length){
