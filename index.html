@@ -286,13 +286,16 @@ tbody tr:hover td{background:var(--surface2)}
 .doc-ok a{font-size:11px;color:var(--green);text-decoration:none}
 .doc-ok a:hover{text-decoration:underline}
 
-/* STATUS BTN */
-.st-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.st-btn{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);font-family:inherit;transition:all .15s var(--ease-out);letter-spacing:.02em}
-.st-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2);transform:translateY(-1px)}
-.st-btn:active{transform:scale(0.97)}
-.st-btn.up{background:var(--green-dim);border-color:var(--green);color:var(--green)}
-.st-btn.dn{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+/* STATUS BAR */
+.drawer-status-bar{padding:10px 20px 8px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.dsb-current{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dsb-current-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.dsb-track{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.dsb-track::-webkit-scrollbar{display:none}
+.st-btn{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:background .12s ease,color .12s ease,border-color .12s ease,transform .1s ease;letter-spacing:.02em;white-space:nowrap}
+.st-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--accent)}
+.st-btn:active{transform:scale(0.95)}
+@media(hover:hover)and(pointer:fine){.st-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--accent)}}
 
 .drawer-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--surface)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:transform .12s var(--ease-out),opacity .12s ease,background .12s ease,border-color .12s ease,color .12s ease;white-space:nowrap;user-select:none}
@@ -837,9 +840,12 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="tab-panel" id="tab-documentos"></div>
     <div class="tab-panel" id="tab-historial"></div>
     <div class="tab-panel" id="tab-seguimiento_cli"></div>
+    <div class="drawer-status-bar" id="drawerStatusBar">
+      <div class="dsb-current" id="dsbCurrent"></div>
+      <div class="dsb-track" id="drawerStBtns"></div>
+    </div>
     <div class="drawer-footer">
-      <div id="drawerStBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;margin-left:auto">
         <button class="btn btn-g btn-sm" onclick="closeDrawer()">Cerrar</button>
         <button class="btn btn-p btn-sm" onclick="saveExp()">Guardar</button>
       </div>
@@ -1524,23 +1530,30 @@ function copyNumAdicional(){
   navigator.clipboard.writeText(formatWANumber(num)).then(function(){toast('Número copiado','ok');}).catch(function(){toast('No se pudo copiar','err');});
 }
 function renderStBtns(r){
-  const cur=(r['ESTATUS_LEGAL']||'').toUpperCase();
-  const al=RT[S.rol]||[];const ci=SO.indexOf(cur);
+  const cur=r['ESTATUS_LEGAL']||'';
+  const al=RT[S.rol]||[];
+  // Current status badge
+  const si=SI[cur]||{c:'b-gn'};
+  const curEl=document.getElementById('dsbCurrent');
+  if(curEl){
+    curEl.innerHTML='<span class="dsb-current-label">Estatus actual</span><span class="badge '+si.c+'">'+esc(cur||'Sin estatus')+'</span>';
+  }
+  // Chips for other statuses — all neutral, no up/dn color
   const container=document.getElementById('drawerStBtns');
-  container.innerHTML=al.filter(s=>s!==cur).map(s=>{
-    const si=SO.indexOf(s);const cls=si>ci?'up':si<ci?'dn':'';
-    return '<button class="st-btn '+cls+'" data-st="'+s+'">→ '+s+'</button>';
+  if(!container)return;
+  container.innerHTML=al.filter(function(s){return s!==cur;}).map(function(s){
+    return '<button class="st-btn" data-st="'+s+'">'+(s)+'</button>';
   }).join('');
-  // Event delegation - un solo listener para todos los botones de estatus
   container.onclick=function(e){
     const btn=e.target.closest('[data-st]');
-    if(btn) changeStatus(btn.dataset.st);
+    if(btn)changeStatus(btn.dataset.st);
   };
 }
 
 function changeStatus(ns){
   if(!confirm('¿Cambiar estatus a "'+ns+'"?'))return;
-  S.cur['ESTATUS_LEGAL']=ns;renderStBtns(S.cur);
+  S.cur['ESTATUS_LEGAL']=ns;
+  renderStBtns(S.cur);
   toast('Estatus → '+ns,'ok');
   // Update local data immediately for responsive UI
   S.cur['ESTATUS_LEGAL']=ns;
@@ -2155,20 +2168,35 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 function toggleUserMenu(){document.getElementById('userMenu').classList.toggle('open');}
 document.addEventListener('click',e=>{if(!document.getElementById('avatarBtn').contains(e.target))document.getElementById('userMenu').classList.remove('open');});
 
-// Mobile touch: tap-to-select, second tap to open drawer
-var _lastCard=null,_lastCardTimer=null;
+// Mobile touch: tap-to-select, second tap to open. Cancel if scroll detected.
+var _lastCard=null,_lastCardTimer=null,_touchStartY=0,_touchStartX=0,_touchMoved=false;
+document.addEventListener('touchstart',function(e){
+  _touchStartY=e.touches[0].clientY;
+  _touchStartX=e.touches[0].clientX;
+  _touchMoved=false;
+},{passive:true});
+document.addEventListener('touchmove',function(e){
+  var dy=Math.abs(e.touches[0].clientY-_touchStartY);
+  var dx=Math.abs(e.touches[0].clientX-_touchStartX);
+  if(dy>8||dx>8)_touchMoved=true;
+},{passive:true});
 document.addEventListener('touchend',function(e){
   // Desktop table row — single tap opens directly
   var tr=e.target.closest('#tblBody tr');
-  if(tr){
+  if(tr&&!_touchMoved){
     var rows=Array.from(document.querySelectorAll('#tblBody tr'));
     var idx=rows.indexOf(tr);
     if(idx>=0){var st=(S.page-1)*PS;e.preventDefault();openExp(st+idx);}
     return;
   }
-  // Mobile card — first tap selects, second tap opens
+  // Mobile card — if scroll happened, just deselect and bail
   var card=e.target.closest('#cardsMobile .client-card');
   if(!card)return;
+  if(_touchMoved){
+    // User was scrolling — clear any stale selection silently
+    if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
+    return;
+  }
   e.preventDefault();
   if(_lastCard&&_lastCard===card){
     // Second tap on same card → open
@@ -2181,7 +2209,6 @@ document.addEventListener('touchend',function(e){
     if(_lastCard){_lastCard.classList.remove('selected');clearTimeout(_lastCardTimer);}
     card.classList.add('selected');
     _lastCard=card;
-    // Auto-reset selection after 2.5s if user doesn't tap again
     _lastCardTimer=setTimeout(function(){
       if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;}
     },2500);
