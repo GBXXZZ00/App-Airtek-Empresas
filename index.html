@@ -286,6 +286,25 @@ tbody tr:hover td{background:var(--surface2)}
 .doc-ok a{font-size:11px;color:var(--green);text-decoration:none}
 .doc-ok a:hover{text-decoration:underline}
 
+/* COMM PANEL */
+.comm-panel{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.comm-block{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.comm-block-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin-bottom:8px}
+.comm-extra{border-style:dashed}
+.comm-row{display:flex;align-items:center;gap:8px;min-height:30px}
+.comm-row+.comm-row{margin-top:6px}
+.comm-lbl{font-size:10px;font-weight:600;color:var(--text3);width:32px;flex-shrink:0;text-transform:uppercase}
+.comm-val{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comm-input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none;transition:border-color .15s ease;min-width:0}
+.comm-input:focus{border-color:var(--accent)}
+.comm-btn{flex-shrink:0;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:inherit;transition:background .1s,color .1s,border-color .1s}
+.comm-btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.comm-btn:active{transform:scale(0.95)}
+.comm-wa{color:#25d366;border-color:#25d366}
+.comm-wa:hover{background:rgba(37,211,102,.12);color:#25d366}
+.comm-lider{color:#3B82F6;border-color:#3B82F6}
+.comm-lider:hover{background:rgba(59,130,246,.12);color:#3B82F6}
+
 /* STATUS BAR */
 .drawer-status-bar{padding:10px 20px 8px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .dsb-current{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -858,7 +877,7 @@ tbody tr:hover td{background:var(--surface2)}
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyx5UBS8bBpcceA_OTvhz7kzA5T6bJ72uGdU5WNCwcNdPgx3Hmu1Y9ZZJ1J3QAZEh68Pg/exec';
-const WA_PRUEBA=true;
+const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
 const PS = 40;
@@ -1474,10 +1493,6 @@ function renderTabHist(r){
 
 function renderDrawerComm(r){
   var est=(r['ESTATUS_LEGAL']||'').toUpperCase();
-  var nums=[];
-  if(r['NUMERO_REPRESENTANTES'])nums.push({l:'Rep.1: '+r['NUMERO_REPRESENTANTES'],v:r['NUMERO_REPRESENTANTES']});
-  if(r['NUMERO_REPRESENTANTES2'])nums.push({l:'Rep.2: '+r['NUMERO_REPRESENTANTES2'],v:r['NUMERO_REPRESENTANTES2']});
-  if(r['TELEFONO_PROHAM'])nums.push({l:'Proham: '+r['TELEFONO_PROHAM'],v:r['TELEFONO_PROHAM']});
   var lc=(S.cfg||[]).find(function(x){return x.EJECUTIVO===r['EJECUTIVO'];});
   var numL=lc?formatWANumber(lc.TELEFONO||lc.Numero||''):'';
   var corrL=lc?lc.CORREO||'':'';
@@ -1487,39 +1502,102 @@ function renderDrawerComm(r){
   else if(est==='PENDIENTE POR FIRMAR'){msgC='cliente_firma';msgL='lider_firma';}
   else if(est==='DOCUMENTOS SOLICITADOS')msgC='cliente_recordatorio';
   else if(est==='DOCUMENTOS RECIBIDOS')msgL='abogada_listo';
-  var uid='u'+Math.random().toString(36).slice(2,6);
+
+  var n1=r['NUMERO_REPRESENTANTES']||'';
+  var n2=r['NUMERO_REPRESENTANTES2']||'';
   var parts=[];
   parts.push('<div class="sec-lbl" style="margin-top:14px">Contacto directo</div>');
-  parts.push('<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">');
-  if(nums.length>1){
-    parts.push('<select id="'+uid+'" class="fp-sel" style="width:100%;font-size:11px;margin-bottom:8px">');
-    nums.forEach(function(n){parts.push('<option value="'+n.v+'">'+n.l+'</option>');});
-    parts.push('</select>');
-  }else if(nums.length===1){parts.push('<div style="font-size:11px;color:var(--text2);margin-bottom:8px">Tel: '+nums[0].l+'</div>');}
-  parts.push('<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">');
-  if(nums.length>0){
-    var numVal=nums.length>1?"document.getElementById('"+uid+"').value":JSON.stringify(nums[0].v);
-        var waCliBtn='<button class="btn btn-g btn-sm" style="color:#25d366;border-color:#25d366;font-size:11px"';waCliBtn+=' onclick="openWA(\'+(typeof numVal==="string"?JSON.stringify(numVal):numVal)+\',getMsgWA(\''+msgC+'\',S.cur),S.cur,\'wac\')">WA Cliente</button>';parts.push(waCliBtn);
-  }
-  if(corrC){parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="segEmailBtn(S.cur,\''+msgC+'\',\''+corrC+'\')">Mail Cliente</button>');}
+  parts.push('<div class="comm-panel">');
+
+  // ── Bloque cliente ───────────────────────────────────────────────────────
+  parts.push('<div class="comm-block">');
+  parts.push('<div class="comm-block-title">📱 Cliente</div>');
+
+  // Rep 1 editable
+  parts.push('<div class="comm-row">');
+  parts.push('<span class="comm-lbl">Rep.1</span>');
+  parts.push('<input id="numRep1" class="comm-input" value="'+esc(n1)+'" placeholder="+58..." oninput="commInputChanged(this,\'NUMERO_REPRESENTANTES\')">');
+  parts.push('<button class="comm-btn comm-wa" onclick="commWAClick(\'numRep1\',\''+msgC+'\')">WA</button>');
   parts.push('</div>');
-  if(numL){
-    parts.push('<div style="display:flex;gap:6px;flex-wrap:wrap">');
-    parts.push('<button class="btn btn-g btn-sm" style="color:#3B82F6;border-color:#3B82F6;font-size:11px" onclick="openWA(\''+numL+'\',getMsgWA(\''+msgL+'\',S.cur),S.cur,\'wal\')">WA Lider</button>');
-    if(corrL){parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="segEmailBtn(S.cur,\''+msgL+'\',\''+corrL+'\')">Mail Lider</button>');}
+
+  // Rep 2 (only if exists)
+  if(n2||r['CORREO_REPRESENTANTES2']){
+    parts.push('<div class="comm-row">');
+    parts.push('<span class="comm-lbl">Rep.2</span>');
+    parts.push('<input id="numRep2" class="comm-input" value="'+esc(n2)+'" placeholder="+58..." oninput="commInputChanged(this,\'NUMERO_REPRESENTANTES2\')">');
+    parts.push('<button class="comm-btn comm-wa" onclick="commWAClick(\'numRep2\',\''+msgC+'\')">WA</button>');
     parts.push('</div>');
   }
-  if(WA_PRUEBA){parts.push('<div style="margin-top:8px;font-size:10px;color:var(--amber)">Modo prueba: WA va a +'+WA_NUM_PRUEBA+'</div>');}
-  // Campo para número adicional de contacto
-  parts.push('<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">');
-  parts.push('<div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Número adicional de contacto</div>');
-  parts.push('<div style="display:flex;gap:6px;align-items:center">');
-  parts.push('<input id="numAdicional" placeholder="+584121234567" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">');
-  parts.push('<button class="btn btn-g btn-sm" style="color:#25d366;border-color:#25d366;font-size:11px" onclick="openWAAdicional()">WA</button>');
-  parts.push('<button class="btn btn-g btn-sm" style="font-size:11px" onclick="copyNumAdicional()">Copiar</button>');
-  parts.push('</div></div>');
+
+  // Email cliente
+  if(corrC){
+    parts.push('<div class="comm-row" style="margin-top:4px">');
+    parts.push('<span class="comm-lbl">Mail</span>');
+    parts.push('<span class="comm-val">'+esc(corrC)+'</span>');
+    parts.push('<button class="comm-btn" onclick="segEmailBtn(S.cur,\''+msgC+'\',\''+corrC+'\')">✉</button>');
+    parts.push('</div>');
+  }
+  parts.push('</div>'); // end comm-block cliente
+
+  // ── Bloque lider ─────────────────────────────────────────────────────────
+  if(numL||corrL){
+    parts.push('<div class="comm-block">');
+    parts.push('<div class="comm-block-title">👤 Líder de Ventas</div>');
+    if(numL){
+      parts.push('<div class="comm-row">');
+      parts.push('<span class="comm-lbl">WA</span>');
+      parts.push('<span class="comm-val">'+esc(numL)+'</span>');
+      parts.push('<button class="comm-btn comm-lider" onclick="openWA(\''+numL+'\',getMsgWA(\''+msgL+'\',S.cur),S.cur,\'wal\')">WA</button>');
+      parts.push('</div>');
+    }
+    if(corrL){
+      parts.push('<div class="comm-row">');
+      parts.push('<span class="comm-lbl">Mail</span>');
+      parts.push('<span class="comm-val">'+esc(corrL)+'</span>');
+      parts.push('<button class="comm-btn" onclick="segEmailBtn(S.cur,\''+msgL+'\',\''+corrL+'\')">✉</button>');
+      parts.push('</div>');
+    }
+    parts.push('</div>');
+  }
+
+  // ── Número puntual (no se guarda) ────────────────────────────────────────
+  parts.push('<div class="comm-block comm-extra">');
+  parts.push('<div class="comm-block-title" style="color:var(--text3)">Número puntual <span style="font-weight:400;font-size:9px">(no se guarda)</span></div>');
+  parts.push('<div class="comm-row">');
+  parts.push('<input id="numAdicional" class="comm-input" placeholder="+584121234567">');
+  parts.push('<button class="comm-btn comm-wa" onclick="openWAAdicional()">WA</button>');
+  parts.push('<button class="comm-btn" onclick="copyNumAdicional()">📋</button>');
   parts.push('</div>');
+  parts.push('</div>');
+
+  parts.push('</div>'); // end comm-panel
   return parts.join('');
+}
+
+// Called when Rep phone is edited inline
+function commInputChanged(el,col){
+  if(!S.cur)return;
+  S.cur[col]=el.value;
+  el.style.borderColor='var(--accent)';
+}
+
+// WA click on comm panel — auto-save phone if edited, then open WA
+function commWAClick(inputId,msgType){
+  var el=document.getElementById(inputId);
+  if(!el)return;
+  var num=el.value.trim();
+  if(!num){toast('Ingresa un número primero','err');return;}
+  // Save phone to sheet if it changed
+  var col=inputId==='numRep1'?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES2';
+  if(S.cur&&S.cur[col]!==num){
+    S.cur[col]=num;
+    var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
+    if(inAll)inAll[col]=num;
+    if(APPS_SCRIPT_URL)saveField(col,num);
+    el.style.borderColor='var(--green)';
+    setTimeout(function(){if(el)el.style.borderColor='';},1500);
+  }
+  openWA(num,getMsgWA(msgType,S.cur),S.cur,'wac');
 }
 
 function openWAAdicional(){
@@ -1555,35 +1633,40 @@ function renderStBtns(r){
     const btn=e.target.closest('[data-st]');
     if(btn)changeStatus(btn.dataset.st);
   };
-  // Mouse drag-to-scroll on desktop
+  // Mouse drag-to-scroll (desktop) — without preventDefault so clicks still fire
   (function(){
-    var el=container,isDown=false,startX,scrollLeft;
+    var el=container,isDown=false,startX,scrollL,moved=false;
     el.addEventListener('mousedown',function(e){
-      isDown=true;el.style.cursor='grabbing';
-      startX=e.pageX-el.offsetLeft;scrollLeft=el.scrollLeft;
-      e.preventDefault();
+      if(e.button!==0)return;
+      isDown=true;moved=false;
+      startX=e.clientX;scrollL=el.scrollLeft;
+      el.style.userSelect='none';
     });
-    el.addEventListener('mouseleave',function(){isDown=false;el.style.cursor='grab';});
-    el.addEventListener('mouseup',function(){isDown=false;el.style.cursor='grab';});
-    el.addEventListener('mousemove',function(e){
+    document.addEventListener('mouseup',function(){
       if(!isDown)return;
-      var x=e.pageX-el.offsetLeft;
-      el.scrollLeft=scrollLeft-(x-startX)*1.2;
+      isDown=false;el.style.userSelect='';
     });
+    document.addEventListener('mousemove',function(e){
+      if(!isDown)return;
+      var dx=e.clientX-startX;
+      if(Math.abs(dx)>3){moved=true;el.scrollLeft=scrollL-dx;}
+    });
+    // Block click-on-button only when drag happened
+    el.addEventListener('click',function(e){
+      if(moved){e.stopPropagation();moved=false;}
+    },true);
     el.style.cursor='grab';
   })();
+  // Attach wheel directly to element with non-passive (must re-attach each render)
+  container._wheelHandler&&container.removeEventListener('wheel',container._wheelHandler);
+  container._wheelHandler=function(e){
+    if(container.scrollWidth>container.clientWidth){
+      e.preventDefault();e.stopPropagation();
+      container.scrollLeft+=e.deltaY+e.deltaX;
+    }
+  };
+  container.addEventListener('wheel',container._wheelHandler,{passive:false});
 }
-
-// Mouse wheel → horizontal scroll on status chips (desktop)
-document.addEventListener('wheel',function(e){
-  var track=document.getElementById('drawerStBtns');
-  if(!track)return;
-  var rect=track.getBoundingClientRect();
-  if(e.clientX>=rect.left&&e.clientX<=rect.right&&e.clientY>=rect.top&&e.clientY<=rect.bottom){
-    e.preventDefault();
-    track.scrollLeft+=e.deltaY*0.8;
-  }
-},{passive:false});
 
 function changeStatus(ns){
   if(!confirm('¿Cambiar estatus a "'+ns+'"?'))return;
