@@ -317,7 +317,7 @@ tbody tr:hover td{background:var(--surface2)}
 .comm-extra{border-style:dashed}
 .comm-row{display:flex;align-items:center;gap:8px;min-height:30px}
 .comm-row+.comm-row{margin-top:6px}
-.comm-lbl{font-size:10px;font-weight:600;color:var(--text3);width:32px;flex-shrink:0;text-transform:uppercase}
+.comm-lbl{font-size:10px;font-weight:600;color:var(--text3);width:44px;min-width:44px;flex-shrink:0;text-transform:uppercase;letter-spacing:.02em}
 .comm-val{flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .comm-input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none;transition:border-color .15s ease;min-width:0}
 .comm-input:focus{border-color:var(--accent)}
@@ -1590,7 +1590,13 @@ function cleanDocUrl(v){
   return v;
 }
 function docField(d,r){
-  var url=cleanDocUrl(r[d.col]);
+  // Triple safety: kill NaN/corrupt values at render time
+  var raw=r[d.col];
+  if(raw!==undefined&&raw!==null){
+    var rs=String(raw).trim().toLowerCase();
+    if(rs==='nan'||rs==='#n/a'||rs==='#ref!'||rs==='#value!'||rs==='null'||rs==='false'||rs==='0')raw='';
+  }
+  var url=cleanDocUrl(raw);
   var hasDoc=url.startsWith('http');
   if(hasDoc){
     return (
