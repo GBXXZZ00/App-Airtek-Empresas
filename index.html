@@ -937,7 +937,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBVBHmTtCWhSCaCT_RZHAkEPDsQLjxp0YvXSWa6NzkZgRsCzRJtovHR7aJVApR56dzSw/exec;
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBVBHmTtCWhSCaCT_RZHAkEPDsQLjxp0YvXSWa6NzkZgRsCzRJtovHR7aJVApR56dzSw/exec';
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -1151,7 +1151,7 @@ function parseCSV(t){
     return o;
   });
 }
-function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='\"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
+function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
 
 // FILTROS
 function normalizeStr(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
