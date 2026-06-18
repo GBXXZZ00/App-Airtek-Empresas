@@ -937,7 +937,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytvOZ_0LOxZMDs5RJU1FNSg7XUUgQ04BuK-oa2oysSRtFfLozzpVqfAEm85Hj1dcCJIA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZC0oNnINKqeQ2512C2yAieQ5OKzROgTn57bJJs2mv_KCsq6g6kOfUiwmK_YbTbK1M3w/exec';
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -1502,7 +1502,16 @@ function renderTabDocs(r){
             (r['NUMERO_REPRESENTANTES']||'').trim()&&
             (!esISP||cleanDocUrl(r['HABILITACION_CONATEL']).startsWith('http'));
 
-  var h='<div style="font-size:12px;color:var(--text2);margin-bottom:16px">';
+  var h='';
+  // Botón crear expediente: solo si no hay carpeta Drive y es Admin
+  var tieneCarpeta=cleanVal(r['Carpeta_Drive_URL']).startsWith('http');
+  if(!tieneCarpeta&&S.rol==='ADMIN'){
+    h+='<div style="margin-bottom:14px;padding:10px 12px;border:1px dashed var(--amber);border-radius:8px;display:flex;align-items:center;gap:10px">';
+    h+='<span style="font-size:12px;color:var(--amber)">⚠ Sin carpeta en Drive</span>';
+    h+='<button class="btn" style="margin-left:auto;font-size:11px;padding:4px 12px;background:var(--amber);color:#000;border:none" onclick="crearExpedienteDrive()">Crear Expediente ↗</button>';
+    h+='</div>';
+  }
+  h+='<div style="font-size:12px;color:var(--text2);margin-bottom:16px">';
   h+='<strong style="color:var(--text)">'+loaded+'</strong> de '+allDocs.length+' documentos cargados · ';
   h+=ckOk?'<span style="color:var(--green);font-weight:600">✓ Checklist completo</span>':'<span style="color:var(--amber)">⚠ Checklist incompleto</span>';
   h+='</div>';
@@ -1625,6 +1634,36 @@ function docField(d,r){
       +'</div>'
     );
   }
+}
+
+
+function crearExpedienteDrive(){
+  if(!S.cur||!APPS_SCRIPT_URL)return;
+  var btn=document.querySelector('[onclick="crearExpedienteDrive()"]');
+  if(btn){btn.textContent='Creando...';btn.disabled=true;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'crearExpediente',
+    rif:S.cur['RIF'],
+    nombre:S.cur['RAZON SOCIAL'],
+    tipo:S.cur['TIPO_CLIENTE']||'GENERAL'
+  })})
+  .then(function(r){return r.json();})
+  .then(function(rs){
+    if(rs.ok){
+      S.cur['Carpeta_Drive_URL']=rs.url;
+      var inAll=S.all.find(function(r){return r['RIF']===S.cur['RIF'];});
+      if(inAll)inAll['Carpeta_Drive_URL']=rs.url;
+      toast('Carpeta creada en Drive ✓','ok');
+      renderTabDocs(S.cur);
+    }else{
+      toast('Error: '+(rs.error||'No se pudo crear'),'err');
+      if(btn){btn.textContent='Crear Expediente ↗';btn.disabled=false;}
+    }
+  })
+  .catch(function(){
+    toast('Error de conexión','err');
+    if(btn){btn.textContent='Crear Expediente ↗';btn.disabled=false;}
+  });
 }
 
 function replaceDoc(btn,col){
@@ -2061,9 +2100,16 @@ function handleFile(input,col){
         // Also update in S.all so the data persists in session
         var inAll=S.all.find(function(r){return r['RIF']===S.cur['RIF'];});
         if(inAll)inAll[col]=rs.url;
-        toast('Documento subido ✓','ok');
+        // Si el checklist completó automáticamente → actualizar estatus en UI
+        if(rs.estatusNuevo&&rs.estatusNuevo!==S.cur['ESTATUS_LEGAL']){
+          S.cur['ESTATUS_LEGAL']=rs.estatusNuevo;
+          if(inAll)inAll['ESTATUS_LEGAL']=rs.estatusNuevo;
+          refreshTableRow(S.cur);
+          toast('Documento subido ✓ — Estatus → '+rs.estatusNuevo,'ok');
+        }else{
+          toast('Documento subido ✓','ok');
+        }
         renderTabDocs(S.cur);
-        // Refresh status buttons in case estatus changed
         renderStBtns(S.cur);
       }else{
         toast('Error: '+(rs.error||'No se pudo subir'),'err');
