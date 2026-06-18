@@ -937,7 +937,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZC0oNnINKqeQ2512C2yAieQ5OKzROgTn57bJJs2mv_KCsq6g6kOfUiwmK_YbTbK1M3w/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnBs8-DI9LcTVN_KFkLnYjMNWFVkL-EDbJkRLBtgG75ka2AI50Q5WLIn1IWlQ62NRwhg/exec';
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -957,7 +957,7 @@ const SO = Object.keys(SI);
 const RT = {
   ADMIN:   SO,
   ABOGADO: ['DOCUMENTOS RECIBIDOS','PENDIENTE POR DOCUMENTOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'],
-  LIDER:   ['DOCUMENTOS SOLICITADOS'],
+  LIDER:   ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS','DOCUMENTOS EN REVISION'],
 };
 
 const S = {user:null,rol:null,email:null,all:[],filtered:[],rptData:[],cfg:[],page:1,cur:null,nReps:1,team:null};
@@ -1419,8 +1419,17 @@ function renderTabDatos(r){
   if(S.nReps<2) h+='<button class="add-rep" onclick="addRep()">+ Agregar 2do Representante</button>';
   h+=renderDrawerComm(r);
   h+='<div class="sec-lbl">Expediente en Drive</div>';
-  if(r['Carpeta_Drive_URL']) h+='<a href="'+r['Carpeta_Drive_URL']+'" target="_blank" class="btn btn-g btn-sm">📁 Abrir carpeta en Drive</a>';
-  else h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada aún</div>';
+  var carpetaUrl=cleanVal(r['Carpeta_Drive_URL']||'');
+  if(carpetaUrl.startsWith('http')){
+    h+='<a href="'+carpetaUrl+'" target="_blank" class="btn btn-g btn-sm">📁 Abrir carpeta en Drive</a>';
+  } else if(S.rol==='ADMIN'){
+    h+='<div style="margin-top:4px;display:flex;align-items:center;gap:10px">';
+    h+='<span style="font-size:12px;color:var(--amber)">⚠ Sin carpeta en Drive</span>';
+    h+='<button class="btn" style="font-size:11px;padding:4px 12px;background:var(--amber);color:#000;border:none" onclick="crearExpedienteDrive()">Crear Expediente ↗</button>';
+    h+='</div>';
+  } else {
+    h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada aún</div>';
+  }
   document.getElementById('tab-datos').innerHTML=h;
 }
 
@@ -1778,8 +1787,8 @@ function renderDrawerComm(r){
   }
   parts.push('</div>'); // end comm-block cliente
 
-  // ── Bloque lider ─────────────────────────────────────────────────────────
-  if(numL||corrL){
+  // ── Bloque lider — ocultar si el usuario logueado ES el líder del cliente
+  if((numL||corrL)&&!(S.rol==='LIDER'&&S.user===r['EJECUTIVO'])){
     parts.push('<div class="comm-block">');
     parts.push('<div class="comm-block-title">👤 Líder de Ventas</div>');
     if(numL){
@@ -1913,15 +1922,11 @@ function changeStatus(ns){
   S.cur['ESTATUS_LEGAL']=ns;
   renderStBtns(S.cur);
   toast('Estatus → '+ns,'ok');
-  // Solo registro local para la vista en sesión (el GAS registra en HISTORIAL_LOG internamente)
-  histLog.push({rif:S.cur['RIF'],campo:'ESTATUS_LEGAL',anterior:anterior,nuevo:ns,
-    fecha:new Date().toLocaleString('es-VE'),usuario:S.user});
-  // Update local data immediately for responsive UI
-  S.cur['ESTATUS_LEGAL']=ns;
+  // Actualizar UI y datos locales inmediatamente
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
   if(inAll)inAll['ESTATUS_LEGAL']=ns;
-  // Re-render badge in both desktop table and mobile cards
   refreshTableRow(S.cur);
+  // El GAS registra en HISTORIAL_LOG con el usuario real — NO usar histLog local
   if(APPS_SCRIPT_URL)saveField('ESTATUS_LEGAL',ns);
 }
 
@@ -2034,7 +2039,8 @@ function saveField(col,val){
   if(col==='ESTATUS_LEGAL'){
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
       action:'cambiarEstatus',rif:S.cur['RIF'],estatus:val,
-      observacion:S.cur['Observacion']||''
+      observacion:S.cur['Observacion']||'',
+      usuario:S.user||'app'
     })})
     .then(function(r){return r.json();}).then(function(rs){
       if(rs.ok){toast('Estatus guardado \u2713','ok');}
