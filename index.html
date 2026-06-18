@@ -557,11 +557,8 @@ tbody tr:hover td{background:var(--surface2)}
       <button class="nav-item" id="nav-dashboard" onclick="showView('dashboard')">
         <span class="nav-icon">📊</span> Dashboard
       </button>
-      <button class="nav-item" id="nav-reportes" onclick="showView('reportes')">
-        <span class="nav-icon">📊</span> Gestión & Reportes
-      </button>
       <button class="nav-item" id="nav-seguimiento" onclick="showView('seguimiento')">
-        <span class="nav-icon">📬</span> Seguimiento
+        <span class="nav-icon">🎯</span> Centro de Control
         <span class="nav-badge" id="segBadge" style="display:none;background:var(--red)">0</span>
       </button>
     </div>
@@ -797,74 +794,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-    <!-- REPORTES -->
-    <div class="view" id="view-reportes">
-      <div class="view-hd"><div><div class="view-title">Reportes</div><div class="view-sub">Genera y envía reportes por correo</div></div></div>
-      <div class="rpt-card">
-        <div class="rpt-title">Filtros del reporte</div>
-        <div class="rpt-grid">
-          <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
-          <div class="fp-group" style="position:relative">
-  <label>Estatus</label>
-  <button id="rEstatusBtn" onclick="toggleEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
-    <span id="rEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
-  </button>
-  <div id="rEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
-    <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
-      <button onclick="selectAllEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
-      <button onclick="clearEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
-    </div>
-    <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateEstatusLabel()"> Grandes Negocios</label>
-    <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateEstatusLabel()"> Pend. Documentos</label>
-    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateEstatusLabel()"> Docs. Solicitados</label>
-    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateEstatusLabel()"> Docs. en Revisión</label>
-    <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateEstatusLabel()"> Docs. Recibidos</label>
-    <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateEstatusLabel()"> Contrato en Curso</label>
-    <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateEstatusLabel()"> Pend. por Firmar</label>
-    <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateEstatusLabel()"> Contrato Firmado</label>
-    <label class="est-opt"><input type="checkbox" value="PERSONA NATURAL" onchange="updateEstatusLabel()"> Persona Natural</label>
-  </div>
-</div>
-          <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="rDesde"></div>
-          <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
-        </div>
-        <button class="btn btn-p" onclick="genReport()">Generar reporte</button>
-      </div>
-      <div id="rptResult" style="display:none">
-        <div class="tbl-wrap" style="margin-bottom:12px">
-          <table><thead><tr><th>Razón Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Instalación</th><th>Observación</th></tr></thead>
-          <tbody id="rptTbl"></tbody></table>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-g" onclick="exportCSV()">⬇ Descargar CSV</button>
-          <button class="btn btn-p" onclick="sendReport()">✉ Enviar por correo</button>
-          <button class="btn btn-g" onclick="genWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 Mensaje WhatsApp</button>
-          <button class="btn btn-g" onclick="exportPDF()" style="border-color:var(--purple);color:var(--purple)">📄 Exportar PDF</button>
-        </div>
-      </div>
 
-      <!-- WHATSAPP RESUMEN -->
-      <div id="waPanel" style="display:none;margin-top:16px">
-        <div class="rpt-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="rpt-title" style="margin-bottom:0">📱 Resumen para WhatsApp</div>
-            <button class="btn btn-g btn-sm" id="waCopyBtn" onclick="copyWAMsg()">📋 Copiar mensaje</button>
-          </div>
-          <textarea id="waMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:320px;outline:none"></textarea>
-        </div>
-      </div>
-
-      <!-- HERRAMIENTAS ADMIN: Carpetas Drive masivo -->
-      <div class="rpt-card" id="driveCard" style="margin-top:16px">
-        <div class="rpt-title">📁 Expedientes en Drive</div>
-        <p style="font-size:12px;color:var(--text2);margin:0 0 12px">Crea las carpetas de Drive para todos los clientes que aún no tienen expediente asignado. Se procesa en lotes de 150.</p>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-p" id="btnDriveMasivo" onclick="crearCarpetasMasivo()">📁 Crear carpetas pendientes</button>
-          <span id="driveMasivoStatus" style="font-size:12px;color:var(--text2)"></span>
-        </div>
-      </div>
-    </div>
-  
 
     <div class="view" id="view-seguimiento">
 
@@ -885,15 +815,35 @@ tbody tr:hover td{background:var(--surface2)}
       <!-- ══ BLOQUE 2: FILTROS ══════════════════════════════════════════════ -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div>
-          <div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
-          <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab()"></div>
-          <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab()"></div>
+          <div class="fp-group">
+            <label>Período</label>
+            <select class="fp-sel" id="segPeriodo" onchange="renderSegTab();renderSegRadar()">
+              <option value="6m">Últimos 6 meses</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+          <div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab();renderSegRadar()"><option value="">Todos</option></select></div>
+          <div class="fp-group"><label>Estatus</label>
+            <select class="fp-sel" id="segEstatusFil" onchange="renderSegTab();renderSegRadar()">
+              <option value="">Todos</option>
+              <option>GRANDES NEGOCIOS</option>
+              <option>PENDIENTE POR DOCUMENTOS</option>
+              <option>DOCUMENTOS SOLICITADOS</option>
+              <option>DOCUMENTOS EN REVISION</option>
+              <option>DOCUMENTOS RECIBIDOS</option>
+              <option>CONTRATO EN CURSO</option>
+              <option>PENDIENTE POR FIRMAR</option>
+              <option>CONTRATO FIRMADO</option>
+            </select>
+          </div>
+          <div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab();renderSegRadar()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
+          <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab();renderSegRadar()"></div>
+          <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab();renderSegRadar()"></div>
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
             <button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Gestionar seleccionados</button>
             <button class="btn btn-g btn-sm" onclick="segSelectAll()">☑ Todos</button>
             <button class="btn btn-g btn-sm" onclick="exportSegCSV()" title="Exportar CSV">⬇ CSV</button>
-            <button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar">✕</button>
+            <button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar filtros">✕</button>
           </div>
         </div>
       </div>
@@ -975,51 +925,51 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="rpt-card">
             <div class="rpt-title">Filtros del reporte</div>
             <div class="rpt-grid">
-              <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
+              <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="ccLider"><option value="">Todos</option></select></div>
               <div class="fp-group" style="position:relative">
                 <label>Estatus</label>
-                <button id="rEstatusBtn" onclick="toggleEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
-                  <span id="rEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
+                <button id="ccEstatusBtn" onclick="toggleCCEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span id="ccEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
                 </button>
-                <div id="rEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
+                <div id="ccEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
                   <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
-                    <button onclick="selectAllEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
-                    <button onclick="clearEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
+                    <button onclick="selectAllCCEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
+                    <button onclick="clearCCEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
                   </div>
-                  <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateEstatusLabel()"> Grandes Negocios</label>
-                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateEstatusLabel()"> Pend. Documentos</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateEstatusLabel()"> Docs. Solicitados</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateEstatusLabel()"> Docs. en Revisión</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateEstatusLabel()"> Docs. Recibidos</label>
-                  <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateEstatusLabel()"> Contrato en Curso</label>
-                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateEstatusLabel()"> Pend. por Firmar</label>
-                  <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateEstatusLabel()"> Contrato Firmado</label>
+                  <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateCCEstatusLabel()"> Grandes Negocios</label>
+                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateCCEstatusLabel()"> Pend. Documentos</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateCCEstatusLabel()"> Docs. Solicitados</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateCCEstatusLabel()"> Docs. en Revisión</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateCCEstatusLabel()"> Docs. Recibidos</label>
+                  <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateCCEstatusLabel()"> Contrato en Curso</label>
+                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateCCEstatusLabel()"> Pend. por Firmar</label>
+                  <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateCCEstatusLabel()"> Contrato Firmado</label>
                 </div>
               </div>
-              <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="rDesde"></div>
-              <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
+              <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="ccDesde"></div>
+              <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="ccHasta"></div>
             </div>
-            <button class="btn btn-p" onclick="genReport()" style="margin-top:10px">Generar reporte</button>
+            <button class="btn btn-p" onclick="genCCReport()" style="margin-top:10px">Generar reporte</button>
           </div>
-          <div id="rptResult" style="display:none;margin-top:12px">
+          <div id="ccRptResult" style="display:none;margin-top:12px">
             <div class="tbl-wrap" style="margin-bottom:12px">
               <table><thead><tr><th>Razón Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Instalación</th><th>Observación</th></tr></thead>
-              <tbody id="rptTbl"></tbody></table>
+              <tbody id="ccRptTbl"></tbody></table>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-g" onclick="exportCSV()">⬇ CSV</button>
-              <button class="btn btn-p" onclick="sendReport()">✉ Enviar por correo</button>
-              <button class="btn btn-g" onclick="genWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 WA Resumen</button>
-              <button class="btn btn-g" onclick="exportPDF()" style="border-color:var(--purple);color:var(--purple)">📄 PDF</button>
+              <button class="btn btn-g" onclick="exportCCCSV()">⬇ CSV</button>
+              <button class="btn btn-p" onclick="sendCCReport()">✉ Enviar por correo</button>
+              <button class="btn btn-g" onclick="genCCWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 WA Resumen</button>
+              <button class="btn btn-g" onclick="exportCCPDF()" style="border-color:var(--purple);color:var(--purple)">📄 PDF</button>
             </div>
           </div>
-          <div id="waPanel" style="display:none;margin-top:16px">
+          <div id="ccWaPanel" style="display:none;margin-top:16px">
             <div class="rpt-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <div class="rpt-title" style="margin-bottom:0">📱 Resumen para WhatsApp</div>
-                <button class="btn btn-g btn-sm" id="waCopyBtn" onclick="copyWAMsg()">📋 Copiar mensaje</button>
+                <button class="btn btn-g btn-sm" id="ccWaCopyBtn" onclick="copyCCWAMsg()">📋 Copiar mensaje</button>
               </div>
-              <textarea id="waMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:320px;outline:none"></textarea>
+              <textarea id="ccWaMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:320px;outline:none"></textarea>
             </div>
           </div>
         </div>
@@ -1186,12 +1136,11 @@ async function doLogin(){
   document.getElementById('menuRol').textContent=S.rol;
   document.getElementById('sbUserInfo').textContent=S.user+' · '+S.rol;
   if(S.rol==='LIDER'){
-    document.getElementById('nav-reportes').style.display='none';
     var dc=document.getElementById('driveCard');if(dc)dc.style.display='none';
     document.getElementById('df-lider-grp').style.display='none';
   }
   if(S.rol==='ABOGADO'){
-    document.getElementById('nav-reportes').style.display='none';
+    // Abogado tiene acceso completo al Centro de Control
   }
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();
   document.getElementById('loader').classList.add('off');
@@ -2903,6 +2852,69 @@ function exportPDF(){
 
 var segTab='pend';var segLog=[];var histLog=[];var segSelected={};
 
+
+// ══ Centro de Control — wrappers para el panel de Envío Masivo Semanal ══════
+// (usa IDs cc* para evitar conflicto con el módulo de reportes eliminado)
+function getSelectedCCEstatus(){
+  var boxes=document.querySelectorAll('#ccEstatusDD input[type=checkbox]:checked');
+  return Array.from(boxes).map(function(b){return b.value;});
+}
+function toggleCCEstatusDD(){
+  var dd=document.getElementById('ccEstatusDD');
+  if(dd)dd.style.display=dd.style.display==='none'?'block':'none';
+}
+function updateCCEstatusLabel(){
+  var sel=getSelectedCCEstatus();
+  var lbl=document.getElementById('ccEstatusLabel');
+  if(lbl)lbl.textContent=sel.length?sel.length+' seleccionados':'Todos';
+}
+function selectAllCCEstatus(){
+  document.querySelectorAll('#ccEstatusDD input[type=checkbox]').forEach(function(b){b.checked=true;});
+  updateCCEstatusLabel();
+}
+function clearCCEstatus(){
+  document.querySelectorAll('#ccEstatusDD input[type=checkbox]').forEach(function(b){b.checked=false;});
+  updateCCEstatusLabel();
+}
+function genCCReport(){
+  var lid=(document.getElementById('ccLider')||{}).value||'';
+  var ests=getSelectedCCEstatus();
+  var desde=(document.getElementById('ccDesde')||{}).value||'';
+  var hasta=(document.getElementById('ccHasta')||{}).value||'';
+  var base=getBase();
+  S.rptData=base.filter(function(r){
+    if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
+    if(lid&&r['EJECUTIVO']!==lid)return false;
+    if(ests.length&&!ests.includes(r['ESTATUS_LEGAL']))return false;
+    if(desde||hasta){var fd=parseDate(r['Fecha de Instalacion Cliente']);if(!fd)return false;if(desde&&fd<new Date(desde))return false;if(hasta&&fd>new Date(hasta))return false;}
+    return true;
+  });
+  var el=document.getElementById('ccRptResult');
+  var tbl=document.getElementById('ccRptTbl');
+  if(!el||!tbl)return;
+  tbl.innerHTML=S.rptData.map(function(r){
+    var dy=calcDays(r['Fecha de Instalacion Cliente']);
+    return '<tr><td>'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px">'+esc(r['RIF'])+'</td><td style="font-size:12px">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?dy+'d':'—')+'</td><td style="font-size:11px">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td><td style="font-size:11px;max-width:160px">'+esc((r['Observacion']||'').slice(0,60))+'</td></tr>';
+  }).join('');
+  el.style.display='block';
+  toast(S.rptData.length+' registros generados','ok');
+}
+function exportCCCSV(){exportCSV();}
+function sendCCReport(){sendReport();}
+function exportCCPDF(){exportPDF();}
+function genCCWhatsApp(){
+  genWhatsApp();
+  // Move waPanel content to ccWaPanel
+  var src=document.getElementById('waPanel');
+  var dst=document.getElementById('ccWaPanel');
+  if(src&&dst){dst.innerHTML=src.innerHTML;dst.style.display='block';}
+}
+function copyCCWAMsg(){
+  var box=document.getElementById('ccWaMsgBox');
+  if(!box)return;
+  navigator.clipboard.writeText(box.value).then(function(){toast('Copiado 📋','ok');}).catch(function(){toast('Error al copiar','err');});
+}
+
 function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab){el.classList.add('on');el.classList.add('seg-chip');}else{el.classList.remove('on');}}});renderSegTab();}
 
 function refreshSeg(){
@@ -2919,43 +2931,38 @@ function refreshSeg(){
 }
 
 function getSegData(){
+  // Devuelve TODA la cartera con filtros visibles — sin limitaciones por tab
   var base=getBase();
   var lid=(document.getElementById('segLider')||{}).value||'';
   var tipo=(document.getElementById('segTipoFil')||{}).value||'';
+  var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
   var desde=(document.getElementById('segDesde')||{}).value||'';
   var hasta=(document.getElementById('segHasta')||{}).value||'';
-  var data=[];
-  if(segTab==='pend'){
-    var now=new Date(),cm=now.getMonth(),cy=now.getFullYear();
-    data=base.filter(function(r){
-      if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
-      var nle=(r['NOTIF_LIDER_ENVIADA']||'').trim();
-      if(nle==='SI'||nle==='HISTORICO')return false;
-      var fd=parseDate(r['Fecha de Instalacion Cliente']);
-      return fd&&fd.getMonth()===cm&&fd.getFullYear()===cy;
-    });
-  } else if(segTab==='sinmov'){
-    data=base.filter(function(r){
-      if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
-      if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;
-      var dy=calcDays(r['Fecha de Instalacion Cliente']);
-      return dy!==null&&dy>30;
-    });
-  } else if(segTab==='firmar'){
-    data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';});
-  } else {return null;}
-  // Filtros adicionales
-  if(lid) data=data.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
-  if(tipo) data=data.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
-  if(desde||hasta){
+
+  var data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
+
+  // Filtro período (6 meses por defecto, o Todos)
+  if(periodo==='6m'&&!desde&&!hasta){
+    var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-6);
     data=data.filter(function(r){
       var fd=parseDate(r['Fecha de Instalacion Cliente']);
-      if(!fd)return false;
+      return !fd||fd>=cutoff; // sin fecha también se incluye
+    });
+  } else if(desde||hasta){
+    data=data.filter(function(r){
+      var fd=parseDate(r['Fecha de Instalacion Cliente']);
+      if(!fd)return true;
       if(desde&&fd<new Date(desde))return false;
       if(hasta&&fd>new Date(hasta))return false;
       return true;
     });
   }
+
+  var est=(document.getElementById('segEstatusFil')||{}).value||'';
+  if(lid)  data=data.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
+  if(tipo) data=data.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
+  if(est)  data=data.filter(function(r){return r['ESTATUS_LEGAL']===est;});
+
   data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});
   return data;
 }
@@ -3147,8 +3154,10 @@ function copySegMsg(){
 }
 
 function clearSegFilters(){
-  ['segLider','segTipoFil','segDesde','segHasta'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  renderSegTab();
+  ['segLider','segTipoFil','segDesde','segHasta','segEstatusFil'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var per=document.getElementById('segPeriodo');if(per)per.value='6m';
+  SEG_RADAR_ACTIVE='';
+  renderSegRadar();renderSegTab();
 }
 
 function exportSegCSV(){
@@ -3335,28 +3344,23 @@ var SEG_RADAR_ACTIVE = '';
 var segLastContact = {}; // rif -> {fecha, tipo} - se carga al entrar al módulo
 
 function getSegRadarData(){
-  var base = getBase();
+  // Usa la misma base filtrada que la tabla — respeta período, líder, tipo, estatus
+  var base = getSegData()||[];
   return {
-    sinNotif: base.filter(function(r){ return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE'; }),
-    sinMov:   base.filter(function(r){
-      if(['CONTRATO FIRMADO'].includes(r['ESTATUS_LEGAL']))return false;
+    sinNotif:   base.filter(function(r){ return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE'; }),
+    sinMov:     base.filter(function(r){
+      if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;
       var dy=calcDays(r['Fecha de Instalacion Cliente']);
       return dy!==null&&dy>30;
     }),
-    docsPend: base.filter(function(r){ return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']); }),
-    porFirmar: base.filter(function(r){ return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR'; }),
+    docsPend:   base.filter(function(r){ return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']); }),
+    porFirmar:  base.filter(function(r){ return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR'; }),
     sinCarpeta: base.filter(function(r){ var u=cleanVal(r['Carpeta_Drive_URL']||''); return !u.startsWith('http'); })
   };
 }
 
 function renderSegRadar(){
   var d = getSegRadarData();
-  var lider = (document.getElementById('segLider')||{}).value||'';
-  if(lider){
-    Object.keys(d).forEach(function(k){
-      d[k]=d[k].filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lider);});
-    });
-  }
   var cards = [
     {key:'sinNotif',  icon:'🆕', label:'Sin notificar',    color:'var(--blue)',   count:d.sinNotif.length},
     {key:'sinMov',    icon:'⏰', label:'Sin movimiento',   color:'var(--amber)',  count:d.sinMov.length},
@@ -3502,6 +3506,12 @@ function initSeg(){
   });
   // Cargar último contacto desde SEGUIMIENTO_LOG
   cargarUltimoContacto();
+  // Poblar dropdown ccLider del panel de envío masivo
+  var ccLid=document.getElementById('ccLider');
+  if(ccLid){
+    ccLid.innerHTML='<option value="">Todos</option>';
+    lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;ccLid.appendChild(o);});
+  }
   try{refreshSeg();}catch(e){console.warn('initSeg:',e);}
 }
 
