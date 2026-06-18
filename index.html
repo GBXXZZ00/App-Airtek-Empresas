@@ -964,7 +964,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
 
         <!-- DRAWER DE GESTIÓN — Centro de Control -->
-        <div class="drawer-bg" id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;justify-content:flex-end;align-items:stretch">
+        <div id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;justify-content:flex-end;align-items:stretch">
           <div id="segGestDrawer" style="width:min(420px,100vw);background:var(--bg);border-left:1px solid var(--border);flex-direction:column;overflow:hidden;animation:slideInRight .22s var(--ease-out);height:100%">
             <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
               <div style="font-size:15px;font-weight:700;color:var(--text);flex:1" id="segGestTitle">Gestionar contacto</div>
