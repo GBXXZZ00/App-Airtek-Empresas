@@ -964,7 +964,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
 
         <!-- DRAWER DE GESTIÓN — Centro de Control -->
-        <div id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;justify-content:flex-end;align-items:stretch">
+        <div id="segGestBg" onclick="closeSegGest(event)" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;justify-content:flex-end;align-items:stretch">
           <div id="segGestDrawer" style="width:min(420px,100vw);background:var(--bg);border-left:1px solid var(--border);flex-direction:column;overflow:hidden;animation:slideInRight .22s var(--ease-out);height:100%">
             <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
               <div style="font-size:15px;font-weight:700;color:var(--text);flex:1" id="segGestTitle">Gestionar contacto</div>
@@ -3377,6 +3377,78 @@ function formatWANumber(n){if(!n)return'';var s=String(n).replace(/[^0-9]/g,'');
 function getLiderWANum(ejec){var f=(S.cfg||[]).find(function(x){return x.EJECUTIVO===ejec;});return f?formatWANumber(f.TELEFONO||f.Numero||''):'';}
 function openWA(numero,msg,r,tipo){var dest=WA_PRUEBA?WA_NUM_PRUEBA:formatWANumber(numero);if(dest){window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(msg),'_blank');}else{navigator.clipboard.writeText(msg).then(function(){toast('Sin numero - mensaje copiado','ok');}).catch(function(){toast('Sin numero para WA','err');});}if(r)regAccion(r,tipo||'WhatsApp',dest||'sin numero');}
 function openMailto(para,asunto,cuerpo,r,tipo){var dest=WA_PRUEBA?((S.cfg||[]).find(function(x){return x.ROL==='ADMIN';})||{}).CORREO||'':para;window.location.href='mailto:'+dest+'?cc='+encodeURIComponent(CC_CORP)+'&subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);if(r)regAccion(r,tipo||'Correo',dest);}
+
+// ── Pestaña Seguimiento del drawer de expediente ─────────────────────────
+// Carga historial de contactos del cliente desde SEGUIMIENTO_LOG + NOTIFICACIONES_LOG
+function renderTabSegFromGAS(r){
+  var el=document.getElementById('tab-seguimiento_cli');
+  if(!el)return;
+  var rif=(r['RIF']||'').toString().trim();
+  el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:20px 0">Cargando seguimiento...</div>';
+  if(!APPS_SCRIPT_URL){renderTabSegLocal(r);return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
+  .then(function(res){return res.json();})
+  .then(function(data){
+    var logs=data.ok&&data.registros?data.registros:[];
+    renderTabSegEntries(el,r,logs);
+  })
+  .catch(function(){renderTabSegLocal(r);});
+}
+
+function renderTabSegLocal(r){
+  var el=document.getElementById('tab-seguimiento_cli');
+  if(!el)return;
+  renderTabSegEntries(el,r,[]);
+}
+
+function renderTabSegEntries(el,r,logs){
+  var rif=(r['RIF']||'').toString().trim();
+  var h='';
+  // Formulario para registrar nuevo contacto
+  h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px">';
+  h+='<div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Registrar contacto</div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:8px">';
+  h+='<select id="seg_tipo" class="fp-sel" style="flex:1"><option value="Llamada realizada">📞 Llamada</option><option value="WhatsApp enviado">💬 WhatsApp</option><option value="Correo enviado">✉ Correo</option><option value="Visita realizada">🤝 Visita</option><option value="Otro">📝 Otro</option></select>';
+  h+='</div>';
+  h+='<textarea id="seg_nota" placeholder="Detalle del contacto..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;resize:vertical;min-height:52px;outline:none;margin-bottom:8px"></textarea>';
+  h+='<button class="btn btn-p btn-sm" onclick="regAccionDrawer()">Registrar</button>';
+  h+='</div>';
+  // Timeline de contactos
+  h+='<div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Historial de contactos</div>';
+  if(!logs.length){
+    h+='<div style="color:var(--text3);font-size:12px;padding:16px 0;text-align:center">Sin contactos registrados</div>';
+  } else {
+    h+=logs.map(function(entry){
+      var ic=tlIcon(entry.tipo||entry.fuente||'');
+      var fuente=entry.fuente==='notificacion'?'<span style="font-size:9px;color:var(--text3);border:1px solid var(--border);padding:1px 4px;border-radius:3px;margin-left:4px">notif</span>':'';
+      return '<div class="tl-entry">'
+        +'<div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'
+        +'<div class="tl-body">'
+          +'<div class="tl-header">'
+            +'<span class="tl-tipo">'+esc(entry.tipo||'Gestión')+fuente+'</span>'
+            +'<span class="tl-ts">'+esc(entry.fecha||'')+'</span>'
+          +'</div>'
+          +(entry.nota?'<div class="tl-nota">'+esc(entry.nota)+'</div>':'')
+          +(entry.usuario||entry.ejecutivo?'<div class="tl-by">por '+esc(entry.usuario||entry.ejecutivo||'')+'</div>':'')
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+  el.innerHTML=h;
+}
+
+function regAccionDrawer(){
+  if(!S.cur||!APPS_SCRIPT_URL)return;
+  var tipo=(document.getElementById('seg_tipo')||{}).value||'Gestión';
+  var nota=(document.getElementById('seg_nota')||{}).value||'';
+  regAccion(S.cur,tipo,nota);
+  // Clear fields
+  var nt=document.getElementById('seg_nota');if(nt)nt.value='';
+  toast('Contacto registrado ✓','ok');
+  // Reload the tab
+  setTimeout(function(){renderTabSegFromGAS(S.cur);},800);
+}
+
 function regAccion(r,canal,dest){
   var e={cliente:r['RAZON SOCIAL'],rif:r['RIF'],ejecutivo:r['EJECUTIVO'],
          tipo:canal,nota:'Enviado a '+dest,fecha:new Date().toLocaleString('es-VE'),
