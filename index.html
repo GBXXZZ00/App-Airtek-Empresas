@@ -242,6 +242,8 @@ tbody tr:hover td{background:var(--surface2)}
 
 /* ══ DRAWER ══════════════════════════════════════ */
 .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:flex-start;justify-content:flex-end}
+#segGestBg{display:none}
+#segGestBg.open{display:flex;justify-content:flex-end;align-items:stretch}
 .drawer-bg.open{display:flex}
 .drawer{background:var(--surface);width:100%;max-width:660px;height:100%;display:flex;flex-direction:column;overflow:hidden;animation:slideIn .28s var(--ease-drawer)}
 @keyframes slideIn{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
@@ -962,8 +964,8 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
 
         <!-- DRAWER DE GESTIÓN — Centro de Control -->
-        <div class="drawer-bg" id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:flex;justify-content:flex-end;align-items:stretch">
-          <div id="segGestDrawer" style="width:min(420px,100vw);background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .22s var(--ease-out)">
+        <div class="drawer-bg" id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;justify-content:flex-end;align-items:stretch">
+          <div id="segGestDrawer" style="width:min(420px,100vw);background:var(--bg);border-left:1px solid var(--border);flex-direction:column;overflow:hidden;animation:slideInRight .22s var(--ease-out);height:100%">
             <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
               <div style="font-size:15px;font-weight:700;color:var(--text);flex:1" id="segGestTitle">Gestionar contacto</div>
               <button onclick="closeSegGest()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1">✕</button>
@@ -3034,7 +3036,7 @@ function openSegGest(indices){
   var isMasivo=clients.length>1;
   title.textContent=isMasivo?'Gestionar '+clients.length+' clientes':'Gestionar: '+clients[0]['RAZON SOCIAL'];
   body.innerHTML=buildSegGestBody(clients);
-  bg.style.display='flex';
+  bg.classList.add('open');
   // Generate initial message
   segGestGenerateMsg();
 }
@@ -3221,8 +3223,9 @@ function copySegGestMsg(){
 function closeSegGest(e){
   var bg=document.getElementById('segGestBg');
   if(!bg)return;
-  if(e&&e.target!==bg)return;
-  bg.style.display='none';
+  // If called from backdrop click, only close if clicking the backdrop itself
+  if(e&&e.type==='click'&&e.target!==bg)return;
+  bg.classList.remove('open');
 }
 
 // ── Refresh y filtros ─────────────────────────────────────────────────────
