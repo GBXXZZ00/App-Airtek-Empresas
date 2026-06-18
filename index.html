@@ -554,12 +554,12 @@ tbody tr:hover td{background:var(--surface2)}
         <span class="nav-icon">📋</span> Clientes
         <span class="nav-badge" id="pendBadge" style="display:none">0</span>
       </button>
-      <button class="nav-item" id="nav-dashboard" onclick="showView('dashboard')">
-        <span class="nav-icon">📊</span> Dashboard
-      </button>
       <button class="nav-item" id="nav-seguimiento" onclick="showView('seguimiento')">
         <span class="nav-icon">🎯</span> Centro de Control
         <span class="nav-badge" id="segBadge" style="display:none;background:var(--red)">0</span>
+      </button>
+      <button class="nav-item" id="nav-dashboard" onclick="showView('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
       </button>
     </div>
     <div class="sb-divider"></div>
@@ -798,33 +798,35 @@ tbody tr:hover td{background:var(--surface2)}
 
     <div class="view" id="view-seguimiento">
 
-      <!-- ══ CABECERA ══════════════════════════════════════════════════════ -->
+      <!-- CABECERA -->
       <div class="view-hd">
         <div>
           <div class="view-title">🎯 Centro de Control</div>
           <div class="view-sub" id="segSub">Gestión y seguimiento de cartera</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button>
-        </div>
+        <button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button>
       </div>
 
-      <!-- ══ BLOQUE 1: RADAR DE GESTIÓN ════════════════════════════════════ -->
+      <!-- RADAR DE GESTIÓN -->
       <div id="segRadar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
 
-      <!-- ══ BLOQUE 2: FILTROS ══════════════════════════════════════════════ -->
+      <!-- FILTROS -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div class="fp-group">
             <label>Período</label>
-            <select class="fp-sel" id="segPeriodo" onchange="renderSegTab();renderSegRadar()">
+            <select class="fp-sel" id="segPeriodo" onchange="applySegFilters()">
               <option value="6m">Últimos 6 meses</option>
               <option value="all">Todos</option>
             </select>
           </div>
-          <div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab();renderSegRadar()"><option value="">Todos</option></select></div>
-          <div class="fp-group"><label>Estatus</label>
-            <select class="fp-sel" id="segEstatusFil" onchange="renderSegTab();renderSegRadar()">
+          <div class="fp-group">
+            <label>Líder</label>
+            <select class="fp-sel" id="segLider" onchange="applySegFilters()"><option value="">Todos</option></select>
+          </div>
+          <div class="fp-group">
+            <label>Estatus</label>
+            <select class="fp-sel" id="segEstatusFil" onchange="applySegFilters()">
               <option value="">Todos</option>
               <option>GRANDES NEGOCIOS</option>
               <option>PENDIENTE POR DOCUMENTOS</option>
@@ -836,77 +838,53 @@ tbody tr:hover td{background:var(--surface2)}
               <option>CONTRATO FIRMADO</option>
             </select>
           </div>
-          <div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab();renderSegRadar()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
-          <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab();renderSegRadar()"></div>
-          <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab();renderSegRadar()"></div>
+          <div class="fp-group">
+            <label>Tipo</label>
+            <select class="fp-sel" id="segTipoFil" onchange="applySegFilters()">
+              <option value="">Todos</option>
+              <option>PYMES</option><option>DEDICADO CORPORATIVO</option>
+              <option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option>
+              <option>DEDICADO ISP + PYME</option>
+            </select>
+          </div>
+          <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="segDesde" onchange="applySegFilters()"></div>
+          <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="applySegFilters()"></div>
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
             <button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Gestionar seleccionados</button>
             <button class="btn btn-g btn-sm" onclick="segSelectAll()">☑ Todos</button>
-            <button class="btn btn-g btn-sm" onclick="exportSegCSV()" title="Exportar CSV">⬇ CSV</button>
-            <button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar filtros">✕</button>
+            <button class="btn btn-g btn-sm" onclick="exportSegCSV()">⬇ CSV</button>
+            <button class="btn btn-g btn-sm" onclick="clearSegFilters()">✕ Limpiar</button>
           </div>
         </div>
       </div>
 
-      <!-- ══ BLOQUE 3: TABLA PRINCIPAL ══════════════════════════════════════ -->
+      <!-- TABLA PRINCIPAL -->
       <div class="tbl-wrap">
         <table>
           <thead>
             <tr>
-              <th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th>
+              <th style="width:32px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th>
               <th>Cliente</th>
               <th>Ejecutivo</th>
               <th>Estatus</th>
               <th>Días</th>
-              <th>Contacto</th>
-              <th>Obs.</th>
+              <th>Último contacto</th>
               <th>Acción</th>
             </tr>
           </thead>
           <tbody id="segTbl"></tbody>
         </table>
       </div>
+      <div id="segPagBtns" style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 0;align-items:center"></div>
 
-      <!-- ══ PANEL DE MENSAJE (existente, reorganizado) ══════════════════════ -->
-      <div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div class="rpt-title" style="margin-bottom:0">✉ Preparar notificación</div>
-          <button onclick="document.getElementById('segMsgPanel').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1">&times;</button>
+      <!-- RANKING POR LÍDER -->
+      <div style="margin-top:20px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--surface)" onclick="toggleRanking()">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">📊 Actividad por Líder</span>
+          <span id="rankingChevron" style="color:var(--text3);font-size:11px;margin-left:auto">▶ Ver</span>
         </div>
-        <div style="margin-bottom:14px">
-          <div class="sec-lbl" style="margin-bottom:8px">Destinatario</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="segDestinatarioOpts"></div>
-          <input id="segCorreoCustom" placeholder="O escribe un correo personalizado..." style="margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none" oninput="segGenerateMsg()">
-        </div>
-        <div style="margin-bottom:14px">
-          <div class="sec-lbl" style="margin-bottom:8px">Tipo de mensaje</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="segTipoOpts"></div>
-        </div>
-        <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-          <div style="flex:1;min-width:200px">
-            <div class="sec-lbl" style="margin-bottom:4px">CC</div>
-            <input id="segCcInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
-          </div>
-          <div style="flex:2;min-width:200px">
-            <div class="sec-lbl" style="margin-bottom:4px">Asunto</div>
-            <input id="segMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
-          </div>
-        </div>
-        <textarea id="segMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:220px;outline:none"></textarea>
-        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-          <button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button>
-          <button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar correo</button>
-        </div>
-      </div></div>
-
-      <!-- ══ BLOQUE 4: RANKING POR LÍDER (colapsable) ═══════════════════════ -->
-      <div style="margin-top:20px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleRanking()">
-          <div class="rpt-title" style="margin-bottom:0">📊 Actividad por Líder</div>
-          <span id="rankingChevron" style="color:var(--text3);font-size:12px">▼</span>
-        </div>
-        <div id="rankingPanel">
-          <div class="tbl-wrap">
+        <div id="rankingPanel" style="display:none">
+          <div class="tbl-wrap" style="margin:0">
             <table>
               <thead><tr><th>Ejecutivo</th><th>Cartera</th><th>Sin notificar</th><th>Estancados +30d</th><th>Docs pendientes</th><th>Por firmar</th></tr></thead>
               <tbody id="rankingTbl"></tbody>
@@ -915,87 +893,86 @@ tbody tr:hover td{background:var(--surface2)}
         </div>
       </div>
 
-      <!-- ══ BLOQUE 5: ENVÍO SEMANAL (Reportes fusionado, colapsable) ════════ -->
-      <div style="margin-top:20px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleEnvioSemanal()">
-          <div class="rpt-title" style="margin-bottom:0">📤 Envío masivo semanal</div>
-          <span id="envioChevron" style="color:var(--text3);font-size:12px">▶</span>
+      <!-- ENVÍO MASIVO SEMANAL (Reportes) -->
+      <div style="margin-top:16px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--surface)" onclick="toggleEnvioSemanal()">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">📤 Envío masivo semanal</span>
+          <span id="envioChevron" style="color:var(--text3);font-size:11px;margin-left:auto">▶ Ver</span>
         </div>
-        <div id="envioSemanalPanel" style="display:none">
-          <div class="rpt-card">
-            <div class="rpt-title">Filtros del reporte</div>
-            <div class="rpt-grid">
-              <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="ccLider"><option value="">Todos</option></select></div>
-              <div class="fp-group" style="position:relative">
-                <label>Estatus</label>
-                <button id="ccEstatusBtn" onclick="toggleCCEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
-                  <span id="ccEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
-                </button>
-                <div id="ccEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
-                  <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
-                    <button onclick="selectAllCCEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
-                    <button onclick="clearCCEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
-                  </div>
-                  <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateCCEstatusLabel()"> Grandes Negocios</label>
-                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateCCEstatusLabel()"> Pend. Documentos</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateCCEstatusLabel()"> Docs. Solicitados</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateCCEstatusLabel()"> Docs. en Revisión</label>
-                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateCCEstatusLabel()"> Docs. Recibidos</label>
-                  <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateCCEstatusLabel()"> Contrato en Curso</label>
-                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateCCEstatusLabel()"> Pend. por Firmar</label>
-                  <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateCCEstatusLabel()"> Contrato Firmado</label>
+        <div id="envioSemanalPanel" style="display:none;padding:16px">
+          <div class="rpt-grid" style="margin-bottom:12px">
+            <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
+            <div class="fp-group" style="position:relative">
+              <label>Estatus</label>
+              <button id="rEstatusBtn" onclick="toggleEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <span id="rEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
+              </button>
+              <div id="rEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
+                <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
+                  <button onclick="selectAllEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
+                  <button onclick="clearEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
                 </div>
+                <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateEstatusLabel()"> Grandes Negocios</label>
+                <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateEstatusLabel()"> Pend. Documentos</label>
+                <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateEstatusLabel()"> Docs. Solicitados</label>
+                <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateEstatusLabel()"> Docs. en Revisión</label>
+                <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateEstatusLabel()"> Docs. Recibidos</label>
+                <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateEstatusLabel()"> Contrato en Curso</label>
+                <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateEstatusLabel()"> Pend. por Firmar</label>
+                <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateEstatusLabel()"> Contrato Firmado</label>
               </div>
-              <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="ccDesde"></div>
-              <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="ccHasta"></div>
             </div>
-            <button class="btn btn-p" onclick="genCCReport()" style="margin-top:10px">Generar reporte</button>
+            <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="rDesde"></div>
+            <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
           </div>
-          <div id="ccRptResult" style="display:none;margin-top:12px">
-            <div class="tbl-wrap" style="margin-bottom:12px">
+          <button class="btn btn-p" onclick="genReport()">Generar reporte</button>
+          <div id="rptResult" style="display:none;margin-top:12px">
+            <div class="tbl-wrap" style="margin-bottom:10px">
               <table><thead><tr><th>Razón Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Instalación</th><th>Observación</th></tr></thead>
-              <tbody id="ccRptTbl"></tbody></table>
+              <tbody id="rptTbl"></tbody></table>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-g" onclick="exportCCCSV()">⬇ CSV</button>
-              <button class="btn btn-p" onclick="sendCCReport()">✉ Enviar por correo</button>
-              <button class="btn btn-g" onclick="genCCWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 WA Resumen</button>
-              <button class="btn btn-g" onclick="exportCCPDF()" style="border-color:var(--purple);color:var(--purple)">📄 PDF</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-g" onclick="exportCSV()">⬇ CSV</button>
+              <button class="btn btn-p" onclick="sendReport()">✉ Enviar correo</button>
+              <button class="btn btn-g" onclick="genWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 WA Resumen</button>
+              <button class="btn btn-g" onclick="exportPDF()" style="border-color:var(--purple);color:var(--purple)">📄 PDF</button>
             </div>
           </div>
-          <div id="ccWaPanel" style="display:none;margin-top:16px">
+          <div id="waPanel" style="display:none;margin-top:12px">
             <div class="rpt-card">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <div class="rpt-title" style="margin-bottom:0">📱 Resumen para WhatsApp</div>
-                <button class="btn btn-g btn-sm" id="ccWaCopyBtn" onclick="copyCCWAMsg()">📋 Copiar mensaje</button>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div class="rpt-title" style="margin-bottom:0">📱 Mensaje WhatsApp</div>
+                <button class="btn btn-g btn-sm" id="waCopyBtn" onclick="copyWAMsg()">📋 Copiar</button>
               </div>
-              <textarea id="ccWaMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:320px;outline:none"></textarea>
+              <textarea id="waMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:280px;outline:none"></textarea>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ══ LOG DE ENVÍOS (historial de la sesión) ═════════════════════════ -->
-      <div style="margin-top:20px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleSegLog()">
-          <div class="rpt-title" style="margin-bottom:0">📋 Historial de envíos (sesión)</div>
-          <span id="segLogChevron" style="color:var(--text3);font-size:12px">▶</span>
-        </div>
-        <div id="segLogPanel" style="display:none">
-          <div class="tbl-wrap">
-            <table><thead><tr><th></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Tipo</th><th>Fecha</th><th>Destinatario</th><th></th></tr></thead>
-            <tbody id="segLogTbl"></tbody>
-          </table>
+          <!-- Drive masivo -->
+          <div id="driveCard" style="margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:6px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">📁 Expedientes en Drive</div>
+            <p style="font-size:12px;color:var(--text2);margin:0 0 10px">Crear carpetas para todos los clientes sin expediente (lotes de 150).</p>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-p" id="btnDriveMasivo" onclick="crearCarpetasMasivo()">📁 Crear carpetas pendientes</button>
+              <span id="driveMasivoStatus" style="font-size:12px;color:var(--text2)"></span>
+            </div>
           </div>
         </div>
       </div>
 
     </div>
 
+        <!-- DRAWER DE GESTIÓN — Centro de Control -->
+        <div class="drawer-bg" id="segGestBg" onclick="closeSegGest(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:flex;justify-content:flex-end;align-items:stretch">
+          <div id="segGestDrawer" style="width:min(420px,100vw);background:var(--bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;animation:slideInRight .22s var(--ease-out)">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+              <div style="font-size:15px;font-weight:700;color:var(--text);flex:1" id="segGestTitle">Gestionar contacto</div>
+              <button onclick="closeSegGest()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1">✕</button>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:16px" id="segGestBody"></div>
+          </div>
+        </div>
 
-
-
-        <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
+                <div class="drawer-bg" id="drawerBg" onclick="closeDrawerIf(event)">
   <div class="drawer">
     <div class="drawer-hd">
       <div class="drawer-title" id="drawerTitle">Expediente</div>
@@ -2850,692 +2827,512 @@ function exportPDF(){
   w.document.write(html);w.document.close();setTimeout(function(){w.print();},500);
 }
 
-var segTab='pend';var segLog=[];var histLog=[];var segSelected={};
+var segLog=[];var histLog=[];var segSelected={};
+var segLastContact={};
+var SEG_RADAR_ACTIVE='';
+var SEG_PAGE=1;
+const SEG_PS=25;
 
-
-// ══ Centro de Control — wrappers para el panel de Envío Masivo Semanal ══════
-// (usa IDs cc* para evitar conflicto con el módulo de reportes eliminado)
-function getSelectedCCEstatus(){
-  var boxes=document.querySelectorAll('#ccEstatusDD input[type=checkbox]:checked');
-  return Array.from(boxes).map(function(b){return b.value;});
-}
-function toggleCCEstatusDD(){
-  var dd=document.getElementById('ccEstatusDD');
-  if(dd)dd.style.display=dd.style.display==='none'?'block':'none';
-}
-function updateCCEstatusLabel(){
-  var sel=getSelectedCCEstatus();
-  var lbl=document.getElementById('ccEstatusLabel');
-  if(lbl)lbl.textContent=sel.length?sel.length+' seleccionados':'Todos';
-}
-function selectAllCCEstatus(){
-  document.querySelectorAll('#ccEstatusDD input[type=checkbox]').forEach(function(b){b.checked=true;});
-  updateCCEstatusLabel();
-}
-function clearCCEstatus(){
-  document.querySelectorAll('#ccEstatusDD input[type=checkbox]').forEach(function(b){b.checked=false;});
-  updateCCEstatusLabel();
-}
-function genCCReport(){
-  var lid=(document.getElementById('ccLider')||{}).value||'';
-  var ests=getSelectedCCEstatus();
-  var desde=(document.getElementById('ccDesde')||{}).value||'';
-  var hasta=(document.getElementById('ccHasta')||{}).value||'';
-  var base=getBase();
-  S.rptData=base.filter(function(r){
-    if(r['TIPO_CLIENTE']==='PERSONA NATURAL')return false;
-    if(lid&&r['EJECUTIVO']!==lid)return false;
-    if(ests.length&&!ests.includes(r['ESTATUS_LEGAL']))return false;
-    if(desde||hasta){var fd=parseDate(r['Fecha de Instalacion Cliente']);if(!fd)return false;if(desde&&fd<new Date(desde))return false;if(hasta&&fd>new Date(hasta))return false;}
-    return true;
-  });
-  var el=document.getElementById('ccRptResult');
-  var tbl=document.getElementById('ccRptTbl');
-  if(!el||!tbl)return;
-  tbl.innerHTML=S.rptData.map(function(r){
-    var dy=calcDays(r['Fecha de Instalacion Cliente']);
-    return '<tr><td>'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px">'+esc(r['RIF'])+'</td><td style="font-size:12px">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?dy+'d':'—')+'</td><td style="font-size:11px">'+fmtDate(r['Fecha de Instalacion Cliente'])+'</td><td style="font-size:11px;max-width:160px">'+esc((r['Observacion']||'').slice(0,60))+'</td></tr>';
-  }).join('');
-  el.style.display='block';
-  toast(S.rptData.length+' registros generados','ok');
-}
-function exportCCCSV(){exportCSV();}
-function sendCCReport(){sendReport();}
-function exportCCPDF(){exportPDF();}
-function genCCWhatsApp(){
-  genWhatsApp();
-  // Move waPanel content to ccWaPanel
-  var src=document.getElementById('waPanel');
-  var dst=document.getElementById('ccWaPanel');
-  if(src&&dst){dst.innerHTML=src.innerHTML;dst.style.display='block';}
-}
-function copyCCWAMsg(){
-  var box=document.getElementById('ccWaMsgBox');
-  if(!box)return;
-  navigator.clipboard.writeText(box.value).then(function(){toast('Copiado 📋','ok');}).catch(function(){toast('Error al copiar','err');});
-}
-
-function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab){el.classList.add('on');el.classList.add('seg-chip');}else{el.classList.remove('on');}}});renderSegTab();}
-
-function refreshSeg(){
-  try{
-    renderSegRadar();
-    renderSegTab();
-    // Re-render ranking if visible
-    var rp=document.getElementById('rankingPanel');
-    if(rp&&rp.style.display!=='none')renderRanking();
-  }catch(e){console.warn('seg:',e);}
-  var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
-  var badge=document.getElementById('segBadge');
-  if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}
-}
-
+// ── Datos filtrados del Centro de Control ─────────────────────────────────
 function getSegData(){
-  // Devuelve TODA la cartera con filtros visibles — sin limitaciones por tab
-  var base=getBase();
-  var lid=(document.getElementById('segLider')||{}).value||'';
-  var tipo=(document.getElementById('segTipoFil')||{}).value||'';
+  var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
   var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
+  var lid=(document.getElementById('segLider')||{}).value||'';
+  var est=(document.getElementById('segEstatusFil')||{}).value||'';
+  var tipo=(document.getElementById('segTipoFil')||{}).value||'';
   var desde=(document.getElementById('segDesde')||{}).value||'';
   var hasta=(document.getElementById('segHasta')||{}).value||'';
-
-  var data=base.filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
-
-  // Filtro período (6 meses por defecto, o Todos)
+  // Período
   if(periodo==='6m'&&!desde&&!hasta){
-    var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-6);
-    data=data.filter(function(r){
-      var fd=parseDate(r['Fecha de Instalacion Cliente']);
-      return !fd||fd>=cutoff; // sin fecha también se incluye
-    });
-  } else if(desde||hasta){
-    data=data.filter(function(r){
-      var fd=parseDate(r['Fecha de Instalacion Cliente']);
-      if(!fd)return true;
-      if(desde&&fd<new Date(desde))return false;
-      if(hasta&&fd>new Date(hasta))return false;
-      return true;
-    });
+    var cut=new Date();cut.setMonth(cut.getMonth()-6);
+    base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd>=cut;});
   }
-
-  var est=(document.getElementById('segEstatusFil')||{}).value||'';
-  if(lid)  data=data.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
-  if(tipo) data=data.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
-  if(est)  data=data.filter(function(r){return r['ESTATUS_LEGAL']===est;});
-
-  data.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});
-  return data;
+  if(desde)base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd>=new Date(desde);});
+  if(hasta)base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd<=new Date(hasta);});
+  if(lid) base=base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
+  if(est) base=base.filter(function(r){return r['ESTATUS_LEGAL']===est;});
+  if(tipo)base=base.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
+  // Radar filter override
+  if(SEG_RADAR_ACTIVE){
+    var rd=getSegRadarSubset(base);
+    base=rd[SEG_RADAR_ACTIVE]||base;
+  }
+  base.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});
+  return base;
 }
 
-function renderSegTab(){
-  if(segTab==='log'){renderSegLogNew();return;}
-  // Si hay filtro de radar activo, usarlo; si no, getSegData() normal
-  var radarData = getSegDataForRadar();
-  var base = radarData !== null ? radarData : (getSegData()||[]);
-  // Filtro adicional por líder del select
+function getSegRadarSubset(base){
+  return {
+    sinNotif:  base.filter(function(r){return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}),
+    sinMov:    base.filter(function(r){return r['ESTATUS_LEGAL']!=='CONTRATO FIRMADO'&&(calcDays(r['Fecha de Instalacion Cliente'])||0)>30;}),
+    docsPend:  base.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']);}),
+    porFirmar: base.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';}),
+    sinCarpeta:base.filter(function(r){return !cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');})
+  };
+}
+
+// ── Radar ─────────────────────────────────────────────────────────────────
+function renderSegRadar(){
+  var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
+  // Apply period/lider/tipo/est filters but NOT radar filter
+  var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
   var lid=(document.getElementById('segLider')||{}).value||'';
-  var data = lid ? base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);}) : base;
+  var est=(document.getElementById('segEstatusFil')||{}).value||'';
+  var tipo=(document.getElementById('segTipoFil')||{}).value||'';
+  var desde=(document.getElementById('segDesde')||{}).value||'';
+  var hasta=(document.getElementById('segHasta')||{}).value||'';
+  if(periodo==='6m'&&!desde&&!hasta){var cut=new Date();cut.setMonth(cut.getMonth()-6);base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd>=cut;});}
+  if(desde)base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd>=new Date(desde);});
+  if(hasta)base=base.filter(function(r){var fd=parseDate(r['Fecha de Instalacion Cliente']);return !fd||fd<=new Date(hasta);});
+  if(lid) base=base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);});
+  if(est) base=base.filter(function(r){return r['ESTATUS_LEGAL']===est;});
+  if(tipo)base=base.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
+  var rd=getSegRadarSubset(base);
+  var cards=[
+    {key:'sinNotif',  icon:'🆕',label:'Sin notificar',   color:'var(--blue)',  n:rd.sinNotif.length},
+    {key:'sinMov',    icon:'⏰',label:'Sin movimiento',  color:'var(--amber)', n:rd.sinMov.length},
+    {key:'docsPend',  icon:'📋',label:'Docs pendientes', color:'var(--red)',   n:rd.docsPend.length},
+    {key:'porFirmar', icon:'✍️',label:'Por firmar',      color:'var(--green)', n:rd.porFirmar.length},
+    {key:'sinCarpeta',icon:'📁',label:'Sin carpeta',     color:'var(--text3)', n:rd.sinCarpeta.length},
+  ];
+  var el=document.getElementById('segRadar');if(!el)return;
+  el.innerHTML=cards.map(function(c){
+    var isActive=SEG_RADAR_ACTIVE===c.key;
+    var border=isActive?'border-color:'+c.color+';box-shadow:0 0 0 2px '+c.color+'44':'';
+    return '<div onclick="segRadarFilter(\"'+c.key+'\")" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 10px;cursor:pointer;transition:all .15s;text-align:center;'+border+'">'
+      +'<div style="font-size:18px;margin-bottom:4px">'+c.icon+'</div>'
+      +'<div style="font-size:22px;font-weight:700;color:'+c.color+';line-height:1;margin-bottom:4px">'+c.n+'</div>'
+      +'<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1.3">'+c.label+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function segRadarFilter(key){
+  SEG_RADAR_ACTIVE=SEG_RADAR_ACTIVE===key?'':key;
+  SEG_PAGE=1;
+  renderSegRadar();
+  renderSegTab();
+}
+
+// ── Tabla principal ───────────────────────────────────────────────────────
+function applySegFilters(){SEG_PAGE=1;SEG_RADAR_ACTIVE='';renderSegRadar();renderSegTab();}
+
+function renderSegTab(){
+  var data=getSegData();
   var sub=document.getElementById('segSub');
-  if(sub)sub.textContent=data.length+' clientes';
-  var ca=document.getElementById('segCheckAll');
-  if(ca)ca.checked=false;
-  var tbl=document.getElementById('segTbl');
-  if(!tbl)return;
+  if(sub)sub.textContent=data.length+' clientes'+(SEG_RADAR_ACTIVE?' · filtrado por '+SEG_RADAR_ACTIVE:'');
+  var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;
+  var tbl=document.getElementById('segTbl');if(!tbl)return;
   if(!data.length){
-    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';
-    return;
+    tbl.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:30px">Sin registros para los filtros aplicados</td></tr>';
+    renderSegPagination(0,0);return;
   }
+  var totalPages=Math.ceil(data.length/SEG_PS);
+  if(SEG_PAGE>totalPages)SEG_PAGE=1;
+  var slice=data.slice((SEG_PAGE-1)*SEG_PS,SEG_PAGE*SEG_PS);
   var html='';
-  data.forEach(function(r,i){
+  slice.forEach(function(r,i){
     var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
     var dy=calcDays(r['Fecha de Instalacion Cliente']);
     var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
     var rif=r['RIF']||'';
     var chk=segSelected[rif]?'checked':'';
-    // Columna último contacto
+    // Último contacto
     var lc=segLastContact[rif];
     var lcHtml='<span style="color:var(--text3);font-size:10px">Sin gestión</span>';
     if(lc){
-      var lcDays=Math.floor((Date.now()-new Date(lc.ts).getTime())/86400000);
-      var lcCol=lcDays<=7?'var(--green)':lcDays<=30?'var(--amber)':'var(--red)';
-      lcHtml='<span style="color:'+lcCol+';font-size:10px">'+lcDays+'d · '+esc(lc.tipo)+'</span>';
+      var lcD=Math.floor((Date.now()-new Date(lc.ts).getTime())/86400000);
+      var lcC=lcD<=7?'var(--green)':lcD<=30?'var(--amber)':'var(--red)';
+      lcHtml='<span style="color:'+lcC+';font-size:10px">'+lcD+'d · '+esc(lc.tipo)+'</span>';
     }
-    // Sin carpeta Drive → mostrar ícono
+    // Botón carpeta si falta
     var sinCarp=!cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
-          var carpIco=sinCarp&&S.rol==='ADMIN'?'<button class="btn btn-g btn-sm" data-carp="'+rif+'" onclick="segCrearCarpeta(this.getAttribute(\"data-carp\"))" style="font-size:9px;padding:2px 6px;color:var(--amber);border-color:var(--amber)" title="Crear carpeta">\uD83D\uDCC1</button>':'';
+    var carpBtn=sinCarp&&S.rol==='ADMIN'?'<button onclick="segCrearCarpeta(\"'+rif+'\")" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:14px;padding:0 4px" title="Crear carpeta Drive">📁</button>':'';
+    var globalIdx=(SEG_PAGE-1)*SEG_PS+i;
     html+='<tr>'
       +'<td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td>'
-      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
-      +'<td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td>'
+      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="openSegGest(['+globalIdx+'])" title="Gestionar"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
+      +'<td style="font-size:12px;color:var(--text2)">'+esc((r['EJECUTIVO']||'').split(' ')[0])+'</td>'
       +'<td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td>'
       +'<td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td>'
       +'<td>'+lcHtml+'</td>'
-      +'<td style="font-size:11px;max-width:100px;white-space:normal;color:var(--text2)">'+esc((r['Observacion']||'').slice(0,40))+'</td>'
       +'<td style="display:flex;gap:4px;align-items:center">'
-        +'<button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">Gestionar</button>'
-        +'<button class="btn btn-g btn-sm" onclick="segWAQuick('+i+')" style="font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366" title="WA rápido">WA</button>'
-        +carpIco
+        +'<button class="btn btn-p btn-sm" onclick="openSegGest(['+globalIdx+'])" style="font-size:10px;padding:3px 8px">Gestionar</button>'
+        +'<button class="btn btn-g btn-sm" onclick="segWADirecto('+globalIdx+')" style="font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366">WA</button>'
+        +carpBtn
       +'</td>'
     +'</tr>';
   });
   tbl.innerHTML=html;
+  renderSegPagination(data.length,totalPages);
 }
 
-function renderSegLog(){var tbl=document.getElementById('segTbl');if(!tbl)return;if(!segLog.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin env\u00edos registrados</td></tr>';return;}var html='';segLog.forEach(function(l){html+='<tr><td></td><td>'+esc(l.cliente)+'</td><td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td><td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td><td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td><td>'+esc(l.dest)+'</td><td>\u2705</td></tr>';});tbl.innerHTML=html;}
+function renderSegPagination(total,pages){
+  var el=document.getElementById('segPagBtns');if(!el)return;
+  if(pages<=1){el.innerHTML='';return;}
+  var html='<span style="font-size:12px;color:var(--text2);margin-right:8px">'+((SEG_PAGE-1)*SEG_PS+1)+'–'+Math.min(SEG_PAGE*SEG_PS,total)+' de '+total+'</span>';
+  html+='<button class="pag-btn" onclick="segGoPage('+( SEG_PAGE-1)+')" '+(SEG_PAGE===1?'disabled':'')+'>‹</button>';
+  // Smart pages
+  var pages_to_show=[];
+  for(var p=1;p<=pages;p++){
+    if(p===1||p===pages||Math.abs(p-SEG_PAGE)<=1)pages_to_show.push(p);
+    else if(pages_to_show[pages_to_show.length-1]!=='…')pages_to_show.push('…');
+  }
+  pages_to_show.forEach(function(p){
+    if(p==='…')html+='<span style="padding:0 4px;color:var(--text3);font-size:12px;line-height:28px">…</span>';
+    else html+='<button class="pag-btn'+(p===SEG_PAGE?' cur':'')+'" onclick="segGoPage('+p+')" '+(p===SEG_PAGE?'disabled':'')+'>'+p+'</button>';
+  });
+  html+='<button class="pag-btn" onclick="segGoPage('+(SEG_PAGE+1)+')" '+(SEG_PAGE>=pages?'disabled':'')+'>›</button>';
+  el.innerHTML=html;
+}
 
-function segToggleAll(el){var data=getSegData()||[];segSelected={};if(el.checked)data.forEach(function(r){segSelected[r['RIF']]=true;});renderSegTab();}
+function segGoPage(p){var data=getSegData();var pages=Math.ceil(data.length/SEG_PS);if(p<1||p>pages)return;SEG_PAGE=p;renderSegTab();}
+
+// ── Selección ─────────────────────────────────────────────────────────────
 function segToggleOne(el){var rif=el.dataset.rif;if(el.checked)segSelected[rif]=true;else delete segSelected[rif];}
-function segSelectAll(){var data=getSegData()||[];data.forEach(function(r){segSelected[r['RIF']]=true;});var ca=document.getElementById('segCheckAll');if(ca)ca.checked=true;renderSegTab();toast(data.length+' seleccionados','ok');}
+function segToggleAll(el){var data=getSegData();segSelected={};if(el.checked)data.forEach(function(r){segSelected[r['RIF']]=true;});renderSegTab();}
+function segSelectAll(){var data=getSegData();data.forEach(function(r){segSelected[r['RIF']]=true;});var ca=document.getElementById('segCheckAll');if(ca)ca.checked=true;renderSegTab();toast(data.length+' seleccionados','ok');}
 
-function segWAQuick(idx){var data=getSegData()||[];if(idx<0||idx>=data.length)return;var r=data[idx];var est=(r['ESTATUS_LEGAL']||'').toUpperCase();var tipo='lider_recordatorio';if(est==='GRANDES NEGOCIOS')tipo='lider_nuevo';else if(est==='PENDIENTE POR FIRMAR')tipo='lider_firma';else if(segTab==='sinmov')tipo='lider_urgente';var num=getLiderWANum(r['EJECUTIVO'])||r['NUMERO_REPRESENTANTES']||r['TELEFONO_PROHAM']||'';openWA(num,getMsgWA(tipo,r),r,'WA rapido');toast(WA_PRUEBA?'WA prueba - va a tu numero':'WhatsApp abierto','ok');}
-function segActionByIdx(idx){var data=getSegData()||[];if(idx>=0&&idx<data.length)segBuildMsg([data[idx]]);}
+function segSendAll(){
+  var rifs=Object.keys(segSelected);
+  if(!rifs.length){toast('Selecciona al menos un cliente','err');return;}
+  var data=getSegData();
+  var clients=data.filter(function(r){return segSelected[r['RIF']];});
+  if(!clients.length){toast('No se encontraron','err');return;}
+  // Get indices in data array
+  var indices=clients.map(function(c){return data.indexOf(c);});
+  openSegGest(indices);
+}
 
-function segSendAll(){var rifs=Object.keys(segSelected);if(!rifs.length){toast('Selecciona al menos un cliente','err');return;}var base=getBase();var clients=base.filter(function(r){return segSelected[r['RIF']];});if(!clients.length){toast('No se encontraron','err');return;}segBuildMsg(clients);}
+// ── WA directo desde botón de fila ────────────────────────────────────────
+function segWADirecto(idx){
+  var data=getSegData();
+  if(idx<0||idx>=data.length)return;
+  var r=data[idx];
+  var est=(r['ESTATUS_LEGAL']||'').toUpperCase();
+  // Determinar tipo de mensaje según estatus
+  var tipo='lider_recordatorio';
+  if(est==='GRANDES NEGOCIOS')tipo='lider_nuevo';
+  else if(est==='PENDIENTE POR FIRMAR')tipo='lider_firma';
+  else if((calcDays(r['Fecha de Instalacion Cliente'])||0)>30)tipo='lider_urgente';
+  var num=getLiderWANum(r['EJECUTIVO'])||'';
+  openWA(num,getMsgWA(tipo,r),r,'WA rapido');
+  toast(WA_PRUEBA?'WA prueba → tu número':'WhatsApp abierto ✓','ok');
+}
 
-function segBuildMsg(clients){
-  var config=S.cfg||[];
+// ── Drawer de gestión ─────────────────────────────────────────────────────
+function openSegGest(indices){
+  var data=getSegData();
+  var clients=indices.map(function(i){return data[i];}).filter(Boolean);
+  if(!clients.length)return;
   window._segClients=clients;
+  // Render drawer
+  var bg=document.getElementById('segGestBg');
+  var title=document.getElementById('segGestTitle');
+  var body=document.getElementById('segGestBody');
+  if(!bg||!body)return;
+  var isMasivo=clients.length>1;
+  title.textContent=isMasivo?'Gestionar '+clients.length+' clientes':'Gestionar: '+clients[0]['RAZON SOCIAL'];
+  body.innerHTML=buildSegGestBody(clients);
+  bg.style.display='flex';
+  // Generate initial message
+  segGestGenerateMsg();
+}
+
+function buildSegGestBody(clients){
   var isMasivo=clients.length>1;
   var lid=clients[0]['EJECUTIVO']||'';
-  var correoLider='',correoAdmin='',correoAbogado='',correoCliente='';
+  var config=S.cfg||[];
+  var correoLider='',correoAbogado='',correoAdmin='',numLider='';
   config.forEach(function(cf){
-    if(cf.EJECUTIVO===lid&&cf.ROL==='LIDER')correoLider=cf.CORREO||'';
-    if(cf.ROL==='ADMIN'&&!correoAdmin)correoAdmin=cf.CORREO||'';
-    if(cf.ROL==='ABOGADO')correoAbogado=cf.CORREO||'';
+    if(normalizeStr(cf.EJECUTIVO||'')===normalizeStr(lid)&&(cf.ROL||'')==='LIDER'){correoLider=cf.CORREO||'';}
+    if((cf.ROL||'')==='ADMIN'&&!correoAdmin)correoAdmin=cf.CORREO||'';
+    if((cf.ROL||'')==='ABOGADO'&&!correoAbogado)correoAbogado=cf.CORREO||'';
   });
-  if(!isMasivo)correoCliente=clients[0]['CORREO_EMPRESA']||clients[0]['CORREO_REPRESENTANTES']||'';
-  window._segConfig={lid:lid,correoLider:correoLider,correoAdmin:correoAdmin,correoAbogado:correoAbogado,correoCliente:correoCliente,isMasivo:isMasivo};
-
-  // Destinatario options
+  numLider=getLiderWANum(lid)||'';
+  var correoCliente=(!isMasivo?(clients[0]['CORREO_REPRESENTANTES']||''):'');
+  var numCliente=(!isMasivo?formatWANumber(clients[0]['NUMERO_REPRESENTANTES']||''):'');
+  // Store for use in sendSegGest
+  window._segGestCfg={lid:lid,correoLider:correoLider,correoAbogado:correoAbogado,correoAdmin:correoAdmin,numLider:numLider,correoCliente:correoCliente,numCliente:numCliente,isMasivo:isMasivo};
+  var html='';
+  // Lista de clientes
+  html+='<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Clientes</div>';
+  clients.forEach(function(r){
+    var dy=calcDays(r['Fecha de Instalacion Cliente']);
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:4px">'
+      +'<span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'" style="font-size:9px">'+esc(r['ESTATUS_LEGAL'])+'</span>'
+      +'<span style="font-size:12px;font-weight:600;flex:1">'+esc(r['RAZON SOCIAL'])+'</span>'
+      +(dy!==null?'<span style="font-size:10px;color:var(--text3)">'+dy+'d</span>':'')
+    +'</div>';
+  });
+  html+='</div>';
+  // Para (destinatario)
+  html+='<div style="margin-bottom:14px"><div class="sec-lbl" style="margin-bottom:6px">Enviar a</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgDestOpts">';
   var dests=[];
-  if(correoLider)dests.push({label:'👤 Líder: '+lid,val:correoLider,tipo:'correo'});
-  if(correoAbogado)dests.push({label:'⚖ Abogada: Reina',val:correoAbogado,tipo:'correo'});
-  if(correoCliente&&!isMasivo)dests.push({label:'🏢 Cliente (correo)',val:correoCliente,tipo:'correo'});
-  dests.push({label:'⚙ Admin (yo)',val:correoAdmin,tipo:'correo'});
-  // Opciones de WhatsApp
-  var numLider=getLiderWANum(lid);
-  if(numLider)dests.push({label:'📱 WA Líder: '+lid.split(' ')[0],val:numLider,tipo:'wa'});
-  if(!isMasivo){
-    var c0=clients[0];
-    var numCli=formatWANumber(c0['NUMERO_REPRESENTANTES']||'')||formatWANumber(c0['TELEFONO_PROHAM']||'')||formatWANumber(c0['NUMERO_REPRESENTANTES2']||'');
-    if(numCli)dests.push({label:'📱 WA Cliente',val:numCli,tipo:'wa'});
-  }
-  document.getElementById('segDestinatarioOpts').innerHTML=dests.map(function(d,i){
-    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" data-tipo="'+(d.tipo||'correo')+'" onclick="segSelDest(this)">'+d.label+'</button>';
+  if(correoLider)dests.push({lbl:'✉ Líder: '+lid.split(' ')[0],val:correoLider,tipo:'correo'});
+  if(numLider)dests.push({lbl:'📱 WA Líder',val:numLider,tipo:'wa'});
+  if(correoAbogado)dests.push({lbl:'✉ Reina (Legal)',val:correoAbogado,tipo:'correo'});
+  if(correoCliente&&!isMasivo)dests.push({lbl:'✉ Cliente',val:correoCliente,tipo:'correo'});
+  if(numCliente&&!isMasivo)dests.push({lbl:'📱 WA Cliente',val:numCliente,tipo:'wa'});
+  dests.push({lbl:'✉ Admin (yo)',val:correoAdmin,tipo:'correo'});
+  window._sgDests=dests;
+  html+=dests.map(function(d,i){
+    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" data-tipo="'+d.tipo+'" onclick="sgSelDest(this)">'+d.lbl+'</button>';
   }).join('');
-
-  // Tipo options
-  var tipos=[];
-  if(segTab==='pend'||segTab==='sinmov'){
-    tipos=[
-      {label:(segTab==='pend'?'📄 Aviso cliente nuevo':'⏰ Sin avance'),key:'aviso'},
-      {label:'⚠ Recordatorio urgente',key:'urgente'},
-      {label:'📝 Mensaje libre',key:'libre'},
-    ];
-  }else if(segTab==='firmar'){
-    tipos=[
-      {label:'🏢 Solicitud al cliente',key:'firma_cliente'},
-      {label:'👤 Aviso al líder',key:'firma_lider'},
-      {label:'⚖ Coordinar con abogada',key:'firma_abogado'},
-      {label:'📝 Mensaje libre',key:'libre'},
-    ];
-  }else{
-    tipos=[{label:'📝 Mensaje libre',key:'libre'}];
-  }
-  document.getElementById('segTipoOpts').innerHTML=tipos.map(function(t,i){
-    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-key="'+t.key+'" onclick="segSelTipo(this)">'+t.label+'</button>';
+  html+='</div></div>';
+  // Tipo de mensaje — usa los mismos tipos de getMsgWA
+  html+='<div style="margin-bottom:14px"><div class="sec-lbl" style="margin-bottom:6px">Tipo de mensaje</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgTipoOpts">';
+  var tipos=[
+    {lbl:'🆕 Cliente nuevo',         key:'lider_nuevo'},
+    {lbl:'🔔 Recordatorio',           key:'lider_recordatorio'},
+    {lbl:'🔴 Urgente',               key:'lider_urgente'},
+    {lbl:'✍️ Pend. firma (líder)',   key:'lider_firma'},
+    {lbl:'🏢 Solicitar docs cliente',key:'cliente_docs'},
+    {lbl:'🔔 Recordatorio cliente',  key:'cliente_recordatorio'},
+    {lbl:'✍️ Firma (cliente)',       key:'cliente_firma'},
+    {lbl:'⚖ Avisar a Reina',        key:'abogada_listo'},
+    {lbl:'✏ Libre',                  key:'libre'},
+  ];
+  html+=tipos.map(function(t,i){
+    return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-key="'+t.key+'" onclick="sgSelTipo(this)">'+t.lbl+'</button>';
   }).join('');
-
-  document.getElementById('segCcInput').value=correoAdmin;
-  document.getElementById('segCorreoCustom').value='';
-  segGenerateMsg();
-  document.getElementById('segMsgPanel').style.display='block';
-  document.getElementById('segMsgPanel').scrollIntoView({behavior:'smooth',block:'start'});
+  html+='</div></div>';
+  // Asunto y cuerpo
+  html+='<div style="margin-bottom:8px"><div class="sec-lbl" style="margin-bottom:4px">Asunto</div>'
+    +'<input id="sgMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none"></div>';
+  html+='<div style="margin-bottom:12px"><div class="sec-lbl" style="margin-bottom:4px">Mensaje</div>'
+    +'<textarea id="sgMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:4px;resize:vertical;min-height:200px;outline:none"></textarea></div>';
+  // Botones de acción
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn btn-g btn-sm" onclick="copySegGestMsg()">📋 Copiar</button>'
+    +'<button class="btn btn-g btn-sm" onclick="sgOpenWA()" style="color:#25d366;border-color:#25d366">📱 Abrir WA</button>'
+    +'<button class="btn btn-p btn-sm" onclick="sendSegGest()">✉ Enviar correo</button>'
+    +'</div>';
+  return html;
 }
 
-function segSelDest(btn){document.querySelectorAll('#segDestinatarioOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGenerateMsg();}
-function segSelTipo(btn){document.querySelectorAll('#segTipoOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGenerateMsg();}
+function sgSelDest(btn){document.querySelectorAll('#sgDestOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGestGenerateMsg();}
+function sgSelTipo(btn){document.querySelectorAll('#sgTipoOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGestGenerateMsg();}
 
-function segGenerateMsg(){
-  var cfg=window._segConfig||{};var clients=window._segClients||[];
+function segGestGenerateMsg(){
+  var clients=window._segClients||[];var cfg=window._segGestCfg||{};
   if(!clients.length)return;
-  var NL=String.fromCharCode(10);
+  var tipoBtn=document.querySelector('#sgTipoOpts .seg-dest-btn.active');
+  var tipoKey=tipoBtn?tipoBtn.dataset.key:'lider_nuevo';
+  var subjEl=document.getElementById('sgMsgSubj');
+  var bodyEl=document.getElementById('sgMsgBody');
+  if(!subjEl||!bodyEl)return;
+  var N=String.fromCharCode(10);
   var hoy=new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
-  var lid=cfg.lid||'';var isMasivo=cfg.isMasivo;
-  var activeTipo=document.querySelector('#segTipoOpts .seg-dest-btn.active');
-  var tipoKey=activeTipo?activeTipo.dataset.key:'libre';
-  var subj='',body='';
-
-  if(tipoKey==='aviso'||tipoKey==='urgente'){
-    var esNuevo=segTab==='pend';var esUrg=tipoKey==='urgente';
-    var prefix=esNuevo?'Nuevo cliente requiere documentación':esUrg?'URGENTE - Expediente sin respuesta':'Recordatorio expediente pendiente';
-    if(isMasivo){
-      subj='[Airtek] '+prefix+' — '+hoy;
-      body='Estimado/a '+lid+','+NL+NL+(esNuevo?'Nuevos clientes que requieren documentación:':'Clientes con expedientes pendientes:')+NL+NL;
-      clients.forEach(function(r,i){var dy=calcDays(r['Fecha de Instalacion Cliente']);body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL+'   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' | '+dy+' días':'')+NL;if(r['Observacion'])body+='   Obs: '+r['Observacion']+NL;body+=NL;});
-      body+='Total: '+clients.length+' clientes.'+NL+NL+'Administración de Contratos — Airtek';
-    }else{
-      var r=clients[0];var dy2=calcDays(r['Fecha de Instalacion Cliente']);
-      subj='[Airtek] '+prefix+' — '+r['RAZON SOCIAL'];
-      body='Estimado/a '+lid+','+NL+NL+(esNuevo?'Nuevo cliente en tu cartera que requiere gestión legal:':esUrg?'El siguiente cliente no ha tenido respuesta y requiere atención urgente:':'El siguiente expediente lleva '+dy2+' días sin avance:')+NL+NL;
-      body+='Razón Social: '+r['RAZON SOCIAL']+NL+'RIF: '+r['RIF']+NL+'Estatus: '+r['ESTATUS_LEGAL']+NL;
-      if(dy2!==null)body+='Días: '+dy2+NL;
-      if(r['Observacion'])body+='Observación: '+r['Observacion']+NL;
-      if(esNuevo)body+=NL+'Documentos requeridos: cédula del representante, RIF vigente, acta constitutiva y acta de asamblea.';
-      body+=NL+NL+'Administración de Contratos — Airtek';
-    }
-  }else if(tipoKey==='firma_cliente'){
-    var r0=clients[0];
-    subj='[Airtek] Contrato pendiente de firma — '+r0['RAZON SOCIAL'];
-    body='Estimado cliente,'+NL+NL+'Le informamos que su contrato de servicio con Airtek se encuentra elaborado y pendiente de su firma.'+NL+NL+'Empresa: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+NL+'Le agradecemos coordinar la entrega del contrato a la brevedad.'+NL+NL+'Administración de Contratos — Airtek'+NL+'ventascorporativas@airtek.com.ve';
-  }else if(tipoKey==='firma_lider'){
-    subj='[Airtek] Contratos pendientes de firma — '+hoy;
-    body='Estimado/a '+lid+','+NL+NL+(isMasivo?'Los siguientes clientes tienen contrato pendiente de firma:'+NL+NL:'El siguiente cliente tiene contrato pendiente de firma:'+NL+NL);
-    clients.forEach(function(r,i){body+=(isMasivo?(i+1)+'. ':'')+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+NL;});
-    body+=NL+'Por favor coordina la firma con el cliente a la brevedad.'+NL+NL+'Administración de Contratos — Airtek';
-  }else if(tipoKey==='firma_abogado'){
-    var r0=clients[0];
-    subj='[Airtek Legal] Coordinación firma — '+r0['RAZON SOCIAL'];
-    body='Estimada Reina,'+NL+NL+'El siguiente cliente tiene el contrato elaborado y pendiente de firma. Por favor coordinar con el líder la entrega al cliente.'+NL+NL+'Razón Social: '+r0['RAZON SOCIAL']+NL+'RIF: '+r0['RIF']+NL+'Líder: '+lid+NL+NL+'Administración de Contratos — Airtek';
-  }else{
-    // libre
-    subj='[Airtek] Gestión — '+(isMasivo?hoy:clients[0]['RAZON SOCIAL']);
-    body='Estimado/a,'+NL+NL;
+  if(tipoKey==='libre'){
+    subjEl.value='[Airtek] Gestión — '+hoy;
+    bodyEl.value='Estimado/a,'+N+N;
+    return;
   }
-  document.getElementById('segMsgSubj').value=subj;
-  document.getElementById('segMsgBody').value=body;
+  if(clients.length===1){
+    // Single client — use getMsgWA directly
+    var r=clients[0];
+    subjEl.value='[Airtek] '+tipoKey.replace('_',' ')+' — '+r['RAZON SOCIAL'];
+    bodyEl.value=getMsgWA(tipoKey,r);
+  } else {
+    // Multiple clients — build summary using lider_recordatorio as base
+    var lid=cfg.lid||'';
+    var prefix={
+      'lider_nuevo':'Nuevos clientes que requieren documentación',
+      'lider_recordatorio':'Expedientes pendientes de gestión',
+      'lider_urgente':'URGENTE — Clientes sin respuesta',
+      'lider_firma':'Contratos pendientes de firma',
+    }[tipoKey]||'Gestión de expedientes';
+    subjEl.value='[Airtek] '+prefix+' — '+hoy;
+    var body='Estimado/a '+lid+','+N+N+prefix+':'+N+N;
+    clients.forEach(function(r,i){
+      var dy=calcDays(r['Fecha de Instalacion Cliente']);
+      body+=(i+1)+'. '+r['RAZON SOCIAL']+' (RIF: '+r['RIF']+')'+N;
+      body+='   Estatus: '+r['ESTATUS_LEGAL']+(dy!==null?' · '+dy+' días':'')+N;
+      if(r['Observacion']&&r['Observacion'].trim())body+='   Obs: '+r['Observacion'].trim().slice(0,80)+N;
+      var appLink='https://gbxxzz00.github.io/App-Airtek-Empresas/?rif='+r['RIF'];
+      body+='   🔗 '+appLink+N+N;
+    });
+    body+='Total: '+clients.length+' clientes.'+N+N+'Administración de Contratos — Airtek'+N+CC_CORP;
+    bodyEl.value=body;
+  }
 }
 
-function copySegMsg(){
-  var subj=document.getElementById('segMsgSubj').value;
-  var body=document.getElementById('segMsgBody').value;
-  var full='Asunto: '+subj+String.fromCharCode(10)+String.fromCharCode(10)+body;
-  navigator.clipboard.writeText(full).then(function(){toast('Mensaje copiado ✓','ok');}).catch(function(){document.getElementById('segMsgBody').select();});
+function sgOpenWA(){
+  var destBtn=document.querySelector('#sgDestOpts .seg-dest-btn.active');
+  if(!destBtn)return;
+  var tipo=destBtn.dataset.tipo||'correo';
+  if(tipo!=='wa'){toast('El destinatario seleccionado es correo, no WA','err');return;}
+  var num=destBtn.dataset.val||'';
+  var body=document.getElementById('sgMsgBody');
+  var msg=body?body.value:'';
+  var clients=window._segClients||[];
+  openWA(num,msg,clients[0]||null,'WA Centro Control');
+}
+
+function sendSegGest(){
+  var destBtn=document.querySelector('#sgDestOpts .seg-dest-btn.active');
+  if(!destBtn){toast('Selecciona destinatario','err');return;}
+  var para=destBtn.dataset.val||'';
+  var tipo=destBtn.dataset.tipo||'correo';
+  if(tipo==='wa'){sgOpenWA();return;}
+  if(!para){toast('Sin correo para enviar','err');return;}
+  var subj=document.getElementById('sgMsgSubj');
+  var body=document.getElementById('sgMsgBody');
+  if(!subj||!body)return;
+  var subjVal=subj.value||'[Airtek] Gestión';
+  var bodyVal=body.value||'';
+  var clients=window._segClients||[];
+  var cfg=window._segGestCfg||{};
+  var cc=cfg.correoAdmin||'';
+  // Use enviarSeguimiento GAS action
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'enviarSeguimiento',para:para,cc:cc,asunto:subjVal,cuerpo:bodyVal,
+    rif:(clients[0]||{})['RIF']||'',cliente:(clients[0]||{})['RAZON SOCIAL']||'',
+    ejecutivo:(clients[0]||{})['EJECUTIVO']||''
+  })})
+  .then(function(r){return r.json();})
+  .then(function(rs){
+    if(rs.ok){
+      toast('Correo enviado ✓','ok');
+      // Log in segLog
+      segLog.push({
+        cliente:clients.map(function(c){return c['RAZON SOCIAL'];}).join(', '),
+        rif:(clients[0]||{})['RIF']||'',
+        ejecutivo:(clients[0]||{})['EJECUTIVO']||'',
+        tipo:'Correo: '+subjVal.slice(0,40),
+        fecha:new Date().toLocaleString('es-VE'),
+        dest:para
+      });
+      closeSegGest();
+    }else{toast('Error: '+(rs.error||''),'err');}
+  })
+  .catch(function(){toast('Error de conexión','err');});
+}
+
+function copySegGestMsg(){
+  var subj=document.getElementById('sgMsgSubj');
+  var body=document.getElementById('sgMsgBody');
+  if(!subj||!body)return;
+  var full='Asunto: '+subj.value+String.fromCharCode(10)+String.fromCharCode(10)+body.value;
+  navigator.clipboard.writeText(full).then(function(){toast('Mensaje copiado ✓','ok');}).catch(function(){toast('Error al copiar','err');});
+}
+
+function closeSegGest(e){
+  var bg=document.getElementById('segGestBg');
+  if(!bg)return;
+  if(e&&e.target!==bg)return;
+  bg.style.display='none';
+}
+
+// ── Refresh y filtros ─────────────────────────────────────────────────────
+function refreshSeg(){
+  renderSegRadar();renderSegTab();
+  var rp=document.getElementById('rankingPanel');
+  if(rp&&rp.style.display!=='none')renderRanking();
+  var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
+  var badge=document.getElementById('segBadge');
+  if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}
 }
 
 function clearSegFilters(){
   ['segLider','segTipoFil','segDesde','segHasta','segEstatusFil'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var per=document.getElementById('segPeriodo');if(per)per.value='6m';
-  SEG_RADAR_ACTIVE='';
+  SEG_RADAR_ACTIVE='';SEG_PAGE=1;
   renderSegRadar();renderSegTab();
 }
 
 function exportSegCSV(){
-  var data=getSegData()||[];
-  if(!data.length){toast('Sin datos para exportar','err');return;}
+  var data=getSegData();
+  if(!data.length){toast('Sin datos','err');return;}
   var h=['RAZON SOCIAL','RIF','EJECUTIVO','TIPO_CLIENTE','ESTATUS_LEGAL','Fecha de Instalacion Cliente','Observacion'];
   var rows=data.map(function(r){return h.map(function(k){return '"'+(r[k]||'').toString().replace(/"/g,'""')+'"';}).join(',');});
   var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['﻿'+[h.join(',')].concat(rows).join('\n')],{type:'text/csv'}));
-  a.download='seguimiento_airtek_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
-  toast('CSV exportado','ok');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+[h.join(',')].concat(rows).join('\n')],{type:'text/csv'}));
+  a.download='centro_control_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();toast('CSV exportado ✓','ok');
 }
 
-function sendSegEmail(){
-  var activeDest=document.querySelector('#segDestinatarioOpts .seg-dest-btn.active');
-  var customCorreo=(document.getElementById('segCorreoCustom')||{value:''}).value.trim();
-  var para=customCorreo||(activeDest?activeDest.dataset.val:'');
-  var tipoEnvio=(activeDest&&!customCorreo)?activeDest.dataset.tipo:'correo';
-  if(!para){toast('Selecciona un destinatario','err');return;}
-  var subj=(document.getElementById('segMsgSubj')||{}).value||'';
-  var body=(document.getElementById('segMsgBody')||{}).value||'';
-  if(!subj||!body){toast('El asunto y mensaje no pueden estar vacíos','err');return;}
-  // Si es WA, abrir WhatsApp directamente
-  if(tipoEnvio==='wa'){
-    var num=formatWANumber(para);
-    var dest=WA_PRUEBA?WA_NUM_PRUEBA:num;
-    if(!dest){toast('Número no válido para WhatsApp','err');return;}
-    window.open('https://wa.me/'+dest+'?text='+encodeURIComponent(body),'_blank');
-    var rifs=Object.keys(segSelected);
-    if(rifs.length===1){
-      var cl=getBase().filter(function(r){return segSelected[r['RIF']];});
-      if(cl.length)regAccion(cl[0],'WhatsApp desde Seguimiento',dest);
-    }
-    toast(WA_PRUEBA?'WA prueba enviado':'WhatsApp abierto','ok');
-    return;
-  }
-  // Correo via Apps Script
-  if(!APPS_SCRIPT_URL){toast('Configura APPS_SCRIPT_URL primero','err');return;}
-  var cc=document.getElementById('segCcInput').value.trim();
-  var subj=document.getElementById('segMsgSubj').value.trim();
-  var body=document.getElementById('segMsgBody').value.trim();
-  if(!subj||!body){toast('El asunto y mensaje no pueden estar vacíos','err');return;}
-  toast('Enviando...','');
-  var rifs=Object.keys(segSelected);
-  fetch(APPS_SCRIPT_URL,{
-    method:'POST',
-    body:JSON.stringify({action:'enviarSeguimiento',para:para,cc:cc,asunto:subj,cuerpo:body,
-      cliente:_segClients.length===1?_segClients[0]['RAZON SOCIAL']:'Múltiples clientes',
-      ejecutivo:_segConfig.lid||'',
-      rif:_segClients.length===1?_segClients[0]['RIF']:''})
-  }).then(function(){
-    toast('Correo enviado ✓','ok');
-    segSelected={};
-    document.getElementById('segMsgPanel').style.display='none';
-    document.getElementById('segCorreoCustom').value='';
-    renderSegTab();
-  }).catch(function(){toast('Error al enviar — verifica tu conexión','err');});
-}
-
-// ── Timeline helpers ─────────────────────────────────────────────────────────
-function tlIcon(tipo){
-  var t=(tipo||'').toLowerCase();
-  if(t.includes('whatsapp')||t.includes('wa')||t==='wal')return{cls:'tl-ic-wa',ico:'💬'};
-  if(t.includes('correo')||t.includes('mail')||t.includes('cliente_firma')||t.includes('cliente_docs')||t.includes('cliente_recordatorio'))return{cls:'tl-ic-mail',ico:'✉️'};
-  if(t.includes('contrato_firmado'))return{cls:'tl-ic-est',ico:'✅'};
-  if(t.includes('pend_firmar')||t.includes('pendiente por firmar'))return{cls:'tl-ic-est',ico:'✍️'};
-  if(t.includes('docs_recibidos')||t.includes('documentos recibidos'))return{cls:'tl-ic-seg',ico:'📥'};
-  if(t.includes('cliente_nuevo'))return{cls:'tl-ic-est',ico:'🆕'};
-  if(t.includes('reporte'))return{cls:'tl-ic-mail',ico:'📊'};
-  if(t.includes('abogad')||t.includes('legal'))return{cls:'tl-ic-seg',ico:'⚖️'};
-  if(t.includes('estatus')||t.includes('cambio')||t.includes('estatus_legal'))return{cls:'tl-ic-est',ico:'🔄'};
-  if(t.includes('llamada'))return{cls:'tl-ic-seg',ico:'📞'};
-  if(t.includes('visita'))return{cls:'tl-ic-seg',ico:'🤝'};
-  if(t.includes('doc'))return{cls:'tl-ic-seg',ico:'📄'};
-  if(t.includes('notif')||t.includes('app_seg'))return{cls:'tl-ic-mail',ico:'🔔'};
-  return{cls:'tl-ic-seg',ico:'📝'};
-}
-
-function buildTLEntry(entry){
-  var ic=tlIcon(entry.tipo);
-  return '<div class="tl-entry">'+
-    '<div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'+
-    '<div class="tl-body">'+
-      '<div class="tl-header">'+
-        '<span class="tl-tipo">'+esc(entry.tipo||'Gestión')+'</span>'+
-        '<span class="tl-ts">'+esc(entry.fecha||'')+'</span>'+
-      '</div>'+
-      (entry.nota||entry.dest?'<div class="tl-nota">'+esc(entry.nota||entry.dest||'')+'</div>':'')+
-      (entry.usuario||entry.ejecutivo?'<div class="tl-by">por '+esc(entry.usuario||entry.ejecutivo||'')+'</div>':'')+
-    '</div>'+
-  '</div>';
-}
-
-function renderTabSeg(r){
-  var rif=r['RIF']||'';
-  var logs=segLog.filter(function(l){return l.rif===rif;});
-  var h='<div style="padding:10px 0">';
-  // Form to register new entry
-  h+='<div class="sec-lbl" style="margin-bottom:8px">Registrar contacto</div>';
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-  h+='<div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel">';
-  ['Llamada realizada','Visita al cliente','WhatsApp enviado','Correo enviado','Docs solicitados','Cliente no contesta','Cliente confirma entrega','Reunión agendada','Otro'].forEach(function(o){h+='<option>'+o+'</option>';});
-  h+='</select></div>';
-  h+='<div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle del contacto..." style="min-height:52px;resize:vertical"></textarea></div>';
-  h+='</div>';
-  h+='<button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-bottom:16px">+ Registrar contacto</button>';
-  // Timeline of contacts
-  h+='<div class="sec-lbl" style="margin-bottom:6px">Contactos registrados</div>';
-  if(logs.length){
-    h+='<div class="tl">';
-    logs.forEach(function(l){h+=buildTLEntry(l);});
-    h+='</div>';
-  }else{
-    h+='<div class="tl-empty">📞 Sin contactos registrados aún</div>';
-  }
-  h+='</div>';
-  document.getElementById('tab-seguimiento_cli').innerHTML=h;
-}
-
-function addSegEntry(){
-  var tipo=(document.getElementById('seg_tipo')||{}).value||'';
-  var nota=(document.getElementById('seg_nota')||{}).value||'';
-  if(!S.cur)return;
-  if(!tipo){toast('Selecciona el tipo de contacto','err');return;}
-  var entry={
-    cliente:S.cur['RAZON SOCIAL'],rif:S.cur['RIF'],ejecutivo:S.cur['EJECUTIVO'],
-    tipo:tipo,nota:nota,fecha:new Date().toLocaleString('es-VE'),
-    usuario:S.user,dest:nota||tipo
-  };
-  segLog.push(entry);
-  if(APPS_SCRIPT_URL){
-    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-      action:'registrarSeguimiento',
-      rif:S.cur['RIF'],cliente:S.cur['RAZON SOCIAL'],
-      ejecutivo:S.cur['EJECUTIVO'],tipo:tipo,nota:nota,usuario:S.user
-    })}).catch(function(){});
-  }
-  toast('Contacto registrado ✓','ok');
-  if(document.getElementById('seg_nota'))document.getElementById('seg_nota').value='';
-  renderTabSeg(S.cur);
-}
-
-function renderTabSegFromGAS(r){
-  var rif=(r['RIF']||'').toString().trim();
-  if(!APPS_SCRIPT_URL){renderTabSeg(r);return;}
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
-  .then(function(res){return res.json();})
-  .then(function(data){
-    if(data.ok&&data.registros&&data.registros.length){
-      // Merge GAS records with local session (avoid duplicates by using GAS as source of truth)
-      var local=segLog.filter(function(l){return l.rif===rif&&l._new;});
-      var all=data.registros.concat(local);
-      var el=document.getElementById('tab-seguimiento_cli');
-      if(!el)return;
-      var h='<div style="padding:10px 0">';
-      h+='<div class="sec-lbl" style="margin-bottom:8px">Registrar contacto</div>';
-      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-      h+='<div class="field"><label>Tipo</label><select id="seg_tipo" class="fp-sel">';
-      ['Llamada realizada','Visita al cliente','WhatsApp enviado','Correo enviado','Docs solicitados','Cliente no contesta','Cliente confirma entrega','Reunión agendada','Otro'].forEach(function(o){h+='<option>'+o+'</option>';});
-      h+='</select></div>';
-      h+='<div class="field"><label>Nota</label><textarea id="seg_nota" placeholder="Detalle del contacto..." style="min-height:52px;resize:vertical"></textarea></div>';
-      h+='</div>';
-      h+='<button class="btn btn-p btn-sm" onclick="addSegEntry()" style="margin-bottom:16px">+ Registrar contacto</button>';
-      h+='<div class="sec-lbl" style="margin-bottom:6px">Contactos registrados</div>';
-      h+='<div class="tl">';
-      all.forEach(function(l){h+=buildTLEntry(l);});
-      h+='</div></div>';
-      el.innerHTML=h;
-    } else {
-      renderTabSeg(r); // fallback to local-only view
-    }
-  })
-  .catch(function(){renderTabSeg(r);});
-}
-
-
-// ══════════════════════════════════════════════════════════════════
-//  CENTRO DE CONTROL — funciones nuevas
-// ══════════════════════════════════════════════════════════════════
-
-// Segmentos del Radar
-var SEG_RADAR_ACTIVE = '';
-var segLastContact = {}; // rif -> {fecha, tipo} - se carga al entrar al módulo
-
-function getSegRadarData(){
-  // Usa la misma base filtrada que la tabla — respeta período, líder, tipo, estatus
-  var base = getSegData()||[];
-  return {
-    sinNotif:   base.filter(function(r){ return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE'; }),
-    sinMov:     base.filter(function(r){
-      if(r['ESTATUS_LEGAL']==='CONTRATO FIRMADO')return false;
-      var dy=calcDays(r['Fecha de Instalacion Cliente']);
-      return dy!==null&&dy>30;
-    }),
-    docsPend:   base.filter(function(r){ return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']); }),
-    porFirmar:  base.filter(function(r){ return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR'; }),
-    sinCarpeta: base.filter(function(r){ var u=cleanVal(r['Carpeta_Drive_URL']||''); return !u.startsWith('http'); })
-  };
-}
-
-function renderSegRadar(){
-  var d = getSegRadarData();
-  var cards = [
-    {key:'sinNotif',  icon:'🆕', label:'Sin notificar',    color:'var(--blue)',   count:d.sinNotif.length},
-    {key:'sinMov',    icon:'⏰', label:'Sin movimiento',   color:'var(--amber)',  count:d.sinMov.length},
-    {key:'docsPend',  icon:'📋', label:'Docs. pendientes', color:'var(--red)',    count:d.docsPend.length},
-    {key:'porFirmar', icon:'✍️', label:'Por firmar',       color:'var(--green)',  count:d.porFirmar.length},
-    {key:'sinCarpeta',icon:'📁', label:'Sin carpeta Drive',color:'var(--text3)',  count:d.sinCarpeta.length},
-  ];
-  var el = document.getElementById('segRadar');
-  if(!el) return;
-  el.innerHTML = cards.map(function(c){
-    var active = SEG_RADAR_ACTIVE===c.key ? 'border-color:'+c.color+';background:var(--surface2)' : '';
-    return '<div onclick="segRadarFilter(\"'+c.key+'\")" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 12px;cursor:pointer;transition:all .15s;text-align:center;'+active+'">'
-      + '<div style="font-size:20px;margin-bottom:4px">'+c.icon+'</div>'
-      + '<div style="font-size:24px;font-weight:700;color:'+c.color+';line-height:1;margin-bottom:4px">'+c.count+'</div>'
-      + '<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+c.label+'</div>'
-    + '</div>';
-  }).join('');
-}
-
-
-function segCrearCarpeta(rif){
-  var r=S.all.find(function(x){return x['RIF']===rif;});
-  if(!r||!APPS_SCRIPT_URL)return;
-  toast('Creando carpeta...','');
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-    action:'crearExpediente',rif:r['RIF'],nombre:r['RAZON SOCIAL'],tipo:r['TIPO_CLIENTE']||'GENERAL'
-  })}).then(function(res){return res.json();}).then(function(rs){
-    if(rs.ok){
-      r['Carpeta_Drive_URL']=rs.url;
-      var inAll=S.all.find(function(x){return x['RIF']===rif;});
-      if(inAll)inAll['Carpeta_Drive_URL']=rs.url;
-      toast('Carpeta creada ✓','ok');
-      renderSegTab();
-      renderSegRadar();
-    }else{toast('Error: '+(rs.error||''),'err');}
-  }).catch(function(){toast('Error de conexión','err');});
-}
-
-function segRadarFilter(key){
-  SEG_RADAR_ACTIVE = SEG_RADAR_ACTIVE===key ? '' : key;
-  renderSegRadar();
-  renderSegTab();
-}
-
-function getSegDataForRadar(){
-  if(!SEG_RADAR_ACTIVE) return null;
-  return getSegRadarData()[SEG_RADAR_ACTIVE]||[];
-}
-
+// ── Ranking ───────────────────────────────────────────────────────────────
 function renderRanking(){
-  var tbl = document.getElementById('rankingTbl');
-  if(!tbl) return;
-  var base = S.rol==='LIDER' ? S.all.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);}) : S.all;
-  var lids = [...new Set(base.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
+  var tbl=document.getElementById('rankingTbl');if(!tbl)return;
+  var base=S.rol==='LIDER'?S.all.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);}):S.all;
+  var lids=[...new Set(base.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
   if(!lids.length){tbl.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Sin datos</td></tr>';return;}
-  tbl.innerHTML = lids.map(function(l){
-    var carr  = base.filter(function(r){return r['EJECUTIVO']===l;});
-    var sinN  = carr.filter(function(r){return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
-    var estanc= carr.filter(function(r){var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30&&r['ESTATUS_LEGAL']!=='CONTRATO FIRMADO';}).length;
-    var docs  = carr.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']);}).length;
-    var firma = carr.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';}).length;
-    var cls1  = sinN>0?'color:var(--blue);font-weight:600':'color:var(--text2)';
-    var cls2  = estanc>5?'color:var(--red);font-weight:600':estanc>0?'color:var(--amber);font-weight:600':'color:var(--text2)';
-    var cls3  = docs>0?'color:var(--amber)':'color:var(--text2)';
-    var cls4  = firma>0?'color:var(--green);font-weight:600':'color:var(--text2)';
+  tbl.innerHTML=lids.map(function(l){
+    var carr=base.filter(function(r){return r['EJECUTIVO']===l;});
+    var sinN =carr.filter(function(r){return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
+    var est  =carr.filter(function(r){return (calcDays(r['Fecha de Instalacion Cliente'])||0)>30&&r['ESTATUS_LEGAL']!=='CONTRATO FIRMADO';}).length;
+    var docs =carr.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']);}).length;
+    var firma=carr.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';}).length;
     return '<tr>'
-      + '<td style="font-weight:600">'+esc(l.split(' ')[0]+' '+( l.split(' ')[1]||''))+'</td>'
-      + '<td style="text-align:center">'+carr.length+'</td>'
-      + '<td style="text-align:center;'+cls1+'">'+sinN+'</td>'
-      + '<td style="text-align:center;'+cls2+'">'+estanc+'</td>'
-      + '<td style="text-align:center;'+cls3+'">'+docs+'</td>'
-      + '<td style="text-align:center;'+cls4+'">'+firma+'</td>'
-    + '</tr>';
+      +'<td style="font-weight:600">'+esc(l.split(' ').slice(0,2).join(' '))+'</td>'
+      +'<td style="text-align:center">'+carr.length+'</td>'
+      +'<td style="text-align:center;color:'+(sinN?'var(--blue)':'var(--text3)')+'">'+sinN+'</td>'
+      +'<td style="text-align:center;color:'+(est>5?'var(--red)':est>0?'var(--amber)':'var(--text3)')+'">'+est+'</td>'
+      +'<td style="text-align:center;color:'+(docs?'var(--amber)':'var(--text3)')+'">'+docs+'</td>'
+      +'<td style="text-align:center;color:'+(firma?'var(--green)':'var(--text3)')+'">'+firma+'</td>'
+    +'</tr>';
   }).join('');
 }
 
 function toggleRanking(){
-  var p=document.getElementById('rankingPanel');
-  var c=document.getElementById('rankingChevron');
-  if(!p||!c)return;
+  var p=document.getElementById('rankingPanel');var c=document.getElementById('rankingChevron');if(!p||!c)return;
   var open=p.style.display!=='none';
   p.style.display=open?'none':'block';
-  c.textContent=open?'▶':'▼';
-  if(!open) renderRanking();
+  c.textContent=open?'▶ Ver':'▼ Ocultar';
+  if(!open)renderRanking();
 }
 
 function toggleEnvioSemanal(){
-  var p=document.getElementById('envioSemanalPanel');
-  var c=document.getElementById('envioChevron');
-  if(!p||!c)return;
+  var p=document.getElementById('envioSemanalPanel');var c=document.getElementById('envioChevron');if(!p||!c)return;
   var open=p.style.display!=='none';
   p.style.display=open?'none':'block';
-  c.textContent=open?'▶':'▼';
+  c.textContent=open?'▶ Ver':'▼ Ocultar';
 }
 
-function toggleSegLog(){
-  var p=document.getElementById('segLogPanel');
-  var c=document.getElementById('segLogChevron');
-  if(!p||!c)return;
-  var open=p.style.display!=='none';
-  p.style.display=open?'none':'block';
-  c.textContent=open?'▶':'▼';
-  if(!open) renderSegLogNew();
+// ── Crear carpeta Drive desde tabla ───────────────────────────────────────
+function segCrearCarpeta(rif){
+  var r=S.all.find(function(x){return x['RIF']===rif;});
+  if(!r||!APPS_SCRIPT_URL)return;
+  toast('Creando carpeta...','');
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'crearExpediente',rif:r['RIF'],nombre:r['RAZON SOCIAL'],tipo:r['TIPO_CLIENTE']||'GENERAL'})})
+  .then(function(res){return res.json();}).then(function(rs){
+    if(rs.ok){r['Carpeta_Drive_URL']=rs.url;var inAll=S.all.find(function(x){return x['RIF']===rif;});if(inAll)inAll['Carpeta_Drive_URL']=rs.url;toast('Carpeta creada ✓','ok');renderSegTab();renderSegRadar();}
+    else{toast('Error: '+(rs.error||''),'err');}
+  }).catch(function(){toast('Error de conexión','err');});
 }
 
-function renderSegLogNew(){
-  var tbl=document.getElementById('segLogTbl');
-  if(!tbl)return;
-  if(!segLog.length){
-    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Sin envíos en esta sesión</td></tr>';
-    return;
-  }
-  tbl.innerHTML=segLog.map(function(l){
-    return '<tr>'
-      + '<td></td>'
-      + '<td>'+esc(l.cliente)+'</td>'
-      + '<td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td>'
-      + '<td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td>'
-      + '<td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td>'
-      + '<td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td>'
-      + '<td>'+esc(l.dest||'')+'</td>'
-      + '<td>✅</td>'
-    + '</tr>';
-  }).join('');
-}
-
-// ── renderSegTab mejorada: integra filtro de radar + columna contacto ───────
-
-function initSeg(){
-  var lid=document.getElementById('segLider');
-  if(!lid)return;
-  var lids=[];
-  S.all.forEach(function(r){
-    if(r['EJECUTIVO']&&r['EJECUTIVO']!=='Pendiente'&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);
-  });
-  lids.sort();
-  lid.innerHTML='<option value="">Todos</option>';
-  lids.forEach(function(l){
-    var o=document.createElement('option');
-    o.value=l;o.textContent=l;
-    if(S.rol==='LIDER'&&normalizeStr(l)===normalizeStr(S.user))o.selected=true;
-    lid.appendChild(o);
-  });
-  // Cargar último contacto desde SEGUIMIENTO_LOG
-  cargarUltimoContacto();
-  // Poblar dropdown ccLider del panel de envío masivo
-  var ccLid=document.getElementById('ccLider');
-  if(ccLid){
-    ccLid.innerHTML='<option value="">Todos</option>';
-    lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;ccLid.appendChild(o);});
-  }
-  try{refreshSeg();}catch(e){console.warn('initSeg:',e);}
-}
-
+// ── Último contacto ───────────────────────────────────────────────────────
 function cargarUltimoContacto(){
-  // Carga resumen de último contacto por RIF desde el GAS
   if(!APPS_SCRIPT_URL)return;
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarUltimoContacto'})})
   .then(function(r){return r.json();})
   .then(function(rs){
     if(rs.ok&&rs.contactos){
       segLastContact={};
-      rs.contactos.forEach(function(c){
-        if(c.rif) segLastContact[c.rif.toString().trim()]={ts:c.fecha,tipo:c.canal||'Gestión'};
-      });
-      renderSegTab();
-      renderSegRadar();
+      rs.contactos.forEach(function(c){if(c.rif)segLastContact[c.rif.toString().trim()]={ts:c.fecha,tipo:c.canal||'Gestión'};});
     }
-  })
-  .catch(function(){
-    // Sin conexión — mostrar igual sin datos de contacto
-    renderSegTab();
-    renderSegRadar();
-  });
+    renderSegTab();renderSegRadar();
+  }).catch(function(){renderSegTab();renderSegRadar();});
 }
+
+// ── Init ──────────────────────────────────────────────────────────────────
+function initSeg(){
+  var lid=document.getElementById('segLider');
+  if(!lid)return;
+  var lids=[];
+  S.all.forEach(function(r){if(r['EJECUTIVO']&&r['EJECUTIVO']!=='Pendiente'&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);});
+  lids.sort();
+  lid.innerHTML='<option value="">Todos</option>';
+  lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;if(S.rol==='LIDER'&&normalizeStr(l)===normalizeStr(S.user))o.selected=true;lid.appendChild(o);});
+  // Populate rLider for envio semanal
+  var rLid=document.getElementById('rLider');
+  if(rLid){rLid.innerHTML='<option value="">Todos</option>';lids.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;rLid.appendChild(o);});}
+  cargarUltimoContacto();
+  try{refreshSeg();}catch(e){console.warn('initSeg:',e);}
+}
+
 
 
 // ESTATUS MULTISELECT
