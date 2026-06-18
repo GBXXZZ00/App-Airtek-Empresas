@@ -867,49 +867,180 @@ tbody tr:hover td{background:var(--surface2)}
   
 
     <div class="view" id="view-seguimiento">
-      <div class="view-hd"><div><div class="view-title">📬 Seguimiento</div><div class="view-sub" id="segSub">Bandeja de notificaciones</div></div><button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button></div><div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><button class="seg-chip on" id="seg-tab-pend" onclick="switchSegTab('pend')">Pendientes</button><button class="seg-chip" id="seg-tab-sinmov" onclick="switchSegTab('sinmov')">Sin movimiento (+30d)</button><button class="seg-chip" id="seg-tab-firmar" onclick="switchSegTab('firmar')">Pend. por firmar</button><button class="seg-chip" id="seg-tab-log" onclick="switchSegTab('log')">Historial</button></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-<div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div>
-<div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
-<div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab()"></div>
-<div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab()"></div>
-<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
-<button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Notificar seleccionados</button>
-<button class="btn btn-g btn-sm" onclick="segSelectAll()">Seleccionar todos</button>
-<button class="btn btn-g btn-sm" onclick="exportSegCSV()" title="Exportar CSV">⬇ CSV</button>
-<button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar filtros">✕</button>
-</div></div></div><div class="tbl-wrap"><table><thead><tr><th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Obs.</th><th>Acción</th></tr></thead><tbody id="segTbl"></tbody></table></div><div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <div class="rpt-title" style="margin-bottom:0">✉ Preparar notificación</div>
-            <button onclick="document.getElementById('segMsgPanel').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1">&times;</button>
+
+      <!-- ══ CABECERA ══════════════════════════════════════════════════════ -->
+      <div class="view-hd">
+        <div>
+          <div class="view-title">🎯 Centro de Control</div>
+          <div class="view-sub" id="segSub">Gestión y seguimiento de cartera</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button>
+        </div>
+      </div>
+
+      <!-- ══ BLOQUE 1: RADAR DE GESTIÓN ════════════════════════════════════ -->
+      <div id="segRadar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
+
+      <!-- ══ BLOQUE 2: FILTROS ══════════════════════════════════════════════ -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fp-group"><label>Líder</label><select class="fp-sel" id="segLider" onchange="renderSegTab()"><option value="">Todos</option></select></div>
+          <div class="fp-group"><label>Tipo</label><select class="fp-sel" id="segTipoFil" onchange="renderSegTab()"><option value="">Todos</option><option>PYMES</option><option>DEDICADO CORPORATIVO</option><option>DEDICADO ISP</option><option>DEDICADO CORPORATIVO + PYME</option><option>DEDICADO ISP + PYME</option></select></div>
+          <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="segDesde" onchange="renderSegTab()"></div>
+          <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="renderSegTab()"></div>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
+            <button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Gestionar seleccionados</button>
+            <button class="btn btn-g btn-sm" onclick="segSelectAll()">☑ Todos</button>
+            <button class="btn btn-g btn-sm" onclick="exportSegCSV()" title="Exportar CSV">⬇ CSV</button>
+            <button class="btn btn-g btn-sm" onclick="clearSegFilters()" title="Limpiar">✕</button>
           </div>
-          <div style="margin-bottom:14px">
-            <div class="sec-lbl" style="margin-bottom:8px">Destinatario</div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px" id="segDestinatarioOpts"></div>
-            <input id="segCorreoCustom" placeholder="O escribe un correo personalizado..." style="margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none" oninput="segGenerateMsg()">
+        </div>
+      </div>
+
+      <!-- ══ BLOQUE 3: TABLA PRINCIPAL ══════════════════════════════════════ -->
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px"><input type="checkbox" id="segCheckAll" onchange="segToggleAll(this)"></th>
+              <th>Cliente</th>
+              <th>Ejecutivo</th>
+              <th>Estatus</th>
+              <th>Días</th>
+              <th>Contacto</th>
+              <th>Obs.</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="segTbl"></tbody>
+        </table>
+      </div>
+
+      <!-- ══ PANEL DE MENSAJE (existente, reorganizado) ══════════════════════ -->
+      <div id="segMsgPanel" style="display:none;margin-top:16px"><div class="rpt-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="rpt-title" style="margin-bottom:0">✉ Preparar notificación</div>
+          <button onclick="document.getElementById('segMsgPanel').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1">&times;</button>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="sec-lbl" style="margin-bottom:8px">Destinatario</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="segDestinatarioOpts"></div>
+          <input id="segCorreoCustom" placeholder="O escribe un correo personalizado..." style="margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none" oninput="segGenerateMsg()">
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="sec-lbl" style="margin-bottom:8px">Tipo de mensaje</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="segTipoOpts"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div class="sec-lbl" style="margin-bottom:4px">CC</div>
+            <input id="segCcInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
           </div>
-          <div style="margin-bottom:14px">
-            <div class="sec-lbl" style="margin-bottom:8px">Tipo de mensaje</div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px" id="segTipoOpts"></div>
+          <div style="flex:2;min-width:200px">
+            <div class="sec-lbl" style="margin-bottom:4px">Asunto</div>
+            <input id="segMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
           </div>
-          <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-            <div style="flex:1;min-width:200px">
-              <div class="sec-lbl" style="margin-bottom:4px">CC</div>
-              <input id="segCcInput" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
+        </div>
+        <textarea id="segMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:220px;outline:none"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button>
+          <button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar correo</button>
+        </div>
+      </div></div>
+
+      <!-- ══ BLOQUE 4: RANKING POR LÍDER (colapsable) ═══════════════════════ -->
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleRanking()">
+          <div class="rpt-title" style="margin-bottom:0">📊 Actividad por Líder</div>
+          <span id="rankingChevron" style="color:var(--text3);font-size:12px">▼</span>
+        </div>
+        <div id="rankingPanel">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Ejecutivo</th><th>Cartera</th><th>Sin notificar</th><th>Estancados +30d</th><th>Docs pendientes</th><th>Por firmar</th></tr></thead>
+              <tbody id="rankingTbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ BLOQUE 5: ENVÍO SEMANAL (Reportes fusionado, colapsable) ════════ -->
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleEnvioSemanal()">
+          <div class="rpt-title" style="margin-bottom:0">📤 Envío masivo semanal</div>
+          <span id="envioChevron" style="color:var(--text3);font-size:12px">▶</span>
+        </div>
+        <div id="envioSemanalPanel" style="display:none">
+          <div class="rpt-card">
+            <div class="rpt-title">Filtros del reporte</div>
+            <div class="rpt-grid">
+              <div class="fp-group"><label>Ejecutivo</label><select class="fp-sel" id="rLider"><option value="">Todos</option></select></div>
+              <div class="fp-group" style="position:relative">
+                <label>Estatus</label>
+                <button id="rEstatusBtn" onclick="toggleEstatusDD()" class="fp-sel" style="cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <span id="rEstatusLabel">Todos</span><span style="opacity:.5">▾</span>
+                </button>
+                <div id="rEstatusDD" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:5px;min-width:220px;padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.3)">
+                  <div style="padding:6px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between">
+                    <button onclick="selectAllEstatus()" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Todos</button>
+                    <button onclick="clearEstatus()" style="background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer;font-family:Inter,sans-serif">Limpiar</button>
+                  </div>
+                  <label class="est-opt"><input type="checkbox" value="GRANDES NEGOCIOS" onchange="updateEstatusLabel()"> Grandes Negocios</label>
+                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR DOCUMENTOS" onchange="updateEstatusLabel()"> Pend. Documentos</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS SOLICITADOS" onchange="updateEstatusLabel()"> Docs. Solicitados</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS EN REVISION" onchange="updateEstatusLabel()"> Docs. en Revisión</label>
+                  <label class="est-opt"><input type="checkbox" value="DOCUMENTOS RECIBIDOS" onchange="updateEstatusLabel()"> Docs. Recibidos</label>
+                  <label class="est-opt"><input type="checkbox" value="CONTRATO EN CURSO" onchange="updateEstatusLabel()"> Contrato en Curso</label>
+                  <label class="est-opt"><input type="checkbox" value="PENDIENTE POR FIRMAR" onchange="updateEstatusLabel()"> Pend. por Firmar</label>
+                  <label class="est-opt"><input type="checkbox" value="CONTRATO FIRMADO" onchange="updateEstatusLabel()"> Contrato Firmado</label>
+                </div>
+              </div>
+              <div class="fp-group"><label>Fecha desde</label><input type="date" class="fp-sel" id="rDesde"></div>
+              <div class="fp-group"><label>Fecha hasta</label><input type="date" class="fp-sel" id="rHasta"></div>
             </div>
-            <div style="flex:2;min-width:200px">
-              <div class="sec-lbl" style="margin-bottom:4px">Asunto</div>
-              <input id="segMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none">
+            <button class="btn btn-p" onclick="genReport()" style="margin-top:10px">Generar reporte</button>
+          </div>
+          <div id="rptResult" style="display:none;margin-top:12px">
+            <div class="tbl-wrap" style="margin-bottom:12px">
+              <table><thead><tr><th>Razón Social</th><th>RIF</th><th>Ejecutivo</th><th>Estatus</th><th>Días</th><th>Instalación</th><th>Observación</th></tr></thead>
+              <tbody id="rptTbl"></tbody></table>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-g" onclick="exportCSV()">⬇ CSV</button>
+              <button class="btn btn-p" onclick="sendReport()">✉ Enviar por correo</button>
+              <button class="btn btn-g" onclick="genWhatsApp()" style="border-color:var(--green);color:var(--green)">📱 WA Resumen</button>
+              <button class="btn btn-g" onclick="exportPDF()" style="border-color:var(--purple);color:var(--purple)">📄 PDF</button>
             </div>
           </div>
-          <textarea id="segMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:220px;outline:none"></textarea>
-          <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-            <button class="btn btn-g btn-sm" onclick="copySegMsg()">📋 Copiar</button>
-            <button class="btn btn-p btn-sm" onclick="sendSegEmail()">✉ Enviar correo</button>
+          <div id="waPanel" style="display:none;margin-top:16px">
+            <div class="rpt-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div class="rpt-title" style="margin-bottom:0">📱 Resumen para WhatsApp</div>
+                <button class="btn btn-g btn-sm" id="waCopyBtn" onclick="copyWAMsg()">📋 Copiar mensaje</button>
+              </div>
+              <textarea id="waMsgBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:320px;outline:none"></textarea>
+            </div>
           </div>
-        </div></div></div>
-</div>
-</div>
+        </div>
+      </div>
+
+      <!-- ══ LOG DE ENVÍOS (historial de la sesión) ═════════════════════════ -->
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer" onclick="toggleSegLog()">
+          <div class="rpt-title" style="margin-bottom:0">📋 Historial de envíos (sesión)</div>
+          <span id="segLogChevron" style="color:var(--text3);font-size:12px">▶</span>
+        </div>
+        <div id="segLogPanel" style="display:none">
+          <div class="tbl-wrap">
+            <table><thead><tr><th></th><th>Cliente</th><th>RIF</th><th>Ejecutivo</th><th>Tipo</th><th>Fecha</th><th>Destinatario</th><th></th></tr></thead>
+            <tbody id="segLogTbl"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
 
 
@@ -947,7 +1078,9 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxG_j7aqFdVS9_5zZTMQdt2eIS3cUt8RkqqZnGw-AaomhHj3XwQwmtxVE0j-yC51a-HJg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4e_PqkyOGEzfS8n3rctHbKSjtzCNwtDtt7wartmHhGP-3z5vmBxSqlvOgTJ1lk_FlgA/exec;
+// Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
+const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -1001,6 +1134,13 @@ function selectTeam(t){
   document.getElementById('screen1').classList.remove('hidden');
   loadConfigForLogin();
 }
+// Si hay deep link con ?rif=, saltar directo al login sin mostrar screen0
+(function(){
+  if(PENDING_RIF){
+    // Seleccionar ventas automáticamente para deep links
+    selectTeam('ventas');
+  }
+})();
 
 function showComingSoon(){ toast('Módulo de Aliados disponible próximamente',''); }
 
@@ -1056,6 +1196,24 @@ async function doLogin(){
   }
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();
   document.getElementById('loader').classList.add('off');
+  // Deep link: si hay RIF pendiente, abrir ese expediente
+  if(PENDING_RIF){
+    var rifTarget=PENDING_RIF.toString().trim();
+    var idx=S.filtered.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+    if(idx>=0){
+      openExp(idx);
+    } else {
+      // Puede estar fuera de página — buscarlo en S.all y ajustar filtro
+      var idxAll=S.all.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+      if(idxAll>=0){
+        // Limpiar filtros para que aparezca
+        document.getElementById('searchInp').value='';
+        applyFilters();
+        var idx2=S.filtered.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+        if(idx2>=0) openExp(idx2);
+      }
+    }
+  }
 }
 
 function doLogout(){
@@ -2748,7 +2906,18 @@ var segTab='pend';var segLog=[];var histLog=[];var segSelected={};
 
 function switchSegTab(tab){segTab=tab;segSelected={};['pend','sinmov','firmar','log'].forEach(function(t){var el=document.getElementById('seg-tab-'+t);if(el){if(t===tab){el.classList.add('on');el.classList.add('seg-chip');}else{el.classList.remove('on');}}});renderSegTab();}
 
-function refreshSeg(){try{renderSegTab();}catch(e){console.warn('seg:',e);}var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;var badge=document.getElementById('segBadge');if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}}
+function refreshSeg(){
+  try{
+    renderSegRadar();
+    renderSegTab();
+    // Re-render ranking if visible
+    var rp=document.getElementById('rankingPanel');
+    if(rp&&rp.style.display!=='none')renderRanking();
+  }catch(e){console.warn('seg:',e);}
+  var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
+  var badge=document.getElementById('segBadge');
+  if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}
+}
 
 function getSegData(){
   var base=getBase();
@@ -2792,7 +2961,59 @@ function getSegData(){
   return data;
 }
 
-function renderSegTab(){if(segTab==='log'){renderSegLog();return;}var data=getSegData()||[];var sub=document.getElementById('segSub');if(sub)sub.textContent=data.length+' registros';var ca=document.getElementById('segCheckAll');if(ca)ca.checked=false;var labels={pend:'Notificar',sinmov:'Recordar',firmar:'Recordar cliente'};var tbl=document.getElementById('segTbl');if(!tbl)return;if(!data.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';return;}var html='';data.forEach(function(r,i){var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};var dy=calcDays(r['Fecha de Instalacion Cliente']);var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';var rif=r['RIF']||'';var chk=segSelected[rif]?'checked':'';html+='<tr><td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['RAZON SOCIAL'])+'</td><td style="font-size:11px;color:var(--text2)">'+esc(rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td><td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td><td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'\u2014')+'</td><td style="font-size:11px;max-width:120px;white-space:normal">'+esc(r['Observacion']||'')+'</td><td style=\"display:flex;gap:4px\"><button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">'+(labels[segTab]||'Enviar')+'</button><button class=\"btn btn-g btn-sm\" onclick=\"segWAQuick('+i+')\" style=\"font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366\" title=\"WA\">WA</button></td></tr>';});tbl.innerHTML=html;}
+function renderSegTab(){
+  if(segTab==='log'){renderSegLogNew();return;}
+  // Si hay filtro de radar activo, usarlo; si no, getSegData() normal
+  var radarData = getSegDataForRadar();
+  var base = radarData !== null ? radarData : (getSegData()||[]);
+  // Filtro adicional por líder del select
+  var lid=(document.getElementById('segLider')||{}).value||'';
+  var data = lid ? base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lid);}) : base;
+  var sub=document.getElementById('segSub');
+  if(sub)sub.textContent=data.length+' clientes';
+  var ca=document.getElementById('segCheckAll');
+  if(ca)ca.checked=false;
+  var tbl=document.getElementById('segTbl');
+  if(!tbl)return;
+  if(!data.length){
+    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin registros</td></tr>';
+    return;
+  }
+  var html='';
+  data.forEach(function(r,i){
+    var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
+    var dy=calcDays(r['Fecha de Instalacion Cliente']);
+    var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
+    var rif=r['RIF']||'';
+    var chk=segSelected[rif]?'checked':'';
+    // Columna último contacto
+    var lc=segLastContact[rif];
+    var lcHtml='<span style="color:var(--text3);font-size:10px">Sin gestión</span>';
+    if(lc){
+      var lcDays=Math.floor((Date.now()-new Date(lc.ts).getTime())/86400000);
+      var lcCol=lcDays<=7?'var(--green)':lcDays<=30?'var(--amber)':'var(--red)';
+      lcHtml='<span style="color:'+lcCol+';font-size:10px">'+lcDays+'d · '+esc(lc.tipo)+'</span>';
+    }
+    // Sin carpeta Drive → mostrar ícono
+    var sinCarp=!cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
+          var carpIco=sinCarp&&S.rol==='ADMIN'?'<button class="btn btn-g btn-sm" data-carp="'+rif+'" onclick="segCrearCarpeta(this.getAttribute(\"data-carp\"))" style="font-size:9px;padding:2px 6px;color:var(--amber);border-color:var(--amber)" title="Crear carpeta">\uD83D\uDCC1</button>':'';
+    html+='<tr>'
+      +'<td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td>'
+      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
+      +'<td style="font-size:12px;color:var(--text2)">'+esc(r['EJECUTIVO'])+'</td>'
+      +'<td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td>'
+      +'<td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td>'
+      +'<td>'+lcHtml+'</td>'
+      +'<td style="font-size:11px;max-width:100px;white-space:normal;color:var(--text2)">'+esc((r['Observacion']||'').slice(0,40))+'</td>'
+      +'<td style="display:flex;gap:4px;align-items:center">'
+        +'<button class="btn btn-p btn-sm" onclick="segActionByIdx('+i+')" style="font-size:10px;padding:4px 8px">Gestionar</button>'
+        +'<button class="btn btn-g btn-sm" onclick="segWAQuick('+i+')" style="font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366" title="WA rápido">WA</button>'
+        +carpIco
+      +'</td>'
+    +'</tr>';
+  });
+  tbl.innerHTML=html;
+}
 
 function renderSegLog(){var tbl=document.getElementById('segTbl');if(!tbl)return;if(!segLog.length){tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">Sin env\u00edos registrados</td></tr>';return;}var html='';segLog.forEach(function(l){html+='<tr><td></td><td>'+esc(l.cliente)+'</td><td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td><td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td><td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td><td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td><td>'+esc(l.dest)+'</td><td>\u2705</td></tr>';});tbl.innerHTML=html;}
 
@@ -3105,13 +3326,171 @@ function renderTabSegFromGAS(r){
   .catch(function(){renderTabSeg(r);});
 }
 
+
+// ══════════════════════════════════════════════════════════════════
+//  CENTRO DE CONTROL — funciones nuevas
+// ══════════════════════════════════════════════════════════════════
+
+// Segmentos del Radar
+var SEG_RADAR_ACTIVE = '';
+var segLastContact = {}; // rif -> {fecha, tipo} - se carga al entrar al módulo
+
+function getSegRadarData(){
+  var base = getBase();
+  return {
+    sinNotif: base.filter(function(r){ return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE'; }),
+    sinMov:   base.filter(function(r){
+      if(['CONTRATO FIRMADO'].includes(r['ESTATUS_LEGAL']))return false;
+      var dy=calcDays(r['Fecha de Instalacion Cliente']);
+      return dy!==null&&dy>30;
+    }),
+    docsPend: base.filter(function(r){ return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']); }),
+    porFirmar: base.filter(function(r){ return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR'; }),
+    sinCarpeta: base.filter(function(r){ var u=cleanVal(r['Carpeta_Drive_URL']||''); return !u.startsWith('http'); })
+  };
+}
+
+function renderSegRadar(){
+  var d = getSegRadarData();
+  var lider = (document.getElementById('segLider')||{}).value||'';
+  if(lider){
+    Object.keys(d).forEach(function(k){
+      d[k]=d[k].filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(lider);});
+    });
+  }
+  var cards = [
+    {key:'sinNotif',  icon:'🆕', label:'Sin notificar',    color:'var(--blue)',   count:d.sinNotif.length},
+    {key:'sinMov',    icon:'⏰', label:'Sin movimiento',   color:'var(--amber)',  count:d.sinMov.length},
+    {key:'docsPend',  icon:'📋', label:'Docs. pendientes', color:'var(--red)',    count:d.docsPend.length},
+    {key:'porFirmar', icon:'✍️', label:'Por firmar',       color:'var(--green)',  count:d.porFirmar.length},
+    {key:'sinCarpeta',icon:'📁', label:'Sin carpeta Drive',color:'var(--text3)',  count:d.sinCarpeta.length},
+  ];
+  var el = document.getElementById('segRadar');
+  if(!el) return;
+  el.innerHTML = cards.map(function(c){
+    var active = SEG_RADAR_ACTIVE===c.key ? 'border-color:'+c.color+';background:var(--surface2)' : '';
+    return '<div onclick="segRadarFilter(\"'+c.key+'\")" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 12px;cursor:pointer;transition:all .15s;text-align:center;'+active+'">'
+      + '<div style="font-size:20px;margin-bottom:4px">'+c.icon+'</div>'
+      + '<div style="font-size:24px;font-weight:700;color:'+c.color+';line-height:1;margin-bottom:4px">'+c.count+'</div>'
+      + '<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+c.label+'</div>'
+    + '</div>';
+  }).join('');
+}
+
+
+function segCrearCarpeta(rif){
+  var r=S.all.find(function(x){return x['RIF']===rif;});
+  if(!r||!APPS_SCRIPT_URL)return;
+  toast('Creando carpeta...','');
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'crearExpediente',rif:r['RIF'],nombre:r['RAZON SOCIAL'],tipo:r['TIPO_CLIENTE']||'GENERAL'
+  })}).then(function(res){return res.json();}).then(function(rs){
+    if(rs.ok){
+      r['Carpeta_Drive_URL']=rs.url;
+      var inAll=S.all.find(function(x){return x['RIF']===rif;});
+      if(inAll)inAll['Carpeta_Drive_URL']=rs.url;
+      toast('Carpeta creada ✓','ok');
+      renderSegTab();
+      renderSegRadar();
+    }else{toast('Error: '+(rs.error||''),'err');}
+  }).catch(function(){toast('Error de conexión','err');});
+}
+
+function segRadarFilter(key){
+  SEG_RADAR_ACTIVE = SEG_RADAR_ACTIVE===key ? '' : key;
+  renderSegRadar();
+  renderSegTab();
+}
+
+function getSegDataForRadar(){
+  if(!SEG_RADAR_ACTIVE) return null;
+  return getSegRadarData()[SEG_RADAR_ACTIVE]||[];
+}
+
+function renderRanking(){
+  var tbl = document.getElementById('rankingTbl');
+  if(!tbl) return;
+  var base = S.rol==='LIDER' ? S.all.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);}) : S.all;
+  var lids = [...new Set(base.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
+  if(!lids.length){tbl.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Sin datos</td></tr>';return;}
+  tbl.innerHTML = lids.map(function(l){
+    var carr  = base.filter(function(r){return r['EJECUTIVO']===l;});
+    var sinN  = carr.filter(function(r){return (r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
+    var estanc= carr.filter(function(r){var dy=calcDays(r['Fecha de Instalacion Cliente']);return dy!==null&&dy>30&&r['ESTATUS_LEGAL']!=='CONTRATO FIRMADO';}).length;
+    var docs  = carr.filter(function(r){return ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS'].includes(r['ESTATUS_LEGAL']);}).length;
+    var firma = carr.filter(function(r){return r['ESTATUS_LEGAL']==='PENDIENTE POR FIRMAR';}).length;
+    var cls1  = sinN>0?'color:var(--blue);font-weight:600':'color:var(--text2)';
+    var cls2  = estanc>5?'color:var(--red);font-weight:600':estanc>0?'color:var(--amber);font-weight:600':'color:var(--text2)';
+    var cls3  = docs>0?'color:var(--amber)':'color:var(--text2)';
+    var cls4  = firma>0?'color:var(--green);font-weight:600':'color:var(--text2)';
+    return '<tr>'
+      + '<td style="font-weight:600">'+esc(l.split(' ')[0]+' '+( l.split(' ')[1]||''))+'</td>'
+      + '<td style="text-align:center">'+carr.length+'</td>'
+      + '<td style="text-align:center;'+cls1+'">'+sinN+'</td>'
+      + '<td style="text-align:center;'+cls2+'">'+estanc+'</td>'
+      + '<td style="text-align:center;'+cls3+'">'+docs+'</td>'
+      + '<td style="text-align:center;'+cls4+'">'+firma+'</td>'
+    + '</tr>';
+  }).join('');
+}
+
+function toggleRanking(){
+  var p=document.getElementById('rankingPanel');
+  var c=document.getElementById('rankingChevron');
+  if(!p||!c)return;
+  var open=p.style.display!=='none';
+  p.style.display=open?'none':'block';
+  c.textContent=open?'▶':'▼';
+  if(!open) renderRanking();
+}
+
+function toggleEnvioSemanal(){
+  var p=document.getElementById('envioSemanalPanel');
+  var c=document.getElementById('envioChevron');
+  if(!p||!c)return;
+  var open=p.style.display!=='none';
+  p.style.display=open?'none':'block';
+  c.textContent=open?'▶':'▼';
+}
+
+function toggleSegLog(){
+  var p=document.getElementById('segLogPanel');
+  var c=document.getElementById('segLogChevron');
+  if(!p||!c)return;
+  var open=p.style.display!=='none';
+  p.style.display=open?'none':'block';
+  c.textContent=open?'▶':'▼';
+  if(!open) renderSegLogNew();
+}
+
+function renderSegLogNew(){
+  var tbl=document.getElementById('segLogTbl');
+  if(!tbl)return;
+  if(!segLog.length){
+    tbl.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Sin envíos en esta sesión</td></tr>';
+    return;
+  }
+  tbl.innerHTML=segLog.map(function(l){
+    return '<tr>'
+      + '<td></td>'
+      + '<td>'+esc(l.cliente)+'</td>'
+      + '<td style="font-size:11px;color:var(--text2)">'+esc(l.rif)+'</td>'
+      + '<td style="font-size:12px;color:var(--text2)">'+esc(l.ejecutivo)+'</td>'
+      + '<td><span class="badge b-gn" style="font-size:10px">'+esc(l.tipo)+'</span></td>'
+      + '<td style="font-size:11px;color:var(--text2)">'+l.fecha+'</td>'
+      + '<td>'+esc(l.dest||'')+'</td>'
+      + '<td>✅</td>'
+    + '</tr>';
+  }).join('');
+}
+
+// ── renderSegTab mejorada: integra filtro de radar + columna contacto ───────
+
 function initSeg(){
   var lid=document.getElementById('segLider');
   if(!lid)return;
-  // Si es LIDER, usar S.all para ver TODOS sus clientes (no solo getBase que ya filtra)
-  var source = S.rol==='LIDER' ? S.all : S.all;
   var lids=[];
-  source.forEach(function(r){
+  S.all.forEach(function(r){
     if(r['EJECUTIVO']&&r['EJECUTIVO']!=='Pendiente'&&lids.indexOf(r['EJECUTIVO'])<0)lids.push(r['EJECUTIVO']);
   });
   lids.sort();
@@ -3119,11 +3498,34 @@ function initSeg(){
   lids.forEach(function(l){
     var o=document.createElement('option');
     o.value=l;o.textContent=l;
-    // Si es LIDER, pre-seleccionar su nombre
     if(S.rol==='LIDER'&&normalizeStr(l)===normalizeStr(S.user))o.selected=true;
     lid.appendChild(o);
   });
+  // Cargar último contacto desde SEGUIMIENTO_LOG
+  cargarUltimoContacto();
   try{refreshSeg();}catch(e){console.warn('initSeg:',e);}
+}
+
+function cargarUltimoContacto(){
+  // Carga resumen de último contacto por RIF desde el GAS
+  if(!APPS_SCRIPT_URL)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarUltimoContacto'})})
+  .then(function(r){return r.json();})
+  .then(function(rs){
+    if(rs.ok&&rs.contactos){
+      segLastContact={};
+      rs.contactos.forEach(function(c){
+        if(c.rif) segLastContact[c.rif.toString().trim()]={ts:c.fecha,tipo:c.canal||'Gestión'};
+      });
+      renderSegTab();
+      renderSegRadar();
+    }
+  })
+  .catch(function(){
+    // Sin conexión — mostrar igual sin datos de contacto
+    renderSegTab();
+    renderSegRadar();
+  });
 }
 
 
