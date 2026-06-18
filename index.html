@@ -1078,7 +1078,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4e_PqkyOGEzfS8n3rctHbKSjtzCNwtDtt7wartmHhGP-3z5vmBxSqlvOgTJ1lk_FlgA/exec;
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4e_PqkyOGEzfS8n3rctHbKSjtzCNwtDtt7wartmHhGP-3z5vmBxSqlvOgTJ1lk_FlgA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1134,13 +1134,12 @@ function selectTeam(t){
   document.getElementById('screen1').classList.remove('hidden');
   loadConfigForLogin();
 }
-// Si hay deep link con ?rif=, saltar directo al login sin mostrar screen0
-(function(){
+// Si hay deep link con ?rif=, saltar directo al login (espera a que el DOM esté listo)
+window.addEventListener('DOMContentLoaded', function(){
   if(PENDING_RIF){
-    // Seleccionar ventas automáticamente para deep links
     selectTeam('ventas');
   }
-})();
+});
 
 function showComingSoon(){ toast('Módulo de Aliados disponible próximamente',''); }
 
