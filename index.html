@@ -244,6 +244,7 @@ tbody tr:hover td{background:var(--surface2)}
 .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:flex-start;justify-content:flex-end}
 #segGestBg{display:none}
 #segGestBg.open{display:flex;justify-content:flex-end;align-items:stretch}
+#segGestDrawer{display:flex;flex-direction:column}
 .drawer-bg.open{display:flex}
 .drawer{background:var(--surface);width:100%;max-width:660px;height:100%;display:flex;flex-direction:column;overflow:hidden;animation:slideIn .28s var(--ease-drawer)}
 @keyframes slideIn{from{transform:translateX(56px);opacity:0}to{transform:translateX(0);opacity:1}}
@@ -1225,6 +1226,9 @@ async function reloadData(){
 }
 
 // ── Función nuclear de limpieza: único punto de verdad para valores del Sheet ─
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: UTILIDADES COMPARTIDAS — no modificar sin revisar dependencias
+// ═══════════════════════════════════════════════════════════════════
 function cleanVal(v){
   if(v===undefined||v===null)return '';
   var s=String(v).trim();
@@ -1353,6 +1357,9 @@ function clearFilters(){
   applyFilters();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: CLIENTES — tabla, filtros, KPIs, paginación
+// ═══════════════════════════════════════════════════════════════════
 function applyFilters(){
   const q=document.getElementById('searchInp').value.toLowerCase();
   const l=document.getElementById('fLider').value;
@@ -1441,6 +1448,10 @@ function renderTable(){
 function smartPgs(c,t){if(t<=7)return Array.from({length:t},(_,i)=>i+1);if(c<=4)return[1,2,3,4,5,'…',t];if(c>=t-3)return[1,'…',t-4,t-3,t-2,t-1,t];return[1,'…',c-1,c,c+1,'…',t];}
 
 // EXPEDIENTE
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: EXPEDIENTE DRAWER — pestañas Datos, Docs, Seguimiento, Historial
+// NO TOCAR: funciona estable
+// ═══════════════════════════════════════════════════════════════════
 function openExp(idx){
   const r=S.filtered[idx];if(!r)return;
   S.cur={...r};S.nReps=countReps(r);
@@ -1779,6 +1790,26 @@ function replaceDoc(btn,col){
   inp.accept='.pdf,.jpg,.jpeg,.png';
   inp.onchange=function(){handleFile(inp,col);};
   inp.click();
+}
+
+
+// ── tlIcon: íconos para la línea de tiempo ────────────────────────────────
+function tlIcon(tipo){
+  var t=(tipo||'').toLowerCase();
+  if(t.includes('whatsapp')||t.includes('wa')||t==='wal')return{cls:'tl-ic-wa',ico:'💬'};
+  if(t.includes('correo')||t.includes('mail')||t.includes('cliente_firma')||t.includes('cliente_docs')||t.includes('cliente_recordatorio'))return{cls:'tl-ic-mail',ico:'✉️'};
+  if(t.includes('contrato_firmado'))return{cls:'tl-ic-est',ico:'✅'};
+  if(t.includes('pend_firmar')||t.includes('pendiente por firmar'))return{cls:'tl-ic-est',ico:'✍️'};
+  if(t.includes('docs_recibidos')||t.includes('documentos recibidos'))return{cls:'tl-ic-seg',ico:'📥'};
+  if(t.includes('cliente_nuevo'))return{cls:'tl-ic-est',ico:'🆕'};
+  if(t.includes('reporte'))return{cls:'tl-ic-mail',ico:'📊'};
+  if(t.includes('abogad')||t.includes('legal'))return{cls:'tl-ic-seg',ico:'⚖️'};
+  if(t.includes('estatus')||t.includes('cambio')||t.includes('estatus_legal'))return{cls:'tl-ic-est',ico:'🔄'};
+  if(t.includes('llamada'))return{cls:'tl-ic-seg',ico:'📞'};
+  if(t.includes('visita'))return{cls:'tl-ic-seg',ico:'🤝'};
+  if(t.includes('doc'))return{cls:'tl-ic-seg',ico:'📄'};
+  if(t.includes('notif')||t.includes('app_seg'))return{cls:'tl-ic-mail',ico:'🔔'};
+  return{cls:'tl-ic-seg',ico:'📝'};
 }
 
 function renderTabHist(r){
@@ -2829,6 +2860,9 @@ function exportPDF(){
   w.document.write(html);w.document.close();setTimeout(function(){w.print();},500);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: CENTRO DE CONTROL — tabla de gestión, radar, drawer gestión
+// ═══════════════════════════════════════════════════════════════════
 var segLog=[];var histLog=[];var segSelected={};
 var segLastContact={};
 var SEG_RADAR_ACTIVE='';
@@ -2876,7 +2910,6 @@ function getSegRadarSubset(base){
 // ── Radar ─────────────────────────────────────────────────────────────────
 function renderSegRadar(){
   var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL';});
-  // Apply period/lider/tipo/est filters but NOT radar filter
   var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
   var lid=(document.getElementById('segLider')||{}).value||'';
   var est=(document.getElementById('segEstatusFil')||{}).value||'';
@@ -2891,23 +2924,31 @@ function renderSegRadar(){
   if(tipo)base=base.filter(function(r){return r['TIPO_CLIENTE']===tipo;});
   var rd=getSegRadarSubset(base);
   var cards=[
-    {key:'sinNotif',  icon:'🆕',label:'Sin notificar',   color:'var(--blue)',  n:rd.sinNotif.length},
-    {key:'sinMov',    icon:'⏰',label:'Sin movimiento',  color:'var(--amber)', n:rd.sinMov.length},
-    {key:'docsPend',  icon:'📋',label:'Docs pendientes', color:'var(--red)',   n:rd.docsPend.length},
-    {key:'porFirmar', icon:'✍️',label:'Por firmar',      color:'var(--green)', n:rd.porFirmar.length},
-    {key:'sinCarpeta',icon:'📁',label:'Sin carpeta',     color:'var(--text3)', n:rd.sinCarpeta.length},
+    {key:'sinNotif',  icon:'🆕', label:'Sin notificar',   color:'var(--blue)',  n:rd.sinNotif.length},
+    {key:'sinMov',    icon:'⏰', label:'Sin movimiento',  color:'var(--amber)', n:rd.sinMov.length},
+    {key:'docsPend',  icon:'📋', label:'Docs pendientes', color:'var(--red)',   n:rd.docsPend.length},
+    {key:'porFirmar', icon:'✍️', label:'Por firmar',      color:'var(--green)', n:rd.porFirmar.length},
+    {key:'sinCarpeta',icon:'📁', label:'Sin carpeta',     color:'var(--text3)', n:rd.sinCarpeta.length},
   ];
-  var el=document.getElementById('segRadar');if(!el)return;
+  var el=document.getElementById('segRadar');
+  if(!el)return;
   el.innerHTML=cards.map(function(c){
     var isActive=SEG_RADAR_ACTIVE===c.key;
     var border=isActive?'border-color:'+c.color+';box-shadow:0 0 0 2px '+c.color+'44':'';
-    return '<div onclick="segRadarFilter(\"'+c.key+'\")" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 10px;cursor:pointer;transition:all .15s;text-align:center;'+border+'">'
+    return '<div data-radarkey="'+c.key+'" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 10px;cursor:pointer;transition:all .15s;text-align:center;'+border+'">'
       +'<div style="font-size:18px;margin-bottom:4px">'+c.icon+'</div>'
       +'<div style="font-size:22px;font-weight:700;color:'+c.color+';line-height:1;margin-bottom:4px">'+c.n+'</div>'
       +'<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1.3">'+c.label+'</div>'
     +'</div>';
   }).join('');
+  // Attach click handlers via JS (no inline onclick = no escaping issues)
+  el.querySelectorAll('[data-radarkey]').forEach(function(card){
+    card.addEventListener('click', function(){
+      segRadarFilter(card.getAttribute('data-radarkey'));
+    });
+  });
 }
+
 
 function segRadarFilter(key){
   SEG_RADAR_ACTIVE=SEG_RADAR_ACTIVE===key?'':key;
