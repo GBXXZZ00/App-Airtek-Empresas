@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Leaflet — mapa de factibilidad -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -565,6 +568,25 @@ tbody tr:hover td{background:var(--surface2)}
 .fact-fab{display:none;position:fixed;bottom:20px;right:16px;z-index:200;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:12px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,132,255,.4);gap:8px;align-items:center;transition:all .2s var(--ease-out)}
 .fact-fab:active{transform:scale(0.96)}
 @media(max-width:860px){.fact-fab{display:flex}}
+@keyframes factResaltar{0%{background:color-mix(in srgb,var(--green-dim) 60%,transparent)}100%{background:none}}
+
+/* ══ MAPA FACTIBILIDAD (separado) ════════════════════════════ */
+.fact-map-wrap{margin-top:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden;display:none}
+.fact-map-wrap.visible{display:block}
+.fact-map-hd{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.fact-map-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.fact-map-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fact-map-leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.fact-map-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+#factMapContainer{height:320px;width:100%;background:var(--surface)}
+@media(max-width:640px){#factMapContainer{height:260px}}
+/* Anular estilos de leaflet que chocan con el dark theme */
+.leaflet-container{font-family:'Inter',sans-serif;background:#1a1a2e}
+.leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.leaflet-popup-tip{background:var(--surface)}
+.leaflet-popup-content{margin:10px 12px;font-size:12px;line-height:1.5}
+.leaflet-bar a{background:var(--surface2);color:var(--text);border-color:var(--border)}
+.leaflet-bar a:hover{background:var(--surface3)}
 </style>
 </head>
 <body>
@@ -1211,6 +1233,19 @@ tbody tr:hover td{background:var(--surface2)}
           <span>🔍</span> Consultar Factibilidad
         </button>
         <div id="factResult"></div>
+      </div>
+
+      <!-- Mapa de factibilidad (aparece tras consultar) -->
+      <div class="fact-map-wrap" id="factMapWrap">
+        <div class="fact-map-hd">
+          <span class="fact-map-title">Vista de cobertura</span>
+          <div class="fact-map-legend">
+            <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#388BFD"></span>En Operación</span>
+            <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#E3B341"></span>Diseño/Otros</span>
+            <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#ff4444;border-radius:50%"></span>Tu punto</span>
+          </div>
+        </div>
+        <div id="factMapContainer"></div>
       </div>
 
       <!-- Botón guardar -->
@@ -3933,11 +3968,12 @@ function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RA
 // ════════════════════════════════════════════════════════════
 
 var FACT_STATE = {
-  tab:        'todos',      // pestaña activa
-  hist:       [],           // historial cargado del Sheet
-  ultimaResp: null,         // último resultado de consulta
-  etiqSel:    'Sin Gestión',// etiqueta seleccionada en el save box
-  pendCambios:[]            // cambios pendientes de reevaluación
+  tab:           'todos',
+  hist:          [],
+  ultimaResp:    null,
+  etiqSel:       'Sin Gestión',
+  pendCambios:   [],
+  recienCambiados: []   // filaIds recién actualizados por reevaluación (para resaltar)
 };
 
 // ── Nav ───────────────────────────────────────────────────────
@@ -4005,6 +4041,18 @@ function factRenderHist(){
     return true;
   });
 
+  // Si hay recién cambiados, ordenarlos primero
+  if(FACT_STATE.recienCambiados && FACT_STATE.recienCambiados.length > 0){
+    var rc = FACT_STATE.recienCambiados;
+    items.sort(function(a, b){
+      var aRec = rc.indexOf(a.id) >= 0;
+      var bRec = rc.indexOf(b.id) >= 0;
+      if(aRec && !bRec) return -1;
+      if(!aRec && bRec) return 1;
+      return 0;
+    });
+  }
+
   var titulo = document.getElementById('factHistTitle');
   if(titulo){
     if(tab === 'potencial') titulo.textContent = '⭐ Clientes potenciales';
@@ -4035,7 +4083,9 @@ function factRenderHist(){
       ? '<div class="fact-hist-cliente">' + escHtml((h.nombre || '') + (h.rif ? ' · '+h.rif : '')) + '</div>'
       : '';
     var telHtml = h.telefono ? ' · 📞 ' + escHtml(h.telefono) : '';
-    html += '<div class="fact-hist-item" style="cursor:pointer" onclick="factAbrirRegistro(' + i + ')">' +
+    var esReciente = FACT_STATE.recienCambiados && FACT_STATE.recienCambiados.indexOf(h.id) >= 0;
+    var estiloItem = 'cursor:pointer' + (esReciente ? ';border-left:3px solid var(--green);animation:factResaltar 3s ease-out forwards' : '');
+    html += '<div class="fact-hist-item" style="' + estiloItem + '" onclick="factAbrirRegistro(' + i + ')">' +
       '<span class="fact-hist-ico">' + ico + '</span>' +
       '<div>' +
         '<div class="fact-hist-coords">' + escHtml(h.coords) + '</div>' +
@@ -4053,6 +4103,13 @@ function factRenderHist(){
     '</div>';
   }
   list.innerHTML = html;
+
+  // Limpiar recienCambiados después de 3.5s (animación dura 3s)
+  if(FACT_STATE.recienCambiados && FACT_STATE.recienCambiados.length > 0){
+    setTimeout(function(){
+      FACT_STATE.recienCambiados = [];
+    }, 3500);
+  }
 }
 
 function factRenderHistVacio(msg){
@@ -4111,6 +4168,18 @@ function factAbrirRegistro(idx){
     if(tab === 'espera')    return h.etiqueta === 'En Espera';
     return true;
   });
+
+  // Si hay recién cambiados, ordenarlos primero
+  if(FACT_STATE.recienCambiados && FACT_STATE.recienCambiados.length > 0){
+    var rc = FACT_STATE.recienCambiados;
+    items.sort(function(a, b){
+      var aRec = rc.indexOf(a.id) >= 0;
+      var bRec = rc.indexOf(b.id) >= 0;
+      if(aRec && !bRec) return -1;
+      if(!aRec && bRec) return 1;
+      return 0;
+    });
+  }
   var h = items[idx];
   if(!h) return;
 
@@ -4134,9 +4203,21 @@ function factAbrirRegistro(idx){
   var cEl = document.getElementById('factCoords'); if(cEl) cEl.value = h.coords || '';
   var tiEl= document.getElementById('factTipo');   if(tiEl) tiEl.value = h.tipo || 'PYMES';
 
-  // Limpiar resultado anterior
+  // Mostrar resultado previo guardado (desde datos del Sheet)
   var res = document.getElementById('factResult');
-  if(res) res.innerHTML = '';
+  if(res){
+    if(h.status){
+      res.innerHTML = factResultHTML({
+        status:      h.status,
+        mdt:         h.mdt         || '',
+        detalle:     h.detalle     || '',
+        distanciaKm: h.distanciaKm || null,
+        exclusividad: ''
+      });
+    } else {
+      res.innerHTML = '';
+    }
+  }
 
   // Preseleccionar etiqueta actual
   document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){ b.className='fact-save-etiq-btn'; });
@@ -4154,11 +4235,29 @@ function factAbrirRegistro(idx){
 
   var bg = document.getElementById('factDrawerBg');
   if(bg) bg.classList.add('open');
+
+  // Mostrar mapa con datos guardados (sin re-consultar)
+  if(h.coords && h.status){
+    var coordNorm = normalizarCoordsParaMapa(h.coords);
+    if(coordNorm){
+      // Construir objeto mínimo para el mapa desde datos del historial
+      var rsMapa = {
+        status:   h.status,
+        mdt:      h.mdt        || '',
+        detalle:  h.detalle    || '',
+        distanciaKm: h.distanciaKm || null,
+        exclusividad: '',
+        poligonosCercanos: []   // sin re-consultar GAS, no hay polígonos
+      };
+      setTimeout(function(){ factMapMostrar(rsMapa, coordNorm.lat, coordNorm.lon); }, 350);
+    }
+  }
 }
 
 function factCloseDrawer(){
   var bg = document.getElementById('factDrawerBg');
   if(bg) bg.classList.remove('open');
+  factMapOcultar();
 }
 
 function factCloseDrawerIf(e){
@@ -4194,9 +4293,13 @@ function factConsultar(){
     FACT_STATE.ultimaResp = {
       status:rs.status, mdt:rs.mdt, detalle:rs.detalle,
       distanciaKm:rs.distanciaKm, exclusividad:rs.exclusividad,
-      estado:rs.estado, coords:coords, tipo:tipo
+      estado:rs.estado, coords:coords, tipo:tipo,
+      poligonosCercanos: rs.poligonosCercanos || []
     };
     resEl.innerHTML = factResultHTML(rs);
+    // Mostrar mapa (submódulo separado)
+    var coordNorm = normalizarCoordsParaMapa(coords);
+    if(coordNorm) factMapMostrar(rs, coordNorm.lat, coordNorm.lon);
   })
   .catch(function(){
     btn.disabled = false;
@@ -4415,10 +4518,10 @@ function factMostrarModalReval(){
         '<div style="font-size:11px;color:var(--text2)">' + escHtml(c.coords) + (c.mdt ? ' → MDT ' + escHtml(c.mdt) : '') + '</div>' +
       '</div>';
     });
+    body.innerHTML = html;
     if(actBtn) actBtn.style.display = '';
   }
 
-  body.innerHTML = html;
   modal.classList.add('open');
 }
 
@@ -4430,6 +4533,7 @@ function factAplicarCambios(){
   if(actBtn){ actBtn.disabled=true; actBtn.textContent='Actualizando…'; }
 
   var done = 0;
+  var filasCambiadas = cambios.map(function(c){ return c.filaId; });
   cambios.forEach(function(c){
     fetch(APPS_SCRIPT_URL, {
       method:'POST',
@@ -4440,7 +4544,11 @@ function factAplicarCambios(){
       done++;
       if(done === cambios.length){
         factCloseModal();
-        toast(cambios.length + ' clientes actualizados a Potencial ✓','ok');
+        toast(cambios.length + ' cliente' + (cambios.length>1?'s':'') + ' actualizados a Potencial ✓','ok');
+        // Guardar IDs cambiados para resaltarlos tras recargar
+        FACT_STATE.recienCambiados = filasCambiadas;
+        // Ir a pestaña Potencial y recargar
+        factSetTab('potencial');
         factCargarHist();
       }
     });
@@ -4500,6 +4608,174 @@ function escHtml(s){
   if(!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// Normalizar string de coordenadas para el mapa (reutiliza lógica del GAS en cliente)
+function normalizarCoordsParaMapa(t){
+  if(!t) return null;
+  t = t.toString().trim().replace(/[()a-zA-Z]/g,'').replace(/\s+/g,' ').trim();
+  var lat, lon;
+  if(t.indexOf(',') >= 0){ var s=t.split(','); lat=parseFloat(s[0]); lon=parseFloat(s[1]); }
+  else { var s=t.split(/\s+/); lat=parseFloat(s[0]); lon=parseFloat(s[1]); }
+  if(!isNaN(lat) && !isNaN(lon) && lat>=-90 && lat<=90 && lon>=-180 && lon<=180)
+    return {lat:lat, lon:lon};
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════
+//  SUBMÓDULO: MAPA DE FACTIBILIDAD
+//  Completamente separado — no toca ninguna función existente
+//  Usa Leaflet.js cargado por CDN
+//  Prefijo: factMap
+// ════════════════════════════════════════════════════════════
+
+var FACT_MAP = {
+  instancia:   null,   // instancia de L.map
+  marcador:    null,   // marcador del punto consultado
+  lineaRef:    null,   // línea al MDT más cercano
+  capas:       []      // polígonos pintados
+};
+
+/**
+ * Inicializa o actualiza el mapa tras una consulta de factibilidad.
+ * rs  = response del GAS { status, mdt, distanciaKm, poligonosCercanos, ... }
+ * lat, lon = coordenadas del punto consultado
+ */
+function factMapMostrar(rs, lat, lon){
+  var wrap = document.getElementById('factMapWrap');
+  var cont = document.getElementById('factMapContainer');
+  if(!wrap || !cont) return;
+  if(typeof L === 'undefined') return;  // Leaflet no cargado aún
+
+  wrap.classList.add('visible');
+
+  // Inicializar mapa si no existe, o reusar
+  if(!FACT_MAP.instancia){
+    FACT_MAP.instancia = L.map('factMapContainer', {
+      minZoom: 12,
+      maxZoom: 18,
+      zoomControl: true,
+      attributionControl: false
+    });
+
+    // Fondo satelital Esri — se ve como Google Earth
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 18, minZoom: 12 }
+    ).addTo(FACT_MAP.instancia);
+  }
+
+  // Limpiar capas anteriores
+  FACT_MAP.capas.forEach(function(c){ FACT_MAP.instancia.removeLayer(c); });
+  FACT_MAP.capas = [];
+  if(FACT_MAP.marcador) { FACT_MAP.instancia.removeLayer(FACT_MAP.marcador); FACT_MAP.marcador = null; }
+  if(FACT_MAP.lineaRef) { FACT_MAP.instancia.removeLayer(FACT_MAP.lineaRef); FACT_MAP.lineaRef = null; }
+
+  // Pintar polígonos cercanos
+  var polys = rs.poligonosCercanos || [];
+  polys.forEach(function(p){
+    var puntos = factMapParsearCoords(p.coords);
+    if(puntos.length < 3) return;
+    var esOp = p.estado === 'En Operación';
+    var capa = L.polygon(puntos, {
+      color:       esOp ? '#388BFD' : '#E3B341',
+      fillColor:   esOp ? '#388BFD' : '#E3B341',
+      fillOpacity: 0.25,
+      weight:      esOp ? 2 : 1,
+      opacity:     esOp ? 0.8 : 0.5
+    });
+    capa.bindPopup(
+      '<strong style="font-size:13px">' + (p.mdt || 'MDT') + '</strong><br>' +
+      '<span style="font-size:11px;color:#888">' + p.estado + '</span>'
+    );
+    capa.addTo(FACT_MAP.instancia);
+    FACT_MAP.capas.push(capa);
+  });
+
+  // Marcador del punto consultado
+  var esFact = factClase(rs.status) === 'fact-r-ok';
+  var colorMarcador = esFact ? '#56D364' : (factClase(rs.status) === 'fact-r-exc' ? '#E3B341' : '#FF4444');
+  var iconoSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30">' +
+    '<path d="M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z" fill="' + colorMarcador + '"/>' +
+    '<circle cx="11" cy="11" r="4" fill="white"/></svg>';
+  var iconoPunto = L.divIcon({
+    html: iconoSvg,
+    iconSize: [22, 30],
+    iconAnchor: [11, 30],
+    popupAnchor: [0, -30],
+    className: ''
+  });
+  FACT_MAP.marcador = L.marker([lat, lon], { icon: iconoPunto })
+    .bindPopup(
+      '<strong style="font-size:12px">Punto consultado</strong><br>' +
+      '<span style="font-size:11px;color:#888">' + lat.toFixed(6) + ', ' + lon.toFixed(6) + '</span><br>' +
+      '<span style="font-size:11px;margin-top:4px;display:block">' + (rs.mdt ? 'MDT más cercano: ' + rs.mdt : '') + '</span>'
+    )
+    .addTo(FACT_MAP.instancia);
+  FACT_MAP.capas.push(FACT_MAP.marcador);
+
+  // Si no es factible, línea roja al MDT más cercano
+  // (usamos el centroide del primer polígono operativo cercano como referencia visual)
+  if(factClase(rs.status) !== 'fact-r-ok' && polys.length > 0){
+    var primerOp = polys.find(function(p){ return p.estado === 'En Operación'; });
+    if(primerOp){
+      var pts = factMapParsearCoords(primerOp.coords);
+      if(pts.length > 0){
+        // Calcular centroide aproximado
+        var sumLat = 0, sumLon = 0;
+        pts.forEach(function(p){ sumLat += p[0]; sumLon += p[1]; });
+        var cLat = sumLat / pts.length;
+        var cLon = sumLon / pts.length;
+        FACT_MAP.lineaRef = L.polyline([[lat, lon],[cLat, cLon]], {
+          color: '#FF4444', weight: 2, dashArray: '6,4', opacity: 0.8
+        }).addTo(FACT_MAP.instancia);
+        FACT_MAP.capas.push(FACT_MAP.lineaRef);
+      }
+    }
+  }
+
+  // Centrar mapa en el punto consultado
+  FACT_MAP.instancia.setView([lat, lon], 15);
+
+  // Invalidar tamaño (necesario cuando el contenedor cambia de visible)
+  setTimeout(function(){
+    if(FACT_MAP.instancia) FACT_MAP.instancia.invalidateSize();
+  }, 100);
+}
+
+/**
+ * Convierte string "lat,lon;lat,lon;..." a array [[lat,lon], ...]
+ * Leaflet usa [lat, lon] en sus funciones de polígono
+ */
+function factMapParsearCoords(str){
+  if(!str) return [];
+  var puntos = [];
+  str.split(';').forEach(function(par){
+    var partes = par.split(',');
+    if(partes.length >= 2){
+      var lat = parseFloat(partes[0]);
+      var lon = parseFloat(partes[1]);
+      if(!isNaN(lat) && !isNaN(lon)) puntos.push([lat, lon]);
+    }
+  });
+  return puntos;
+}
+
+/**
+ * Oculta y destruye el mapa (al cerrar el drawer o limpiar)
+ */
+function factMapOcultar(){
+  var wrap = document.getElementById('factMapWrap');
+  if(wrap) wrap.classList.remove('visible');
+  if(FACT_MAP.instancia){
+    FACT_MAP.instancia.remove();
+    FACT_MAP.instancia = null;
+    FACT_MAP.marcador  = null;
+    FACT_MAP.lineaRef  = null;
+    FACT_MAP.capas     = [];
+  }
+}
+
+// ── Fin submódulo Mapa ────────────────────────────────────────
+
 // ── Fin módulo Factibilidad ───────────────────────────────────
 
 // PWA
