@@ -1155,44 +1155,19 @@ tbody tr:hover td{background:var(--surface2)}
 <div class="fact-drawer-bg" id="factDrawerBg" onclick="factCloseDrawerIf(event)">
   <div class="fact-drawer" id="factDrawer">
     <div class="fact-drawer-hd">
-      <span class="fact-drawer-title">📡 Consulta de Factibilidad</span>
+      <span class="fact-drawer-title" id="factDrawerTitle">📡 Nueva consulta</span>
       <button onclick="factCloseDrawer()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;transition:background .12s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✕</button>
     </div>
     <div class="fact-drawer-body">
-      <!-- Formulario consulta -->
-      <div class="fact-field">
-        <label class="fact-label">Tipo de cliente</label>
-        <select class="fact-input" id="factTipo">
-          <option value="PYMES">PYMES</option>
-          <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
-          <option value="DEDICADO ISP">DEDICADO ISP</option>
-          <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
-          <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
-        </select>
-      </div>
-      <div class="fact-field">
-        <label class="fact-label">Coordenadas</label>
-        <input class="fact-input" id="factCoords" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultar()">
-        <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
-      </div>
-      <button class="fact-btn-primary" id="factBtn" onclick="factConsultar()">
-        <span>🔍</span> Consultar Factibilidad
-      </button>
-      <!-- Resultado -->
-      <div id="factResult"></div>
-      <!-- Caja guardar (aparece tras resultado) -->
-      <div class="fact-save-box" id="factSaveBox" style="display:none">
-        <div class="fact-save-title">Guardar en historial</div>
-        <div class="fact-save-etiq" id="factEtiqBtns">
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Potencial',this)">⭐ Potencial</button>
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('En Espera',this)">⏳ En Espera</button>
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Sin Gestión',this)">— Sin Gestión</button>
-        </div>
+
+      <!-- Datos del cliente (siempre visible) -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Datos del cliente</div>
         <div class="fact-field" style="margin-bottom:10px">
-          <label class="fact-label">Nombre del cliente <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+          <label class="fact-label">Nombre <span style="font-weight:400;text-transform:none">(opcional)</span></label>
           <input class="fact-input" id="factNombre" type="text" placeholder="Empresa o persona">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div class="fact-field" style="margin-bottom:0">
             <label class="fact-label">RIF <span style="font-weight:400;text-transform:none">(opcional)</span></label>
             <input class="fact-input" id="factRif" type="text" placeholder="J-12345678-9">
@@ -1202,11 +1177,50 @@ tbody tr:hover td{background:var(--surface2)}
             <input class="fact-input" id="factTelefono" type="tel" placeholder="0424-0000000">
           </div>
         </div>
+      </div>
+
+      <!-- Etiqueta (siempre visible) -->
+      <div class="fact-field">
+        <label class="fact-label">Etiqueta</label>
+        <div class="fact-save-etiq" id="factEtiqBtns">
+          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Potencial',this)">⭐ Potencial</button>
+          <button class="fact-save-etiq-btn" onclick="factSelEtiq('En Espera',this)">⏳ En Espera</button>
+          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Sin Gestión',this)">— Sin Gestión</button>
+        </div>
+      </div>
+
+      <!-- Consulta de factibilidad -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Consulta de factibilidad</div>
+        <div class="fact-field">
+          <label class="fact-label">Tipo de cliente</label>
+          <select class="fact-input" id="factTipo">
+            <option value="PYMES">PYMES</option>
+            <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
+            <option value="DEDICADO ISP">DEDICADO ISP</option>
+            <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
+            <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
+          </select>
+        </div>
+        <div class="fact-field">
+          <label class="fact-label">Coordenadas</label>
+          <input class="fact-input" id="factCoords" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultar()">
+          <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
+        </div>
+        <button class="fact-btn-primary" id="factBtn" onclick="factConsultar()">
+          <span>🔍</span> Consultar Factibilidad
+        </button>
+        <div id="factResult"></div>
+      </div>
+
+      <!-- Botón guardar -->
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
         <button class="fact-btn-primary" id="factGuardarBtn" onclick="factGuardar()">
-          💾 Guardar consulta
+          💾 Guardar
         </button>
         <button class="fact-btn-sec" onclick="factCloseDrawer()">Cancelar</button>
       </div>
+
     </div>
   </div>
 </div>
@@ -1230,7 +1244,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhqPg5yrS6GhjcdYXZbO-Dp14qLKvK4_FOhvJQwd4smmZyv5chKKWsP1Qe-W2uUpTgUQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyXGM_uX9QFUzmncZChHVCwDX6seIouIv5FYmwM1GQholqJ4oT9XhjZcx2cmb57jvjwg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -4021,7 +4035,7 @@ function factRenderHist(){
       ? '<div class="fact-hist-cliente">' + escHtml((h.nombre || '') + (h.rif ? ' · '+h.rif : '')) + '</div>'
       : '';
     var telHtml = h.telefono ? ' · 📞 ' + escHtml(h.telefono) : '';
-    html += '<div class="fact-hist-item">' +
+    html += '<div class="fact-hist-item" style="cursor:pointer" onclick="factAbrirRegistro(' + i + ')">' +
       '<span class="fact-hist-ico">' + ico + '</span>' +
       '<div>' +
         '<div class="fact-hist-coords">' + escHtml(h.coords) + '</div>' +
@@ -4035,10 +4049,6 @@ function factRenderHist(){
       '</div>' +
       '<div class="fact-hist-right">' +
         etiqHtml +
-        '<div class="fact-hist-actions">' +
-          '<button class="fact-hist-btn" onclick="factRehacerConsulta(' + i + ')">↻ Revaluar</button>' +
-          '<button class="fact-hist-btn" onclick="factEditarEtiq(' + h.id + ',\'' + escHtml(h.etiqueta) + '\')">✎</button>' +
-        '</div>' +
       '</div>' +
     '</div>';
   }
@@ -4065,24 +4075,85 @@ function factFmtDist(d){
 }
 
 // ── Drawer ────────────────────────────────────────────────────
+// ── FACT_STATE modo: 'nuevo' | 'editar' ─────────────────────
+// En modo editar, FACT_STATE.editFilaId contiene la fila real del Sheet
+
 function factOpenDrawer(){
-  var bg = document.getElementById('factDrawerBg');
-  if(bg) bg.classList.add('open');
-  // Limpiar campos y resultado
-  var campos = ['factCoords','factNombre','factRif','factTelefono'];
-  campos.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  // Modo NUEVO — limpiar todo
+  FACT_STATE.modo       = 'nuevo';
+  FACT_STATE.editFilaId = null;
+  FACT_STATE.ultimaResp = null;
+  FACT_STATE.etiqSel    = 'Sin Gestión';
+  var title = document.getElementById('factDrawerTitle');
+  if(title) title.textContent = '📡 Nueva consulta';
+  var gbtn = document.getElementById('factGuardarBtn');
+  if(gbtn) gbtn.innerHTML = '💾 Guardar en historial';
+  // Limpiar campos
+  ['factCoords','factNombre','factRif','factTelefono'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var tEl = document.getElementById('factTipo');
+  if(tEl) tEl.value = 'PYMES';
   var res = document.getElementById('factResult');
   if(res) res.innerHTML = '';
-  var sbox = document.getElementById('factSaveBox');
-  if(sbox) sbox.style.display = 'none';
-  FACT_STATE.ultimaResp = null;
-  FACT_STATE.etiqSel = 'Sin Gestión';
-  // Reiniciar etiquetas
+  // Resetear etiquetas
   document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){ b.className='fact-save-etiq-btn'; });
-  setTimeout(function(){
-    var inp = document.getElementById('factCoords');
-    if(inp) inp.focus();
-  }, 280);
+  var bg = document.getElementById('factDrawerBg');
+  if(bg) bg.classList.add('open');
+  setTimeout(function(){ var inp=document.getElementById('factCoords'); if(inp) inp.focus(); }, 280);
+}
+
+function factAbrirRegistro(idx){
+  // Modo EDITAR — abrir registro existente
+  var tab = FACT_STATE.tab;
+  var items = FACT_STATE.hist.filter(function(h){
+    if(tab === 'potencial') return h.etiqueta === 'Potencial';
+    if(tab === 'espera')    return h.etiqueta === 'En Espera';
+    return true;
+  });
+  var h = items[idx];
+  if(!h) return;
+
+  FACT_STATE.modo       = 'editar';
+  FACT_STATE.editFilaId = h.id;
+  FACT_STATE.ultimaResp = null;
+  FACT_STATE.etiqSel    = h.etiqueta || 'Sin Gestión';
+
+  // Título del drawer
+  var title = document.getElementById('factDrawerTitle');
+  if(title) title.textContent = '✎ Editar registro';
+  var gbtn = document.getElementById('factGuardarBtn');
+  if(gbtn) gbtn.innerHTML = '💾 Guardar cambios';
+
+  // Cargar datos del cliente
+  var nEl = document.getElementById('factNombre');  if(nEl) nEl.value = h.nombre   || '';
+  var rEl = document.getElementById('factRif');     if(rEl) rEl.value = h.rif      || '';
+  var tEl = document.getElementById('factTelefono');if(tEl) tEl.value = h.telefono || '';
+
+  // Cargar tipo y coords
+  var cEl = document.getElementById('factCoords'); if(cEl) cEl.value = h.coords || '';
+  var tiEl= document.getElementById('factTipo');   if(tiEl) tiEl.value = h.tipo || 'PYMES';
+
+  // Limpiar resultado anterior
+  var res = document.getElementById('factResult');
+  if(res) res.innerHTML = '';
+
+  // Preseleccionar etiqueta actual
+  document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){ b.className='fact-save-etiq-btn'; });
+  var clsMap = {'Potencial':'sel-potencial','En Espera':'sel-espera','Sin Gestión':'sel-sin'};
+  var etqCls = clsMap[h.etiqueta] || 'sel-sin';
+  var btns = document.querySelectorAll('.fact-save-etiq-btn');
+  btns.forEach(function(b){
+    if(b.textContent.indexOf(h.etiqueta.replace(/[⭐⏳—]\s*/,'')) >= 0 ||
+       (h.etiqueta === 'Potencial' && b.textContent.indexOf('Potencial') >= 0) ||
+       (h.etiqueta === 'En Espera' && b.textContent.indexOf('En Espera') >= 0) ||
+       (h.etiqueta === 'Sin Gestión' && b.textContent.indexOf('Sin Gestión') >= 0)){
+      b.className = 'fact-save-etiq-btn ' + etqCls;
+    }
+  });
+
+  var bg = document.getElementById('factDrawerBg');
+  if(bg) bg.classList.add('open');
 }
 
 function factCloseDrawer(){
@@ -4102,11 +4173,9 @@ function factConsultar(){
 
   var btn   = document.getElementById('factBtn');
   var resEl = document.getElementById('factResult');
-  var sbox  = document.getElementById('factSaveBox');
   btn.disabled = true;
   btn.innerHTML = '<div class="fact-spin"></div> Consultando…';
   resEl.innerHTML = '';
-  if(sbox) sbox.style.display = 'none';
   FACT_STATE.ultimaResp = null;
 
   fetch(APPS_SCRIPT_URL,{
@@ -4122,12 +4191,12 @@ function factConsultar(){
       toast('Error en la consulta','err');
       return;
     }
-    FACT_STATE.ultimaResp = { status:rs.status, mdt:rs.mdt, detalle:rs.detalle,
-      distanciaKm:rs.distanciaKm, exclusividad:rs.exclusividad, estado:rs.estado,
-      coords:coords, tipo:tipo };
+    FACT_STATE.ultimaResp = {
+      status:rs.status, mdt:rs.mdt, detalle:rs.detalle,
+      distanciaKm:rs.distanciaKm, exclusividad:rs.exclusividad,
+      estado:rs.estado, coords:coords, tipo:tipo
+    };
     resEl.innerHTML = factResultHTML(rs);
-    // Mostrar caja de guardado
-    if(sbox){ sbox.style.display = ''; }
   })
   .catch(function(){
     btn.disabled = false;
@@ -4142,7 +4211,7 @@ function factResultHTML(rs){
   var cls = factClase(rs.status);
   var ico = factIcono(rs.status);
   var rows = '';
-  if(rs.mdt)     rows += factRow('MDT', rs.mdt);
+  if(rs.mdt)          rows += factRow('MDT', rs.mdt);
   if(rs.exclusividad) rows += factRow('Zona', rs.exclusividad);
   if(rs.distanciaKm !== null && rs.distanciaKm !== undefined && rs.distanciaKm > 0)
     rows += factRow('Distancia', factFmtDist(rs.distanciaKm) + ' al borde de red');
@@ -4170,105 +4239,109 @@ function factResultErrHTML(msg){
 function factSelEtiq(etiq, btn){
   FACT_STATE.etiqSel = etiq;
   document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){ b.className='fact-save-etiq-btn'; });
-  var cls = etiq === 'Potencial' ? 'sel-potencial' : etiq === 'En Espera' ? 'sel-espera' : 'sel-sin';
+  var cls = etiq==='Potencial' ? 'sel-potencial' : etiq==='En Espera' ? 'sel-espera' : 'sel-sin';
   btn.className = 'fact-save-etiq-btn ' + cls;
 }
 
-// ── Guardar en Sheet ──────────────────────────────────────────
+// ── Guardar — detecta modo nuevo vs editar ────────────────────
 function factGuardar(){
-  var rs = FACT_STATE.ultimaResp;
-  if(!rs){ toast('Primero realiza una consulta','err'); return; }
-
   var gbtn = document.getElementById('factGuardarBtn');
   gbtn.disabled = true;
   gbtn.innerHTML = '<div class="fact-spin"></div> Guardando…';
 
-  var payload = {
-    action:      'guardarConsultaFact',
-    usuario:     S.user || '',
-    coords:      rs.coords,
-    tipo:        rs.tipo,
-    status:      rs.status,
-    mdt:         rs.mdt        || '',
-    distanciaKm: rs.distanciaKm !== undefined ? rs.distanciaKm : '',
-    detalle:     rs.detalle    || '',
-    etiqueta:    FACT_STATE.etiqSel,
-    rif:         (document.getElementById('factRif').value      || '').trim(),
-    nombre:      (document.getElementById('factNombre').value   || '').trim(),
-    telefono:    (document.getElementById('factTelefono').value || '').trim()
-  };
+  var nombre   = (document.getElementById('factNombre').value   || '').trim();
+  var rif      = (document.getElementById('factRif').value      || '').trim();
+  var telefono = (document.getElementById('factTelefono').value || '').trim();
+  var etiq     = FACT_STATE.etiqSel;
 
-  fetch(APPS_SCRIPT_URL, { method:'POST', body:JSON.stringify(payload) })
-  .then(function(r){ return r.json(); })
-  .then(function(resp){
-    gbtn.disabled = false;
-    gbtn.innerHTML = '💾 Guardar consulta';
-    if(!resp.ok){ toast('Error al guardar: '+(resp.error||''),'err'); return; }
-    toast('Consulta guardada ✓','ok');
-    factCloseDrawer();
-    factCargarHist();
-  })
-  .catch(function(){
-    gbtn.disabled = false;
-    gbtn.innerHTML = '💾 Guardar consulta';
-    toast('Error de conexión','err');
-  });
-}
+  if(FACT_STATE.modo === 'editar' && FACT_STATE.editFilaId){
+    // MODO EDITAR: actualizar fila existente sin duplicar
+    var rs   = FACT_STATE.ultimaResp;  // puede ser null si no re-consultó
+    var payload = {
+      action:   'actualizarEtiquetaFact',
+      filaId:   FACT_STATE.editFilaId,
+      etiqueta: etiq,
+      nombre:   nombre,
+      rif:      rif,
+      telefono: telefono
+    };
+    // Si hizo una nueva consulta, actualizar también el resultado
+    if(rs){
+      payload.status      = rs.status;
+      payload.mdt         = rs.mdt         || '';
+      payload.detalle     = rs.detalle     || '';
+      payload.distanciaKm = rs.distanciaKm !== undefined ? rs.distanciaKm : '';
+      payload.tipo        = rs.tipo        || '';
+    }
+    fetch(APPS_SCRIPT_URL, { method:'POST', body:JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      gbtn.disabled = false;
+      gbtn.innerHTML = '💾 Guardar cambios';
+      if(!resp.ok){ toast('Error al guardar: '+(resp.error||''),'err'); return; }
+      // Actualizar localmente
+      var item = FACT_STATE.hist.find(function(h){ return h.id === FACT_STATE.editFilaId; });
+      if(item){
+        item.etiqueta = etiq;
+        item.nombre   = nombre;
+        item.rif      = rif;
+        item.telefono = telefono;
+        if(rs){ item.status=rs.status; item.mdt=rs.mdt; item.detalle=rs.detalle; item.distanciaKm=rs.distanciaKm; }
+      }
+      toast('Cambios guardados ✓','ok');
+      factCloseDrawer();
+      factRenderHist();
+      factActualizarBadge();
+    })
+    .catch(function(){
+      gbtn.disabled = false;
+      gbtn.innerHTML = '💾 Guardar cambios';
+      toast('Error de conexión','err');
+    });
 
-// ── Editar etiqueta de un registro ───────────────────────────
-function factEditarEtiq(filaId, etiqActual){
-  var nueva = etiqActual === 'Potencial' ? 'En Espera'
-            : etiqActual === 'En Espera'  ? 'Sin Gestión'
-            : 'Potencial';
-
-  fetch(APPS_SCRIPT_URL, {
-    method:'POST',
-    body: JSON.stringify({ action:'actualizarEtiquetaFact', filaId:filaId, etiqueta:nueva })
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(rs){
-    if(!rs.ok){ toast('Error al actualizar','err'); return; }
-    // Actualizar localmente sin recargar todo
-    var item = FACT_STATE.hist.find(function(h){ return h.id === filaId; });
-    if(item){ item.etiqueta = nueva; }
-    factRenderHist();
-    factActualizarBadge();
-    toast('Etiqueta actualizada ✓','ok');
-  })
-  .catch(function(){ toast('Error de conexión','err'); });
-}
-
-// ── Rehacer consulta desde historial ────────────────────────
-function factRehacerConsulta(idx){
-  var tab = FACT_STATE.tab;
-  var items = FACT_STATE.hist.filter(function(h){
-    if(tab === 'potencial') return h.etiqueta === 'Potencial';
-    if(tab === 'espera')    return h.etiqueta === 'En Espera';
-    return true;
-  });
-  var h = items[idx];
-  if(!h) return;
-  // Cargar datos en el drawer y abrirlo
-  var cEl = document.getElementById('factCoords');
-  var tEl = document.getElementById('factTipo');
-  var nEl = document.getElementById('factNombre');
-  var rEl = document.getElementById('factRif');
-  var telEl = document.getElementById('factTelefono');
-  if(cEl) cEl.value = h.coords;
-  if(tEl) tEl.value = h.tipo;
-  if(nEl) nEl.value = h.nombre  || '';
-  if(rEl) rEl.value = h.rif     || '';
-  if(telEl) telEl.value = h.telefono || '';
-  var res = document.getElementById('factResult');
-  if(res) res.innerHTML = '';
-  var sbox = document.getElementById('factSaveBox');
-  if(sbox) sbox.style.display = 'none';
-  FACT_STATE.ultimaResp = null;
-  var bg = document.getElementById('factDrawerBg');
-  if(bg) bg.classList.add('open');
+  } else {
+    // MODO NUEVO: guardar como fila nueva (requiere consulta previa)
+    var rs = FACT_STATE.ultimaResp;
+    if(!rs){
+      gbtn.disabled = false;
+      gbtn.innerHTML = '💾 Guardar en historial';
+      toast('Primero realiza una consulta de factibilidad','err');
+      return;
+    }
+    var payload = {
+      action:      'guardarConsultaFact',
+      usuario:     S.user || '',
+      coords:      rs.coords,
+      tipo:        rs.tipo,
+      status:      rs.status,
+      mdt:         rs.mdt         || '',
+      distanciaKm: rs.distanciaKm !== undefined ? rs.distanciaKm : '',
+      detalle:     rs.detalle     || '',
+      etiqueta:    etiq,
+      rif:         rif,
+      nombre:      nombre,
+      telefono:    telefono
+    };
+    fetch(APPS_SCRIPT_URL, { method:'POST', body:JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      gbtn.disabled = false;
+      gbtn.innerHTML = '💾 Guardar en historial';
+      if(!resp.ok){ toast('Error al guardar: '+(resp.error||''),'err'); return; }
+      toast('Consulta guardada ✓','ok');
+      factCloseDrawer();
+      factCargarHist();
+    })
+    .catch(function(){
+      gbtn.disabled = false;
+      gbtn.innerHTML = '💾 Guardar en historial';
+      toast('Error de conexión','err');
+    });
+  }
 }
 
 // ── Reevaluación masiva (pestaña En Espera) ──────────────────
+
 function factRevaluar(){
   var espera = FACT_STATE.hist.filter(function(h){ return h.etiqueta === 'En Espera'; });
   if(espera.length === 0){ toast('No hay clientes en espera','err'); return; }
