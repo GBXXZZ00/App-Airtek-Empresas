@@ -470,6 +470,65 @@ tbody tr:hover td{background:var(--surface2)}
   .drawer{max-width:100%}
   .funnel-lbl{width:110px;font-size:10px}
 }
+
+/* ══ MÓDULO FACTIBILIDAD ══════════════════════════════ */
+.fact-layout{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
+@media(max-width:860px){.fact-layout{grid-template-columns:1fr}}
+.fact-hist-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.fact-hist-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.fact-hist-title{font-size:13px;font-weight:600;color:var(--text)}
+.fact-hist-list{display:flex;flex-direction:column}
+.fact-hist-empty{padding:32px 16px;text-align:center;color:var(--text3);font-size:13px}
+.fact-hist-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:10px}
+.fact-hist-item:last-child{border-bottom:none}
+.fact-hist-item:hover{background:var(--surface2)}
+.fact-hist-ico{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.fact-hist-info{flex:1;min-width:0}
+.fact-hist-coords{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fact-hist-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.fact-hist-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;white-space:nowrap}
+/* Formulario panel (desktop) */
+.fact-form-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;position:sticky;top:16px}
+.fact-form-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.fact-field{margin-bottom:14px}
+.fact-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:block}
+.fact-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-family:'Inter',sans-serif;font-size:13px;outline:none;border-radius:6px;transition:border-color .15s;box-sizing:border-box}
+.fact-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,132,255,.1)}
+.fact-hint{font-size:10px;color:var(--text3);margin-top:4px}
+.fact-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s var(--ease-out);display:flex;align-items:center;justify-content:center;gap:8px}
+.fact-btn:hover{background:var(--accent-hover);transform:translateY(-1px)}
+.fact-btn:active{transform:scale(0.98)}
+.fact-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* Resultado */
+.fact-result{margin-top:16px;border-radius:8px;overflow:hidden;animation:fadeIn .2s var(--ease-out)}
+.fact-result-hd{padding:14px 16px;display:flex;align-items:center;gap:10px}
+.fact-result-ico{font-size:20px}
+.fact-result-status{font-size:14px;font-weight:700}
+.fact-result-body{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06)}
+.fact-result-row{display:flex;gap:8px;margin-bottom:6px;font-size:12px}
+.fact-result-row:last-child{margin-bottom:0}
+.fact-result-lbl{color:rgba(255,255,255,.55);min-width:80px;flex-shrink:0}
+.fact-result-val{color:#fff;font-weight:500}
+/* Colores por estado */
+.fact-r-ok{background:var(--green-dim);border:1px solid var(--green)}
+.fact-r-ok .fact-result-status{color:var(--green)}
+.fact-r-exc{background:var(--amber-dim);border:1px solid var(--amber)}
+.fact-r-exc .fact-result-status{color:var(--amber)}
+.fact-r-wait{background:var(--blue-dim);border:1px solid var(--blue)}
+.fact-r-wait .fact-result-status{color:var(--blue)}
+.fact-r-no{background:var(--red-dim);border:1px solid var(--red)}
+.fact-r-no .fact-result-status{color:var(--red)}
+/* Spinner */
+.fact-spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .55s linear infinite;flex-shrink:0}
+/* Botón móvil flottante */
+.fact-fab{display:none;position:fixed;bottom:24px;right:20px;z-index:200;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:12px 20px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,132,255,.35);gap:8px;align-items:center;transition:all .2s var(--ease-out)}
+.fact-fab:active{transform:scale(0.97)}
+@media(max-width:860px){.fact-fab{display:flex}.fact-form-panel{display:none}}
+/* Drawer factibilidad (móvil) */
+#factDrawerBg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:stretch;justify-content:flex-start}
+#factDrawerBg.open{display:flex}
+#factDrawer{width:min(340px,92vw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;animation:slideInLeft .26s var(--ease-drawer);height:100%}
+@keyframes slideInLeft{from{transform:translateX(-48px);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>
 </head>
 <body>
@@ -561,6 +620,9 @@ tbody tr:hover td{background:var(--surface2)}
         <span class="nav-icon">🎯</span> Centro de Control
         <span class="nav-badge" id="segBadge" style="display:none;background:var(--red)">0</span>
       </button>
+      <button class="nav-item" id="nav-factibilidad" onclick="showView('factibilidad')" style="display:none">
+        <span class="nav-icon">📡</span> Factibilidad
+      </button>
       <button class="nav-item" id="nav-dashboard" onclick="showView('dashboard')">
         <span class="nav-icon">📊</span> Dashboard
       </button>
@@ -582,7 +644,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.18</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.19</div>
     </div>
   </div>
 
@@ -1004,11 +1066,97 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- ══ VISTA FACTIBILIDAD ══════════════════════════════════ -->
+<div class="view" id="view-factibilidad">
+  <div class="view-hd">
+    <div>
+      <div class="view-title">📡 Factibilidad de Red</div>
+      <div class="view-sub" id="factSub">Consulta cobertura Airtek por coordenadas</div>
+    </div>
+  </div>
+
+  <div class="fact-layout">
+    <!-- HISTORIAL (izquierda en desktop, arriba en móvil) -->
+    <div class="fact-hist-panel">
+      <div class="fact-hist-hd">
+        <span class="fact-hist-title">Consultas recientes</span>
+        <span style="font-size:11px;color:var(--text3)" id="factHistCount">sesión actual</span>
+      </div>
+      <div class="fact-hist-list" id="factHistList">
+        <div class="fact-hist-empty" id="factHistEmpty">
+          📡 Aún no has realizado consultas.<br>
+          <span style="font-size:11px">Las consultas de esta sesión aparecerán aquí.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO (derecha en desktop, oculto en móvil) -->
+    <div class="fact-form-panel">
+      <div class="fact-form-title">📡 Nueva consulta</div>
+      <div class="fact-field">
+        <label class="fact-label">Tipo de cliente</label>
+        <select class="fact-input" id="factTipo">
+          <option value="PYMES">PYMES</option>
+          <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
+          <option value="DEDICADO ISP">DEDICADO ISP</option>
+          <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
+          <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
+        </select>
+      </div>
+      <div class="fact-field">
+        <label class="fact-label">Coordenadas</label>
+        <input class="fact-input" id="factCoords" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultar()">
+        <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
+      </div>
+      <button class="fact-btn" id="factBtn" onclick="factConsultar()">
+        <span>🔍</span> Consultar Factibilidad
+      </button>
+      <div id="factResult"></div>
+    </div>
+  </div>
+
+  <!-- FAB MÓVIL -->
+  <button class="fact-fab" onclick="factOpenDrawer()">
+    <span>📡</span> Consultar Factibilidad
+  </button>
+</div>
+
+<!-- DRAWER FACTIBILIDAD (móvil — sale por la izquierda) -->
+<div id="factDrawerBg" onclick="factCloseDrawerIf(event)">
+  <div id="factDrawer">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div style="font-size:15px;font-weight:700;color:var(--text);flex:1">📡 Consulta de Factibilidad</div>
+      <button onclick="factCloseDrawer()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px">
+      <div class="fact-field">
+        <label class="fact-label">Tipo de cliente</label>
+        <select class="fact-input" id="factTipoM">
+          <option value="PYMES">PYMES</option>
+          <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
+          <option value="DEDICADO ISP">DEDICADO ISP</option>
+          <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
+          <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
+        </select>
+      </div>
+      <div class="fact-field">
+        <label class="fact-label">Coordenadas</label>
+        <input class="fact-input" id="factCoordsM" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultarM()">
+        <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
+      </div>
+      <button class="fact-btn" id="factBtnM" onclick="factConsultarM()">
+        <span>🔍</span> Consultar Factibilidad
+      </button>
+      <div id="factResultM"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4e_PqkyOGEzfS8n3rctHbKSjtzCNwtDtt7wartmHhGP-3z5vmBxSqlvOgTJ1lk_FlgA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDL46e31yxG3GH_ahTrnUf_okaOJAQjGJ56UCRdzXzaR2iB-h1uhVx4J0yjlp37JXC0Q/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1122,7 +1270,7 @@ async function doLogin(){
   if(S.rol==='ABOGADO'){
     // Abogado tiene acceso completo al Centro de Control
   }
-  populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();
+  populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
   // Deep link: si hay RIF pendiente, abrir ese expediente
   if(PENDING_RIF){
@@ -2745,9 +2893,10 @@ function showView(v){
   if(mainEl){mainEl.scrollTop=0;}
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+v)?.classList.add('active');
-  const lbs={clientes:'Gestión Clientes B2B · Clientes',dashboard:'Gestión Clientes B2B · Dashboard',reportes:'Gestión Clientes B2B · Reportes',seguimiento:'Gestión Clientes B2B · Seguimiento'};
+  const lbs={clientes:'Gestión Clientes B2B · Clientes',dashboard:'Gestión Clientes B2B · Dashboard',reportes:'Gestión Clientes B2B · Reportes',seguimiento:'Gestión Clientes B2B · Seguimiento',factibilidad:'Gestión Clientes B2B · Factibilidad'};
   document.getElementById('crumb').textContent=lbs[v]||v;
   if(v==='dashboard')renderDash();
+  if(v==='factibilidad')factInit();
   closeSidebar();
 }
 
@@ -3689,6 +3838,259 @@ function getMsgWA(tipo,r){
   return m[tipo]||('Gestión — '+nom);
 }
 function segEmailBtn(r,tipoMsg,para){openMailto(para,'[Airtek] Gestion - '+r['RAZON SOCIAL'],getMsgWA(tipoMsg,r),r,'Correo '+tipoMsg);}
+// ════════════════════════════════════════════════════════════
+//  MÓDULO FACTIBILIDAD — v1.19
+//  Prefijo: fact — no colisiona con ningún módulo existente
+// ════════════════════════════════════════════════════════════
+
+// Estado del módulo (solo sesión, no persiste)
+var FACT_HIST = [];   // [{coords, tipo, status, mdt, detalle, distKm, ts}]
+var FACT_MAX  = 5;    // máximo historial en sesión
+
+// Mostrar/ocultar el nav de factibilidad según el rol
+function factInitNav(){
+  var btn = document.getElementById('nav-factibilidad');
+  if(!btn) return;
+  // Visible para ADMIN y LIDER, oculto para ABOGADO
+  btn.style.display = (S.rol === 'ABOGADO') ? 'none' : '';
+}
+
+// Inicialización al entrar a la vista
+function factInit(){
+  factInitNav();
+  factRenderHist();
+}
+
+// ── Consulta desde el panel desktop ──────────────────────────
+function factConsultar(){
+  var coords = (document.getElementById('factCoords').value || '').trim();
+  var tipo   = document.getElementById('factTipo').value || 'PYMES';
+  factEjecutar(coords, tipo, 'factBtn', 'factResult');
+}
+
+// ── Consulta desde el drawer móvil ───────────────────────────
+function factConsultarM(){
+  var coords = (document.getElementById('factCoordsM').value || '').trim();
+  var tipo   = document.getElementById('factTipoM').value || 'PYMES';
+  factEjecutar(coords, tipo, 'factBtnM', 'factResultM');
+}
+
+// ── Motor de consulta (compartido desktop+móvil) ──────────────
+function factEjecutar(coords, tipo, btnId, resultId){
+  if(!coords){
+    toast('Ingresa las coordenadas','err');
+    return;
+  }
+  if(!APPS_SCRIPT_URL){
+    toast('APPS_SCRIPT_URL no configurada','err');
+    return;
+  }
+
+  // Estado de carga
+  var btn = document.getElementById(btnId);
+  var resEl = document.getElementById(resultId);
+  btn.disabled = true;
+  btn.innerHTML = '<div class="fact-spin"></div> Consultando...';
+  resEl.innerHTML = '';
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'consultarFactibilidad',
+      coordenadas: coords,
+      tipoCliente: tipo
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(rs){
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔍</span> Consultar Factibilidad';
+
+    if(!rs.ok){
+      resEl.innerHTML = factRenderError(rs.error || 'Error desconocido');
+      toast('Error en la consulta','err');
+      return;
+    }
+
+    // Guardar en historial de sesión
+    var entrada = {
+      coords:  coords,
+      tipo:    tipo,
+      status:  rs.status,
+      mdt:     rs.mdt     || '',
+      detalle: rs.detalle || '',
+      distKm:  rs.distanciaKm,
+      excl:    rs.exclusividad || '',
+      ts:      new Date()
+    };
+    FACT_HIST.unshift(entrada);
+    if(FACT_HIST.length > FACT_MAX) FACT_HIST.pop();
+    factRenderHist();
+
+    // Render resultado
+    resEl.innerHTML = factRenderResultHTML(rs);
+    toast('Consulta completada','ok');
+  })
+  .catch(function(e){
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔍</span> Consultar Factibilidad';
+    resEl.innerHTML = factRenderError('Error de conexión. Verifica tu red.');
+    toast('Error de red','err');
+  });
+}
+
+// ── Renderizado del resultado ─────────────────────────────────
+function factRenderResultHTML(rs){
+  var cls = factClase(rs.status);
+  var ico = factIcono(rs.status);
+  var rows = '';
+
+  if(rs.mdt){
+    rows += '<div class="fact-result-row"><span class="fact-result-lbl">MDT</span><span class="fact-result-val">'+escHtml(rs.mdt)+'</span></div>';
+  }
+  if(rs.estado){
+    rows += '<div class="fact-result-row"><span class="fact-result-lbl">Estado</span><span class="fact-result-val">'+escHtml(rs.estado)+'</span></div>';
+  }
+  if(rs.exclusividad){
+    rows += '<div class="fact-result-row"><span class="fact-result-lbl">Zona</span><span class="fact-result-val">'+escHtml(rs.exclusividad)+'</span></div>';
+  }
+  if(rs.distanciaKm !== null && rs.distanciaKm !== undefined && rs.distanciaKm > 0){
+    var dist = rs.distanciaKm < 1
+      ? Math.round(rs.distanciaKm * 1000) + ' m al borde de red'
+      : rs.distanciaKm.toFixed(2) + ' km al borde de red';
+    rows += '<div class="fact-result-row"><span class="fact-result-lbl">Distancia</span><span class="fact-result-val">'+dist+'</span></div>';
+  }
+  if(rs.detalle){
+    rows += '<div class="fact-result-row"><span class="fact-result-lbl">Detalle</span><span class="fact-result-val">'+escHtml(rs.detalle)+'</span></div>';
+  }
+
+  return '<div class="fact-result '+cls+'">'+
+    '<div class="fact-result-hd">'+
+      '<span class="fact-result-ico">'+ico+'</span>'+
+      '<span class="fact-result-status">'+escHtml(rs.status)+'</span>'+
+    '</div>'+
+    (rows ? '<div class="fact-result-body">'+rows+'</div>' : '')+
+  '</div>';
+}
+
+function factRenderError(msg){
+  return '<div class="fact-result fact-r-no" style="margin-top:16px">'+
+    '<div class="fact-result-hd">'+
+      '<span class="fact-result-ico">⚠️</span>'+
+      '<span class="fact-result-status">'+escHtml(msg)+'</span>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── Historial de sesión ───────────────────────────────────────
+function factRenderHist(){
+  var list  = document.getElementById('factHistList');
+  var empty = document.getElementById('factHistEmpty');
+  var count = document.getElementById('factHistCount');
+  if(!list) return;
+
+  if(FACT_HIST.length === 0){
+    if(empty) empty.style.display = '';
+    if(count) count.textContent = 'sesión actual';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  if(count) count.textContent = FACT_HIST.length + ' de ' + FACT_MAX;
+
+  var html = '';
+  for(var i = 0; i < FACT_HIST.length; i++){
+    var h   = FACT_HIST[i];
+    var cls = factClase(h.status);
+    var ico = factIcono(h.status);
+    var badgeCls = factBadgeCls(h.status);
+    var hora = h.ts ? h.ts.toLocaleTimeString('es-VE', {hour:'2-digit',minute:'2-digit'}) : '';
+    var meta = h.tipo + (h.mdt ? ' · ' + h.mdt : '') + (hora ? ' · ' + hora : '');
+    var label = h.status.replace(/[✅⚠️🕐❌]\s*/,'');
+
+    html += '<div class="fact-hist-item" onclick="factRehacerConsulta('+i+')">'+
+      '<span class="fact-hist-ico">'+ico+'</span>'+
+      '<div class="fact-hist-info">'+
+        '<div class="fact-hist-coords">'+escHtml(h.coords)+'</div>'+
+        '<div class="fact-hist-meta">'+escHtml(meta)+'</div>'+
+      '</div>'+
+      '<span class="fact-hist-badge '+badgeCls+'">'+escHtml(label)+'</span>'+
+    '</div>';
+  }
+  list.innerHTML = html;
+}
+
+// Al tocar un elemento del historial, recarga el formulario con esas coords
+function factRehacerConsulta(idx){
+  var h = FACT_HIST[idx];
+  if(!h) return;
+  // Llenar desktop
+  var c = document.getElementById('factCoords');
+  var t = document.getElementById('factTipo');
+  if(c) c.value = h.coords;
+  if(t) t.value = h.tipo;
+  // Llenar móvil
+  var cm = document.getElementById('factCoordsM');
+  var tm = document.getElementById('factTipoM');
+  if(cm) cm.value = h.coords;
+  if(tm) tm.value = h.tipo;
+  // Mostrar resultado guardado en desktop
+  var res = document.getElementById('factResult');
+  if(res) res.innerHTML = factRenderResultHTML({
+    status: h.status, mdt: h.mdt, detalle: h.detalle,
+    distanciaKm: h.distKm, exclusividad: h.excl, estado: ''
+  });
+}
+
+// ── Drawer móvil ──────────────────────────────────────────────
+function factOpenDrawer(){
+  var bg = document.getElementById('factDrawerBg');
+  if(bg) bg.classList.add('open');
+  setTimeout(function(){
+    var inp = document.getElementById('factCoordsM');
+    if(inp) inp.focus();
+  }, 300);
+}
+
+function factCloseDrawer(){
+  var bg = document.getElementById('factDrawerBg');
+  if(bg) bg.classList.remove('open');
+}
+
+function factCloseDrawerIf(e){
+  if(e.target === document.getElementById('factDrawerBg')) factCloseDrawer();
+}
+
+// ── Helpers visuales ─────────────────────────────────────────
+function factClase(status){
+  if(!status) return 'fact-r-no';
+  var s = status.toLowerCase();
+  if(s.indexOf('factible') >= 0 && s.indexOf('no') < 0 && s.indexOf('excep') < 0) return 'fact-r-ok';
+  if(s.indexOf('excep') >= 0) return 'fact-r-exc';
+  if(s.indexOf('espera') >= 0) return 'fact-r-wait';
+  return 'fact-r-no';
+}
+
+function factIcono(status){
+  if(!status) return '❌';
+  var s = status.toLowerCase();
+  if(s.indexOf('factible') >= 0 && s.indexOf('no') < 0 && s.indexOf('excep') < 0) return '✅';
+  if(s.indexOf('excep') >= 0) return '⚠️';
+  if(s.indexOf('espera') >= 0) return '🕐';
+  return '❌';
+}
+
+function factBadgeCls(status){
+  var c = factClase(status);
+  var map = {'fact-r-ok':'b-cf','fact-r-exc':'b-ds','fact-r-wait':'b-dr','fact-r-no':'b-pd'};
+  return map[c] || 'b-pd';
+}
+
+function escHtml(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// ── Fin módulo Factibilidad ───────────────────────────────────
+
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
 const mb=new Blob([JSON.stringify(mf)],{type:'application/json'});const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(mb);document.head.appendChild(ml);
