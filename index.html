@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<html lang="es"><!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -224,14 +223,22 @@ tbody tr:hover td{background:var(--surface2)}
 .cc-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text2)}
 
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.03em;border-left:2px solid currentColor}
-.b-gn{background:#1A2030;color:#6B7A99;border-left-color:#4D5562}
-.b-pd{background:#2B1215;color:#FF7B72;border-left-color:#F85149}
-.b-ds{background:#2B200A;color:#E3B341;border-left-color:#D29922}
-.b-dr{background:#0B1F38;color:#79C0FF;border-left-color:#388BFD}
-.b-dc{background:#1A0E33;color:#D2A8FF;border-left-color:#8957E5}
-.b-cc{background:#2B1500;color:#FFA657;border-left-color:#F0883E}
-.b-pf{background:#2B1300;color:#FF9A5C;border-left-color:#E3652B}
-.b-cf{background:#0A2A12;color:#56D364;border-left-color:#3FB950}
+.b-gn{background:color-mix(in srgb,#4D5562 15%,var(--surface2));color:#8899AA;border-left-color:#4D5562}
+.b-pd{background:color-mix(in srgb,#F85149 12%,var(--surface2));color:#D93025;border-left-color:#F85149}
+.b-ds{background:color-mix(in srgb,#D29922 12%,var(--surface2));color:#B07D10;border-left-color:#D29922}
+.b-dr{background:color-mix(in srgb,#388BFD 12%,var(--surface2));color:#1A6FD4;border-left-color:#388BFD}
+.b-dc{background:color-mix(in srgb,#8957E5 12%,var(--surface2));color:#6B3DBF;border-left-color:#8957E5}
+.b-cc{background:color-mix(in srgb,#F0883E 12%,var(--surface2));color:#C46010;border-left-color:#F0883E}
+.b-pf{background:color-mix(in srgb,#E3652B 12%,var(--surface2));color:#B84E18;border-left-color:#E3652B}
+.b-cf{background:color-mix(in srgb,#3FB950 12%,var(--surface2));color:#1A8A2C;border-left-color:#3FB950}
+[data-theme="dark"] .b-gn{color:#6B7A99}
+[data-theme="dark"] .b-pd{color:#FF7B72}
+[data-theme="dark"] .b-ds{color:#E3B341}
+[data-theme="dark"] .b-dr{color:#79C0FF}
+[data-theme="dark"] .b-dc{color:#D2A8FF}
+[data-theme="dark"] .b-cc{color:#FFA657}
+[data-theme="dark"] .b-pf{color:#FF9A5C}
+[data-theme="dark"] .b-cf{color:#56D364}
 .days{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
 .d-ok{background:var(--green-dim);color:var(--green)}
 .d-mid{background:var(--amber-dim);color:var(--amber)}
@@ -1279,8 +1286,8 @@ tbody tr:hover td{background:var(--surface2)}
 <div class="toast" id="toast"></div>
 
 <script>
-const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYxMVvL75Tl4yNjtfrqUEKSVaCjGbhrUlEWsRN2SbJj6avTIul9UXLbV2fiRbafv5Tow/exec';
+const BASE = 'https://script.google.com/macros/s/AKfycbwYxMVvL75Tl4yNjtfrqUEKSVaCjGbhrUlEWsRN2SbJj6avTIul9UXLbV2fiRbafv5Tow/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmgBGAMc8qC0Q8c3XIciaKeFTzWV7_ww68gVL1xZokLSS6sX16FrffDHZhHcSIt9QWPg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
