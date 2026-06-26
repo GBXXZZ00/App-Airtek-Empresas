@@ -1283,7 +1283,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhd_mXfcKRlkjhZQebw1agv7paL88NGAdCva5jDVmnJoYssX4Sfwjg8lFIs7OH36X_w/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaPjs_u7gLxx2EsxZb51fdpEiKsv3gcNihIkEwuuU9fYg70iOdo3vx7q3lE_tgYMOO8w/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -4687,27 +4687,39 @@ var FACT_MAP = {
  */
 function factMapMostrar(rs, lat, lon){
   var wrap = document.getElementById('factMapWrap');
-  var cont = document.getElementById('factMapContainer');
-  if(!wrap || !cont) return;
-  if(typeof L === 'undefined') return;  // Leaflet no cargado aún
+  if(!wrap) return;
+  if(typeof L === 'undefined') return;
 
+  // 1. Hacer visible primero
   wrap.classList.add('visible');
 
-  // Inicializar mapa si no existe, o reusar
+  // 2. Doble rAF: primer frame aplica display:block, segundo ya tiene dimensiones reales
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      factMapPintar(rs, lat, lon);
+    });
+  });
+}
+
+function factMapPintar(rs, lat, lon){
+  var cont = document.getElementById('factMapContainer');
+  if(!cont) return;
+
+  // Inicializar instancia si no existe
   if(!FACT_MAP.instancia){
     FACT_MAP.instancia = L.map('factMapContainer', {
-      minZoom: 12,
-      maxZoom: 18,
-      zoomControl: true,
-      attributionControl: false
+      minZoom: 10, maxZoom: 18,
+      zoomControl: true, attributionControl: false
     });
-
-    // Fondo satelital Esri — se ve como Google Earth
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 18, minZoom: 12 }
+      { maxZoom: 18 }
     ).addTo(FACT_MAP.instancia);
   }
+
+  // invalidateSize doble: inmediato + 500ms de seguro
+  FACT_MAP.instancia.invalidateSize();
+  setTimeout(function(){ if(FACT_MAP.instancia) FACT_MAP.instancia.invalidateSize(); }, 500);
 
   // Limpiar capas anteriores
   FACT_MAP.capas.forEach(function(c){ FACT_MAP.instancia.removeLayer(c); });
@@ -4720,13 +4732,16 @@ function factMapMostrar(rs, lat, lon){
   polys.forEach(function(p){
     var puntos = factMapParsearCoords(p.coords);
     if(puntos.length < 3) return;
-    var esOp = p.estado === 'En Operación';
+    var esOp   = p.estado === 'En Operación';
+    var esExcl = p.estado === 'Zona Exclusiva';
+    var esActivo = esOp || esExcl;
+    var colorPoly = esExcl ? '#00CFFF' : (esOp ? '#388BFD' : '#E3B341');
     var capa = L.polygon(puntos, {
-      color:       esOp ? '#388BFD' : '#E3B341',
-      fillColor:   esOp ? '#388BFD' : '#E3B341',
-      fillOpacity: esOp ? 0.45 : 0.30,
-      weight:      esOp ? 2.5 : 1.5,
-      opacity:     esOp ? 0.9 : 0.6
+      color:       colorPoly,
+      fillColor:   colorPoly,
+      fillOpacity: esActivo ? 0.45 : 0.30,
+      weight:      esActivo ? 2.5 : 1.5,
+      opacity:     esActivo ? 0.9 : 0.6
     });
     capa.bindPopup(
       '<strong style="font-size:13px">' + (p.mdt || 'MDT') + '</strong><br>' +
@@ -4764,11 +4779,6 @@ function factMapMostrar(rs, lat, lon){
 
   // Centrar mapa en el punto consultado
   FACT_MAP.instancia.setView([lat, lon], 15);
-
-  // Invalidar tamaño — 400ms para que el drawer termine de animarse en desktop
-  setTimeout(function(){
-    if(FACT_MAP.instancia) FACT_MAP.instancia.invalidateSize();
-  }, 400);
 }
 
 /**
