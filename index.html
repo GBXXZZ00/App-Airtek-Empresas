@@ -4657,10 +4657,33 @@ function escHtml(s){
 // Normalizar string de coordenadas para el mapa (reutiliza lógica del GAS en cliente)
 function normalizarCoordsParaMapa(t){
   if(!t) return null;
-  t = t.toString().trim().replace(/[()a-zA-Z]/g,'').replace(/\s+/g,' ').trim();
+  t = t.toString().trim();
+  // Detectar formato DMS: tiene letras N/S/E/W y símbolo °
+  if(/[NSEWnsew]/.test(t) && /\d+[°]/.test(t)){
+    // Extraer componentes DMS: grados, minutos, segundos, hemisferio
+    var re = /(\d+)[°\s]+(\d+)[`'′\s]+(\d+(?:\.\d+)?)[″"\s]*([NSEWnsew])/g;
+    var matches = [], m;
+    while((m = re.exec(t)) !== null) matches.push(m);
+    if(matches.length >= 2){
+      var parseDMS = function(match){
+        var d = parseFloat(match[1]);
+        var mi = parseFloat(match[2]);
+        var s = parseFloat(match[3]);
+        var hem = match[4].toUpperCase();
+        var dec = d + mi/60 + s/3600;
+        return (hem === 'S' || hem === 'W') ? -dec : dec;
+      };
+      var lat = parseDMS(matches[0]);
+      var lon = parseDMS(matches[1]);
+      if(!isNaN(lat) && !isNaN(lon) && lat>=-90 && lat<=90 && lon>=-180 && lon<=180)
+        return {lat:lat, lon:lon};
+    }
+  }
+  // Formato decimal con coma o espacio
+  t = t.replace(/[()]/g,'').trim();
   var lat, lon;
   if(t.indexOf(',') >= 0){ var s=t.split(','); lat=parseFloat(s[0]); lon=parseFloat(s[1]); }
-  else { var s=t.split(/\s+/); lat=parseFloat(s[0]); lon=parseFloat(s[1]); }
+  else { var s=t.trim().split(/\s+/); lat=parseFloat(s[0]); lon=parseFloat(s[1]); }
   if(!isNaN(lat) && !isNaN(lon) && lat>=-90 && lat<=90 && lon>=-180 && lon<=180)
     return {lat:lat, lon:lon};
   return null;
