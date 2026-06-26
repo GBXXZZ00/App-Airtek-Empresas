@@ -1283,7 +1283,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby46XP0fVbYJRUX5lFSq1ZzVUmTKeqq6UxbCCvibg-ny-cUcGx8mnjK3-leE5kduNo-aA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1gIyF-pHMUsQrm6nBf7v_X4VK3ZXRQyewD7JsSXN2GAElqpgDEDLlgFQv5IYquWMoMw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -4708,12 +4708,18 @@ function factMapPintar(rs, lat, lon){
   // Inicializar instancia si no existe
   if(!FACT_MAP.instancia){
     FACT_MAP.instancia = L.map('factMapContainer', {
-      minZoom: 10, maxZoom: 18,
+      minZoom: 8, maxZoom: 18,
       zoomControl: true, attributionControl: false
     });
+    // Capa satelital Esri con maxNativeZoom para evitar tiles vacíos
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 18 }
+      { maxZoom: 18, maxNativeZoom: 17 }
+    ).addTo(FACT_MAP.instancia);
+    // Capa de etiquetas encima del satelital (siempre disponible)
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+      { maxZoom: 18, opacity: 0.7 }
     ).addTo(FACT_MAP.instancia);
   }
 
@@ -4777,8 +4783,8 @@ function factMapPintar(rs, lat, lon){
   // (usamos el centroide del primer polígono operativo cercano como referencia visual)
   // Línea de referencia eliminada — los polígonos muestran la zonificación directamente
 
-  // Centrar mapa en el punto consultado
-  FACT_MAP.instancia.setView([lat, lon], 15);
+  // Centrar mapa — zoom 14 garantiza tiles Esri en toda Venezuela
+  FACT_MAP.instancia.setView([lat, lon], 14);
 }
 
 /**
