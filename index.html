@@ -1190,58 +1190,28 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="fact-drawer-body">
 
-      <!-- Datos del cliente (siempre visible) -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Datos del cliente</div>
-        <div class="fact-field" style="margin-bottom:10px">
-          <label class="fact-label">Nombre <span style="font-weight:400;text-transform:none">(opcional)</span></label>
-          <input class="fact-input" id="factNombre" type="text" placeholder="Empresa o persona">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="fact-field" style="margin-bottom:0">
-            <label class="fact-label">RIF <span style="font-weight:400;text-transform:none">(opcional)</span></label>
-            <input class="fact-input" id="factRif" type="text" placeholder="J-12345678-9">
-          </div>
-          <div class="fact-field" style="margin-bottom:0">
-            <label class="fact-label">Teléfono <span style="font-weight:400;text-transform:none">(opcional)</span></label>
-            <input class="fact-input" id="factTelefono" type="tel" placeholder="0424-0000000">
-          </div>
-        </div>
-      </div>
-
-      <!-- Etiqueta (siempre visible) -->
+      <!-- SECCIÓN 1: Consulta de factibilidad (siempre visible) -->
       <div class="fact-field">
-        <label class="fact-label">Etiqueta</label>
-        <div class="fact-save-etiq" id="factEtiqBtns">
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Potencial',this)">⭐ Potencial</button>
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('En Espera',this)">⏳ En Espera</button>
-          <button class="fact-save-etiq-btn" onclick="factSelEtiq('Sin Gestión',this)">— Sin Gestión</button>
-        </div>
+        <label class="fact-label">Tipo de cliente</label>
+        <select class="fact-input" id="factTipo">
+          <option value="PYMES">PYMES</option>
+          <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
+          <option value="DEDICADO ISP">DEDICADO ISP</option>
+          <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
+          <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
+        </select>
       </div>
+      <div class="fact-field">
+        <label class="fact-label">Coordenadas</label>
+        <input class="fact-input" id="factCoords" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultar()">
+        <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
+      </div>
+      <button class="fact-btn-primary" id="factBtn" onclick="factConsultar()">
+        <span>🔍</span> Consultar Factibilidad
+      </button>
 
-      <!-- Consulta de factibilidad -->
-      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Consulta de factibilidad</div>
-        <div class="fact-field">
-          <label class="fact-label">Tipo de cliente</label>
-          <select class="fact-input" id="factTipo">
-            <option value="PYMES">PYMES</option>
-            <option value="DEDICADO CORPORATIVO">DEDICADO CORPORATIVO</option>
-            <option value="DEDICADO ISP">DEDICADO ISP</option>
-            <option value="DEDICADO CORPORATIVO + PYME">DEDICADO CORPORATIVO + PYME</option>
-            <option value="DEDICADO ISP + PYME">DEDICADO ISP + PYME</option>
-          </select>
-        </div>
-        <div class="fact-field">
-          <label class="fact-label">Coordenadas</label>
-          <input class="fact-input" id="factCoords" type="text" placeholder="10.5,-71.6" autocomplete="off" onkeydown="if(event.key==='Enter')factConsultar()">
-          <div class="fact-hint">Formatos: 10.5,-71.6 · 10.5 -71.6 · 10°30'N 71°W</div>
-        </div>
-        <button class="fact-btn-primary" id="factBtn" onclick="factConsultar()">
-          <span>🔍</span> Consultar Factibilidad
-        </button>
-        <div id="factResult"></div>
-      </div>
+      <!-- Resultado de la consulta -->
+      <div id="factResult"></div>
 
       <!-- Mapa de factibilidad (aparece tras consultar) -->
       <div class="fact-map-wrap" id="factMapWrap">
@@ -1249,6 +1219,7 @@ tbody tr:hover td{background:var(--surface2)}
           <span class="fact-map-title">Vista de cobertura</span>
           <div class="fact-map-legend">
             <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#388BFD"></span>En Operación</span>
+            <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#00CFFF"></span>Zona Exclusiva</span>
             <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#E3B341"></span>Diseño/Otros</span>
             <span class="fact-map-leg-item"><span class="fact-map-leg-dot" style="background:#ff4444;border-radius:50%"></span>Tu punto</span>
           </div>
@@ -1256,12 +1227,37 @@ tbody tr:hover td{background:var(--surface2)}
         <div id="factMapContainer"></div>
       </div>
 
-      <!-- Botón guardar -->
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
-        <button class="fact-btn-primary" id="factGuardarBtn" onclick="factGuardar()">
-          💾 Guardar
-        </button>
-        <button class="fact-btn-sec" onclick="factCloseDrawer()">Cancelar</button>
+      <!-- SECCIÓN 2: Datos del cliente + etiqueta (aparece DESPUÉS del resultado) -->
+      <div id="factSeccionGuardar" style="display:none">
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Datos del cliente</div>
+          <div class="fact-field" style="margin-bottom:10px">
+            <label class="fact-label">Nombre <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+            <input class="fact-input" id="factNombre" type="text" placeholder="Empresa o persona">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="fact-field" style="margin-bottom:0">
+              <label class="fact-label">RIF <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+              <input class="fact-input" id="factRif" type="text" placeholder="J-12345678-9">
+            </div>
+            <div class="fact-field" style="margin-bottom:0">
+              <label class="fact-label">Teléfono <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+              <input class="fact-input" id="factTelefono" type="tel" placeholder="0424-0000000">
+            </div>
+          </div>
+          <div class="fact-field">
+            <label class="fact-label">Etiqueta</label>
+            <div class="fact-save-etiq" id="factEtiqBtns">
+              <button class="fact-save-etiq-btn" onclick="factSelEtiq('Potencial',this)">⭐ Potencial</button>
+              <button class="fact-save-etiq-btn" onclick="factSelEtiq('En Espera',this)">⏳ En Espera</button>
+              <button class="fact-save-etiq-btn" onclick="factSelEtiq('Sin Gestión',this)">— Sin Gestión</button>
+            </div>
+          </div>
+          <button class="fact-btn-primary" id="factGuardarBtn" onclick="factGuardar()" style="margin-top:8px">
+            💾 Guardar en historial
+          </button>
+          <button class="fact-btn-sec" onclick="factCloseDrawer()">Cancelar</button>
+        </div>
       </div>
 
     </div>
@@ -1287,7 +1283,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlBl84nTJ9KIwX7RdiIoq7N4iFZTNEHltCFEU8wLOcFjaMoZspte8u7fBh9z1n6BxGpA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhd_mXfcKRlkjhZQebw1agv7paL88NGAdCva5jDVmnJoYssX4Sfwjg8lFIs7OH36X_w/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -4154,6 +4150,11 @@ function factOpenDrawer(){
   FACT_STATE.editFilaId = null;
   FACT_STATE.ultimaResp = null;
   FACT_STATE.etiqSel    = 'Sin Gestión';
+  // Ocultar sección guardar al abrir modo nuevo
+  var secN = document.getElementById('factSeccionGuardar');
+  if(secN) secN.style.display = 'none';
+  var resN = document.getElementById('factResult');
+  if(resN) resN.innerHTML = '';
   var title = document.getElementById('factDrawerTitle');
   if(title) title.textContent = '📡 Nueva consulta';
   var gbtn = document.getElementById('factGuardarBtn');
@@ -4249,20 +4250,27 @@ function factAbrirRegistro(idx){
   var bg = document.getElementById('factDrawerBg');
   if(bg) bg.classList.add('open');
 
-  // Mostrar mapa con datos guardados (sin re-consultar)
+  // En modo editar mostrar la sección de guardar directamente
+  var secEd = document.getElementById('factSeccionGuardar');
+  if(secEd) secEd.style.display = 'block';
+
+  // Mostrar mapa con datos guardados — usar FOTO_KMZ si existe
   if(h.coords && h.status){
     var coordNorm = normalizarCoordsParaMapa(h.coords);
     if(coordNorm){
-      // Construir objeto mínimo para el mapa desde datos del historial
+      var polsGuardados = [];
+      if(h.fotoKmz){
+        try{ polsGuardados = JSON.parse(h.fotoKmz); }catch(e){ polsGuardados = []; }
+      }
       var rsMapa = {
-        status:   h.status,
-        mdt:      h.mdt        || '',
-        detalle:  h.detalle    || '',
-        distanciaKm: h.distanciaKm || null,
-        exclusividad: '',
-        poligonosCercanos: []   // sin re-consultar GAS, no hay polígonos
+        status:            h.status,
+        mdt:               h.mdt        || '',
+        detalle:           h.detalle    || '',
+        distanciaKm:       h.distanciaKm || null,
+        exclusividad:      '',
+        poligonosCercanos: polsGuardados
       };
-      setTimeout(function(){ factMapMostrar(rsMapa, coordNorm.lat, coordNorm.lon); }, 350);
+      setTimeout(function(){ factMapMostrar(rsMapa, coordNorm.lat, coordNorm.lon); }, 400);
     }
   }
 }
@@ -4271,6 +4279,13 @@ function factCloseDrawer(){
   var bg = document.getElementById('factDrawerBg');
   if(bg) bg.classList.remove('open');
   factMapOcultar();
+  // Ocultar sección guardar y limpiar resultado para la próxima apertura en modo nuevo
+  if(FACT_STATE.modo === 'nuevo'){
+    var sec = document.getElementById('factSeccionGuardar');
+    if(sec) sec.style.display = 'none';
+    var res = document.getElementById('factResult');
+    if(res) res.innerHTML = '';
+  }
 }
 
 function factCloseDrawerIf(e){
@@ -4313,6 +4328,22 @@ function factConsultar(){
     // Mostrar mapa (submódulo separado)
     var coordNorm = normalizarCoordsParaMapa(coords);
     if(coordNorm) factMapMostrar(rs, coordNorm.lat, coordNorm.lon);
+    // Mostrar sección guardar + auto-etiqueta (solo modo nuevo)
+    if(FACT_STATE.modo === 'nuevo'){
+      var sec = document.getElementById('factSeccionGuardar');
+      if(sec) sec.style.display = 'block';
+      var autoEtiq = null;
+      if(rs.status && rs.status.indexOf('FACTIBLE') >= 0 && rs.status.indexOf('POSIBLE') < 0) autoEtiq = 'Potencial';
+      else if(rs.status && (rs.status.indexOf('EN ESPERA') >= 0 || rs.status.indexOf('ESPERA') >= 0)) autoEtiq = 'En Espera';
+      if(autoEtiq){
+        document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){ b.className='fact-save-etiq-btn'; });
+        var clsM = {'Potencial':'sel-potencial','En Espera':'sel-espera','Sin Gestión':'sel-sin'};
+        document.querySelectorAll('.fact-save-etiq-btn').forEach(function(b){
+          if(b.textContent.indexOf(autoEtiq) >= 0) b.className='fact-save-etiq-btn '+clsM[autoEtiq];
+        });
+        FACT_STATE.etiqSel = autoEtiq;
+      }
+    }
   })
   .catch(function(){
     btn.disabled = false;
@@ -4436,7 +4467,9 @@ function factGuardar(){
       etiqueta:    etiq,
       rif:         rif,
       nombre:      nombre,
-      telefono:    telefono
+      telefono:    telefono,
+      fotoKmz:     rs.poligonosCercanos && rs.poligonosCercanos.length > 0
+                   ? JSON.stringify(rs.poligonosCercanos) : ''
     };
     fetch(APPS_SCRIPT_URL, { method:'POST', body:JSON.stringify(payload) })
     .then(function(r){ return r.json(); })
@@ -4691,9 +4724,9 @@ function factMapMostrar(rs, lat, lon){
     var capa = L.polygon(puntos, {
       color:       esOp ? '#388BFD' : '#E3B341',
       fillColor:   esOp ? '#388BFD' : '#E3B341',
-      fillOpacity: 0.25,
-      weight:      esOp ? 2 : 1,
-      opacity:     esOp ? 0.8 : 0.5
+      fillOpacity: esOp ? 0.45 : 0.30,
+      weight:      esOp ? 2.5 : 1.5,
+      opacity:     esOp ? 0.9 : 0.6
     });
     capa.bindPopup(
       '<strong style="font-size:13px">' + (p.mdt || 'MDT') + '</strong><br>' +
@@ -4727,31 +4760,15 @@ function factMapMostrar(rs, lat, lon){
 
   // Si no es factible, línea roja al MDT más cercano
   // (usamos el centroide del primer polígono operativo cercano como referencia visual)
-  if(factClase(rs.status) !== 'fact-r-ok' && polys.length > 0){
-    var primerOp = polys.find(function(p){ return p.estado === 'En Operación'; });
-    if(primerOp){
-      var pts = factMapParsearCoords(primerOp.coords);
-      if(pts.length > 0){
-        // Calcular centroide aproximado
-        var sumLat = 0, sumLon = 0;
-        pts.forEach(function(p){ sumLat += p[0]; sumLon += p[1]; });
-        var cLat = sumLat / pts.length;
-        var cLon = sumLon / pts.length;
-        FACT_MAP.lineaRef = L.polyline([[lat, lon],[cLat, cLon]], {
-          color: '#FF4444', weight: 2, dashArray: '6,4', opacity: 0.8
-        }).addTo(FACT_MAP.instancia);
-        FACT_MAP.capas.push(FACT_MAP.lineaRef);
-      }
-    }
-  }
+  // Línea de referencia eliminada — los polígonos muestran la zonificación directamente
 
   // Centrar mapa en el punto consultado
   FACT_MAP.instancia.setView([lat, lon], 15);
 
-  // Invalidar tamaño (necesario cuando el contenedor cambia de visible)
+  // Invalidar tamaño — 400ms para que el drawer termine de animarse en desktop
   setTimeout(function(){
     if(FACT_MAP.instancia) FACT_MAP.instancia.invalidateSize();
-  }, 100);
+  }, 400);
 }
 
 /**
