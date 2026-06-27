@@ -2008,10 +2008,17 @@ function renderTabDocs(r){
   empDocsActasExtra.forEach(function(d){h+=docField(d,r);});
   h+='</div></div></div>';
 
-  // Contrato
-  h+='<div class="doc-grid">';
-  empDocsFinal.forEach(function(d){h+=docField(d,r);});
-  h+='</div></div>';
+  // Contrato: solo si estatus es PENDIENTE POR FIRMAR / CONTRATO FIRMADO, o ya tiene URL
+  var estatusActual=(r['ESTATUS_LEGAL']||'').toUpperCase();
+  var mostrarContrato=estatusActual==='PENDIENTE POR FIRMAR'||
+                      estatusActual==='CONTRATO FIRMADO'||
+                      cleanDocUrl(r['CONTRATO']||'').startsWith('http');
+  if(mostrarContrato){
+    h+='<div class="doc-grid">';
+    empDocsFinal.forEach(function(d){h+=docField(d,r);});
+    h+='</div>';
+  }
+  h+='</div>';
 
   // ── Checklist de estados — Admin y Abogado editan, Líder lee ───
   var faltItems=[
@@ -2147,20 +2154,21 @@ function cleanDocUrl(v){
   return s;
 }
 function docField(d,r){
-  // Nuclear safety: usa cleanVal primero, luego cleanDocUrl
   var rawVal=r[d.col];
-  // console.log('[docField DEBUG] col='+d.col+' raw='+JSON.stringify(rawVal)+' type='+typeof rawVal);
   var url=cleanDocUrl(rawVal);
   var hasDoc=url.startsWith('http');
   if(hasDoc){
+    // Nombre corto del archivo para mostrar
+    var nombreCorto=d.lbl;
     return (
       '<div class="doc-item doc-item-ok">'
-      +'<div class="doc-lbl">'+d.lbl+'</div>'
+      +'<div class="doc-lbl">'+nombreCorto+'</div>'
       +'<div class="doc-ok">'
-      +'<span style="color:var(--green)">✓ Cargado</span>'
-      +'<div style="display:flex;gap:6px;margin-top:4px">'
+      +'<span style="color:var(--green);font-size:11px">✓ Cargado</span>'
+      +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
       +'<a href="'+url+'" target="_blank" class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px">Ver ↗</a>'
-      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="replaceDoc(this,\''+d.col+'\')" >Reemplazar</button>'
+      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="replaceDoc(this,\''+d.col+'\',\''+url+'\')">Reemplazar</button>'
+      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--red);border-color:var(--red)" onclick="eliminarDoc(this,\''+d.col+'\',\''+url+'\')">Eliminar</button>'
       +'</div>'
       +'</div>'
       +'</div>'
@@ -2171,7 +2179,8 @@ function docField(d,r){
       +'<div class="doc-lbl">'+d.lbl+'</div>'
       +'<div class="doc-upload">'
       +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this,\''+d.col+'\')">'
-      +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div><div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div>'
+      +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
+      +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div>'
       +'</div>'
       +'</div>'
     );
@@ -2209,13 +2218,47 @@ function crearExpedienteDrive(){
   });
 }
 
-function replaceDoc(btn,col){
-  // Create a hidden file input and trigger it
+function replaceDoc(btn,col,urlVieja){
   var inp=document.createElement('input');
   inp.type='file';
   inp.accept='.pdf,.jpg,.jpeg,.png';
-  inp.onchange=function(){handleFile(inp,col);};
+  inp.onchange=function(){handleFile(inp,col,urlVieja);};
   inp.click();
+}
+
+function eliminarDoc(btn,col,url){
+  if(!S.cur)return;
+  if(!confirm('¿Confirmas eliminar este documento? Se borrará de Drive y del expediente.'))return;
+  if(!APPS_SCRIPT_URL){toast('GAS URL no configurada','err');return;}
+  // Deshabilitar botón mientras procesa
+  btn.disabled=true;
+  btn.textContent='Eliminando...';
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'eliminarDocumento',
+    rif:S.cur['RIF'],
+    columna:col,
+    url:url,
+    usuario:S.user||''
+  })})
+  .then(function(r){return r.json();})
+  .then(function(rs){
+    if(rs.ok){
+      S.cur[col]='';
+      var inAll=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
+      if(inAll)inAll[col]='';
+      toast('Documento eliminado ✓','ok');
+      renderTabDocs(S.cur);
+    }else{
+      toast('Error al eliminar: '+(rs.error||''),'err');
+      btn.disabled=false;
+      btn.textContent='Eliminar';
+    }
+  })
+  .catch(function(){
+    toast('Error de red al eliminar','err');
+    btn.disabled=false;
+    btn.textContent='Eliminar';
+  });
 }
 
 
@@ -2606,7 +2649,7 @@ function saveField(col,val){
   }
 }
 
-function handleFile(input,col){
+function handleFile(input,col,urlVieja){
   var file=input.files[0];if(!file)return;
   if(file.size>10*1024*1024){toast('Archivo muy grande (máx 10MB)','err');return;}
   // Build descriptive filename: LABEL_RIF_RAZON_SOCIAL.ext
@@ -2645,6 +2688,7 @@ function handleFile(input,col){
         tipo:S.cur['TIPO_CLIENTE'],
         columna:col,
         usuario:S.user||'',
+        urlVieja:urlVieja||'',
         fileBase64:e.target.result.split(',')[1],
         fileName:fileName,
         mimeType:file.type
