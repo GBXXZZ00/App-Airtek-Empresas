@@ -343,18 +343,33 @@ tbody tr:hover td{background:var(--surface2)}
 .comm-lider{color:#3B82F6;border-color:#3B82F6}
 .comm-lider:hover{background:rgba(59,130,246,.12);color:#3B82F6}
 
-/* FALTANTES PANEL */
+/* FALTANTES PANEL — tres estados */
 .falt-panel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:8px}
 .falt-title{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.falt-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
-.falt-item{display:flex;align-items:center;gap:8px;font-size:12px}
-.falt-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
-.falt-item label{cursor:pointer;color:var(--text2);flex:1}
-.falt-item.done label{color:var(--text3);text-decoration:line-through}
-.falt-item.done .falt-auto{color:var(--green);font-size:10px}
-.falt-detail{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none;resize:vertical;min-height:48px;margin-top:4px}
+.falt-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.falt-item3{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface)}
+.falt-item3 .fi-lbl{flex:1;color:var(--text2)}
+.falt-item3.fi-ok{border-color:transparent;background:transparent}
+.falt-item3.fi-ok .fi-lbl{color:var(--text3);text-decoration:line-through}
+.falt-item3.fi-problema{border-color:rgba(202,138,4,.3);background:rgba(202,138,4,.05)}
+.falt-item3.fi-problema .fi-lbl{color:var(--text)}
+.falt-item3.fi-faltante{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.05)}
+.falt-item3.fi-faltante .fi-lbl{color:var(--text)}
+.fi-sel{font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;cursor:pointer;outline:none}
+.fi-sel:focus{border-color:var(--accent)}
+.falt-readonly .fi-sel{pointer-events:none;opacity:.6}
+.falt-legend{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.falt-legend span{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.obs-panel{margin-top:10px}
+.obs-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.falt-detail{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none;resize:vertical;min-height:48px;margin-top:4px;box-sizing:border-box}
 .falt-detail:focus{border-color:var(--accent)}
 .falt-detail::placeholder{color:var(--text3)}
+.falt-detail[readonly]{opacity:.6;cursor:default}
+.rep-contact-blk{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.rep-contact-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px}
+.rep-contact-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.rep-contact-row{grid-template-columns:1fr}}
 
 /* STATUS BAR */
 .drawer-status-bar{padding:10px 20px 8px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
@@ -1758,53 +1773,29 @@ function countReps(r){
 }
 
 function renderTabDatos(r){
-  const dy=calcDays(r['Fecha de Instalacion Cliente']);
-  const dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
-  let h='<div class="fg"><div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL'])+'"></div><div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF'])+'"></div><div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE'])+'"></div><div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal'])+'"></div><div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO'])+'"></div><div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado'])+'"></div><div class="field"><label>Correo Empresarial</label><input id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'"></div><div class="field"><label>Tel. Proham</label><input id="f_tel_proham" value="'+esc(r['TELEFONO_PROHAM']||'')+'"></div><div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div><div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div></div>';
-  // Parse faltantes from Observacion
-  var obsRaw=r['Observacion']||'';
-  var faltMatch=obsRaw.match(/\[FALTANTES:([^\]]*?)\]/);
-  var detMatch=obsRaw.match(/\[DETALLE:([^\]]*?)\]/);
-  var faltItems=faltMatch?faltMatch[1].split(',').map(function(x){return x.trim();}).filter(Boolean):[];
-  var detText=detMatch?detMatch[1]:'';
-  var obsClean=obsRaw.replace(/\[FALTANTES:[^\]]*\]/g,'').replace(/\[DETALLE:[^\]]*\]/g,'').trim();
-  var esISPd=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
-  var allFaltItems=[
-    {k:'CEDULA_REP',      lbl:'Cédula del Representante Legal',     autoCol:'DOCUMENTOS_REPRESENTANTES'},
-    {k:'RIF_REP',         lbl:'RIF personal del Representante Legal',autoCol:'DOCUMENTOS_REPRESENTANTES2'},
-    {k:'RIF_EMPRESA',     lbl:'RIF vigente de la empresa',           autoCol:'RIF_VIGENTE'},
-    {k:'ACTA_CONST',      lbl:'Acta Constitutiva',                   autoCol:'ACTA CONSTITUTIVA'},
-    {k:'ACTA_ASAMBLEA',   lbl:'Acta de Asamblea',                    autoCol:''},
-    ...(esISPd?[{k:'CONATEL',lbl:'Habilitación CONATEL',             autoCol:'HABILITACION_CONATEL'}]:[]),
-  ];
+  var dy=calcDays(r['Fecha de Instalacion Cliente']);
+  var dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
 
-  h+='<div class="sec-lbl">Estatus Legal</div><div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL'])+'" style="font-weight:600"></div><div class="field"><label>Observación general</label><textarea id="f_obs" placeholder="Notas del ejecutivo...">'+esc(obsClean)+'</textarea></div></div>';
-
-  // Faltantes panel — only visible for ADMIN
-  if(S.rol==='ADMIN'||S.rol==='ABOGADO'){
-    h+='<div class="falt-panel">';
-    h+='<div class="falt-title">📋 Documentos faltantes <span style="font-size:9px;font-weight:400;color:var(--text3)">(para el mensaje al cliente)</span></div>';
-    h+='<div class="falt-list">';
-    allFaltItems.forEach(function(item){
-      var autoLoaded=item.autoCol?cleanDocUrl(r[item.autoCol]||'').startsWith('http'):false;
-      // Explicitly: checked if item.k is in faltItems (and not autoLoaded)
-      var checked=(!autoLoaded)&&(faltItems.indexOf(item.k)>=0);
-      // If auto-loaded, show as done automatically
-      if(autoLoaded){
-        h+='<div class="falt-item done"><input type="checkbox" disabled checked><label>'+item.lbl+'</label><span class="falt-auto">✓ cargado</span></div>';
-      } else {
-        h+='<div class="falt-item"><input type="checkbox" id="falt_'+item.k+'" '+(checked?'checked':'')+' onchange="saveFaltantes()"><label for="falt_'+item.k+'">'+item.lbl+'</label></div>';
-      }
-    });
-    h+='</div>';
-    h+='<textarea class="falt-detail" id="falt_detail" placeholder="Detalle específico: ej. Acta de Ratificación de Junta Directiva 2024, cédula vencida..." onchange="saveFaltantes()">'+esc(detText)+'</textarea>';
-    h+='</div>';
-  }
-  h+='<div class="sec-lbl">Representantes Legales</div><div id="repsC">';
-  for(let i=1;i<=S.nReps;i++) h+=buildRep(i,r);
+  // ── Datos de la empresa (siempre readonly) ─────────────────────
+  var h='<div class="fg">';
+  h+='<div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL']||'')+'"></div>';
+  h+='<div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF']||'')+'"></div>';
+  h+='<div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE']||'')+'"></div>';
+  h+='<div class="field"><label>Sucursal</label><input readonly value="'+esc(r['Sucursal']||'')+'"></div>';
+  h+='<div class="field"><label>Ejecutivo</label><input readonly value="'+esc(r['EJECUTIVO']||'')+'"></div>';
+  h+='<div class="field"><label>Estado servicio</label><input readonly value="'+esc(r['Estado']||'')+'"></div>';
+  h+='<div class="field"><label>Instalación</label><input readonly value="'+esc(fmtDate(r['Fecha de Instalacion Cliente']))+'"></div>';
+  h+='<div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div>';
   h+='</div>';
-  if(S.nReps<2) h+='<button class="add-rep" onclick="addRep()">+ Agregar 2do Representante</button>';
+
+  // ── Estatus legal (readonly, solo visual) ──────────────────────
+  h+='<div class="sec-lbl">Estatus Legal</div>';
+  h+='<div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL']||'')+'" style="font-weight:600"></div></div>';
+
+  // ── Panel de contacto directo (igual que antes) ─────────────────
   h+=renderDrawerComm(r);
+
+  // ── Expediente en Drive ─────────────────────────────────────────
   h+='<div class="sec-lbl">Expediente en Drive</div>';
   var carpetaUrl=cleanVal(r['Carpeta_Drive_URL']||'');
   if(carpetaUrl.startsWith('http')){
@@ -1817,6 +1808,7 @@ function renderTabDatos(r){
   } else {
     h+='<div style="color:var(--text3);font-size:12px">⚠ Carpeta no creada aún</div>';
   }
+
   document.getElementById('tab-datos').innerHTML=h;
 }
 
@@ -1843,106 +1835,150 @@ function rmRep(n){
 }
 
 function renderTabDocs(r){
-  const esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
+  var esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
+  var puedeEditar=(S.rol==='ADMIN'||S.rol==='ABOGADO');
 
-  // ── Representantes: pares de slots (Cédula + RIF por rep) ─────────────
-  // Slots 1+2 = Representante 1 | Slots 3+4 = Representante 2
+  // ── Parsear estados del campo Observacion ──────────────────────
+  // Soporta formato nuevo [DOCS:cod:estado,...] y legado [FALTANTES:cod,...]
+  var obsRaw=r['Observacion']||'';
+  var estadosDoc={};  // { codigo: 'ok'|'problema'|'faltante' }
+  var detText='';
+  var obsClean='';
+
+  var docsMatch=obsRaw.match(/\[DOCS:([^\]]*)\]/);
+  var detMatch=obsRaw.match(/\[DETALLE:([^\]]*)\]/);
+  var faltLegadoMatch=obsRaw.match(/\[FALTANTES:([^\]]*)\]/);
+
+  if(docsMatch){
+    docsMatch[1].split(',').forEach(function(part){
+      var p=part.trim().split(':');
+      if(p.length>=2)estadosDoc[p[0].trim()]=p[1].trim();
+    });
+  } else if(faltLegadoMatch){
+    // Compatibilidad hacia atrás — los que estaban marcados como faltante
+    faltLegadoMatch[1].split(',').forEach(function(k){
+      if(k.trim())estadosDoc[k.trim()]='faltante';
+    });
+  }
+  if(detMatch)detText=detMatch[1];
+  obsClean=obsRaw
+    .replace(/\[DOCS:[^\]]*\]/g,'')
+    .replace(/\[FALTANTES:[^\]]*\]/g,'')
+    .replace(/\[DETALLE:[^\]]*\]/g,'')
+    .trim();
+
+  // ── Definición de documentos ───────────────────────────────────
   var repSections=[];
-  // Rep 1 — siempre visible
   repSections.push({
     lbl:'Representante 1',
+    ck:'CORREO_REPRESENTANTES', nk:'NUMERO_REPRESENTANTES', idx:1,
     docs:[
-      {col:'DOCUMENTOS_REPRESENTANTES', lbl:'Cédula'},
-      {col:'DOCUMENTOS_REPRESENTANTES2',lbl:'RIF Personal'},
+      {col:'DOCUMENTOS_REPRESENTANTES', lbl:'Cédula', faltCod:'CEDULA_REP'},
+      {col:'DOCUMENTOS_REPRESENTANTES2',lbl:'RIF Personal', faltCod:'RIF_REP'},
     ]
   });
-  // Rep 2 — solo si existe
   if(S.nReps>=2){
     repSections.push({
       lbl:'Representante 2',
+      ck:'CORREO_REPRESENTANTES2', nk:'NUMERO_REPRESENTANTES2', idx:2,
       docs:[
-        {col:'DOCUMENTOS_REPRESENTANTES3',lbl:'Cédula'},
-        {col:'DOCUMENTOS_REPRESENTANTES4',lbl:'RIF Personal'},
+        {col:'DOCUMENTOS_REPRESENTANTES3',lbl:'Cédula', faltCod:'CEDULA_REP2'},
+        {col:'DOCUMENTOS_REPRESENTANTES4',lbl:'RIF Personal', faltCod:'RIF_REP2'},
       ]
     });
   }
+  var empDocsBase=[
+    {col:'RIF_VIGENTE',         lbl:'RIF Vigente',        faltCod:'RIF_EMPRESA'},
+    {col:'ACTA CONSTITUTIVA',   lbl:'Acta Constitutiva',  faltCod:'ACTA_CONST'},
+    ...(esISP?[{col:'HABILITACION_CONATEL',lbl:'Habilitación CONATEL',faltCod:'CONATEL'}]:[]),
+  ];
+  var empDocsActasExtra=[
+    {col:'ACTA_ASAMBLEA_JUNTA', lbl:'Acta de Asamblea 1', faltCod:'ACTA_ASAMBLEA'},
+    {col:'ACTA_ASAMBLEA_JUNTA2',lbl:'Acta de Asamblea 2', faltCod:''},
+    {col:'ACTA_ASAMBLEA_JUNTA3',lbl:'Acta de Asamblea 3', faltCod:''},
+    {col:'ACTA_ASAMBLEA_JUNTA4',lbl:'Acta de Asamblea 4', faltCod:''},
+  ];
+  var empDocsFinal=[{col:'CONTRATO',lbl:'Contrato',faltCod:''}];
+  var empDocs=empDocsBase.concat(empDocsActasExtra).concat(empDocsFinal);
 
-  // ── Docs empresa ──────────────────────────────────────────────────────
-  // Docs base empresa: RIF Vigente y Acta Constitutiva primero
-  const empDocsBase=[
-    {col:'RIF_VIGENTE',         lbl:'RIF Vigente'},
-    {col:'ACTA CONSTITUTIVA',   lbl:'Acta Constitutiva'},
-    ...(esISP?[{col:'HABILITACION_CONATEL',lbl:'Habilitación CONATEL'}]:[]),
-  ];
-  // Todas las actas de asamblea (colapsables)
-  const empDocsAcatasExtra=[
-    {col:'ACTA_ASAMBLEA_JUNTA', lbl:'Acta de Asamblea 1'},
-    {col:'ACTA_ASAMBLEA_JUNTA2',lbl:'Acta de Asamblea 2'},
-    {col:'ACTA_ASAMBLEA_JUNTA3',lbl:'Acta de Asamblea 3'},
-    {col:'ACTA_ASAMBLEA_JUNTA4',lbl:'Acta de Asamblea 4'},
-  ];
-  // Contrato siempre al final
-  const empDocsFinal=[
-    {col:'CONTRATO',            lbl:'Contrato'},
-  ];
-  const empDocs=[...empDocsBase,...empDocsAcatasExtra,...empDocsFinal];
-
-  // Contar totales para el header
-  var allRepDocs=repSections.flatMap(function(s){return s.docs;});
+  // Conteo
+  var allRepDocs=[];
+  repSections.forEach(function(s){s.docs.forEach(function(d){allRepDocs.push(d);});});
   var allDocs=allRepDocs.concat(empDocs);
-  var loaded=allDocs.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
-  var ckOk=cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES']).startsWith('http')&&
-            cleanDocUrl(r['ACTA CONSTITUTIVA']).startsWith('http')&&
-            cleanDocUrl(r['RIF_VIGENTE']).startsWith('http')&&
+  var loaded=allDocs.filter(function(d){return cleanDocUrl(r[d.col]||'').startsWith('http');}).length;
+  var ckOk=cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES']||'').startsWith('http')&&
+            cleanDocUrl(r['ACTA CONSTITUTIVA']||'').startsWith('http')&&
+            cleanDocUrl(r['RIF_VIGENTE']||'').startsWith('http')&&
             (r['CORREO_REPRESENTANTES']||'').trim()&&
             (r['NUMERO_REPRESENTANTES']||'').trim()&&
-            (!esISP||cleanDocUrl(r['HABILITACION_CONATEL']).startsWith('http'));
+            (!esISP||cleanDocUrl(r['HABILITACION_CONATEL']||'').startsWith('http'));
 
   var h='';
-  // Botón crear expediente: solo si no hay carpeta Drive y es Admin
-  var tieneCarpeta=cleanVal(r['Carpeta_Drive_URL']).startsWith('http');
+
+  // ── Banner sin carpeta Drive ────────────────────────────────────
+  var tieneCarpeta=cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
   if(!tieneCarpeta&&S.rol==='ADMIN'){
     h+='<div style="margin-bottom:14px;padding:10px 12px;border:1px dashed var(--amber);border-radius:8px;display:flex;align-items:center;gap:10px">';
     h+='<span style="font-size:12px;color:var(--amber)">⚠ Sin carpeta en Drive</span>';
     h+='<button class="btn" style="margin-left:auto;font-size:11px;padding:4px 12px;background:var(--amber);color:#000;border:none" onclick="crearExpedienteDrive()">Crear Expediente ↗</button>';
     h+='</div>';
   }
+
+  // ── Resumen de carga ────────────────────────────────────────────
   h+='<div style="font-size:12px;color:var(--text2);margin-bottom:16px">';
   h+='<strong style="color:var(--text)">'+loaded+'</strong> de '+allDocs.length+' documentos cargados · ';
   h+=ckOk?'<span style="color:var(--green);font-weight:600">✓ Checklist completo</span>':'<span style="color:var(--amber)">⚠ Checklist incompleto</span>';
   h+='</div>';
 
-  // ── Sección por representante ─────────────────────────────────────────
+  // ── Sección por representante: contacto + archivos ─────────────
   repSections.forEach(function(sec){
-    var secLoaded=sec.docs.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
+    var secLoaded=sec.docs.filter(function(d){return cleanDocUrl(r[d.col]||'').startsWith('http');}).length;
     h+='<div class="doc-section">';
     h+='<div class="doc-section-title">'+sec.lbl;
-    h+='<span style="font-size:10px;color:var(--text3);font-weight:400"> '+secLoaded+'/'+sec.docs.length+' cargados</span></div>';
+    h+='<span style="font-size:10px;color:var(--text3);font-weight:400"> '+secLoaded+'/'+sec.docs.length+' docs cargados</span></div>';
+
+    // Contacto del representante (correo + teléfono)
+    // Admin, Abogado y Líder pueden editar correo y teléfono del representante
+    var puedeEditarContacto=(S.rol==='ADMIN'||S.rol==='ABOGADO'||S.rol==='LIDER');
+    h+='<div class="rep-contact-blk">';
+    h+='<div class="rep-contact-lbl">Datos de contacto</div>';
+    h+='<div class="rep-contact-row">';
+    h+='<div class="field" style="margin:0"><label>Correo</label><input type="email" id="fc'+sec.idx+'" value="'+esc(r[sec.ck]||'')+'" placeholder="correo@empresa.com" oninput="docContactChanged(this,\''+sec.ck+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
+    h+='<div class="field" style="margin:0"><label>Teléfono</label><input type="tel" id="fn'+sec.idx+'" value="'+esc(r[sec.nk]||'')+'" placeholder="+584121234567" oninput="docContactChanged(this,\''+sec.nk+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
+    h+='</div></div>';
+
+    // Archivos del representante
     h+='<div class="doc-grid">';
     sec.docs.forEach(function(d){h+=docField(d,r);});
     h+='</div></div>';
   });
 
-  // Botón para agregar Rep 2 si solo hay Rep 1
+  // Botón agregar Rep 2
   if(S.nReps<2){
     h+='<button class="btn btn-g btn-sm" style="margin-bottom:14px;width:100%" onclick="addRepDocs()">+ Agregar Representante 2</button>';
   }
 
-  // ── Sección empresa ───────────────────────────────────────────────────
-  var empBaseLoaded=empDocsBase.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
-  var empExtraLoaded=empDocsAcatasExtra.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
-  var empFinalLoaded=empDocsFinal.filter(function(d){return cleanDocUrl(r[d.col]).startsWith('http');}).length;
-  var empLoaded=empBaseLoaded+empExtraLoaded+empFinalLoaded;
-  // El acordeón se abre si hay alguna acta extra cargada
-  var actasAbiertas=empExtraLoaded>0;
+  // ── Datos de la empresa ─────────────────────────────────────────
   h+='<div class="doc-section">';
-  h+='<div class="doc-section-title">Documentos de la Empresa';
-  h+='<span style="font-size:10px;color:var(--text3);font-weight:400"> '+empLoaded+'/'+empDocs.length+' cargados</span></div>';
-  // Docs base + acta 1 + CONATEL
+  h+='<div class="doc-section-title">Datos de la empresa</div>';
+  h+='<div class="rep-contact-blk">';
+  h+='<div class="rep-contact-lbl">Contacto empresarial</div>';
+  h+='<div class="rep-contact-row">';
+  h+='<div class="field" style="margin:0"><label>Correo empresarial</label><input type="email" id="f_correo_emp" value="'+esc(r['CORREO_EMPRESA']||'')+'" placeholder="info@empresa.com" oninput="docContactChanged(this,\'CORREO_EMPRESA\')" '+(puedeEditar?'':'readonly')+'></div>';
+  h+='<div class="field" style="margin:0"><label>Tel. Proham</label><input type="tel" id="f_tel_proham" value="'+esc(r['TELEFONO_PROHAM']||'')+'" placeholder="+58..." oninput="docContactChanged(this,\'TELEFONO_PROHAM\')" '+(puedeEditar?'':'readonly')+'></div>';
+  h+='</div></div>';
+
+  // Documentos de la empresa
+  var empBaseLoaded=empDocsBase.filter(function(d){return cleanDocUrl(r[d.col]||'').startsWith('http');}).length;
+  var empExtraLoaded=empDocsActasExtra.filter(function(d){return cleanDocUrl(r[d.col]||'').startsWith('http');}).length;
+  var actasAbiertas=empExtraLoaded>0;
+  h+='<div class="doc-section-title" style="margin-top:10px">Documentos de la Empresa';
+  h+='<span style="font-size:10px;color:var(--text3);font-weight:400"> '+empBaseLoaded+'/'+empDocsBase.length+' base cargados</span></div>';
   h+='<div class="doc-grid">';
   empDocsBase.forEach(function(d){h+=docField(d,r);});
   h+='</div>';
-  // Acordeón "Agregar más actas"
+
+  // Acordeón actas
   var acordeonId='actas-extra-'+Math.random().toString(36).slice(2,6);
   h+='<div style="margin:10px 0 6px">';
   h+='<button onclick="toggleActasExtra(this)" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:7px 14px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;width:100%;text-align:left;display:flex;align-items:center;gap:8px;transition:all .15s" id="'+acordeonId+'-btn">';
@@ -1951,14 +1987,87 @@ function renderTabDocs(r){
   h+='</button>';
   h+='<div id="'+acordeonId+'" style="overflow:hidden;max-height:'+(actasAbiertas?'600px':'0')+';transition:max-height .25s var(--ease-out);">';
   h+='<div class="doc-grid" style="margin-top:10px">';
-  empDocsAcatasExtra.forEach(function(d){h+=docField(d,r);});
+  empDocsActasExtra.forEach(function(d){h+=docField(d,r);});
   h+='</div></div></div>';
-  // Contrato siempre al final
+
+  // Contrato
   h+='<div class="doc-grid">';
   empDocsFinal.forEach(function(d){h+=docField(d,r);});
   h+='</div></div>';
 
+  // ── Checklist de estados — Admin y Abogado editan, Líder lee ───
+  var faltItems=[
+    {k:'CEDULA_REP',   lbl:'Cédula del Representante Legal'},
+    {k:'RIF_REP',      lbl:'RIF personal del Representante Legal'},
+    {k:'RIF_EMPRESA',  lbl:'RIF vigente de la empresa'},
+    {k:'ACTA_CONST',   lbl:'Acta Constitutiva'},
+    {k:'ACTA_ASAMBLEA',lbl:'Acta de Asamblea'},
+    ...(esISP?[{k:'CONATEL',lbl:'Habilitación CONATEL'}]:[]),
+  ];
+
+  h+='<div class="falt-panel'+(puedeEditar?'':' falt-readonly')+'">';
+  h+='<div class="falt-title">📋 Estado de documentos';
+  if(!puedeEditar)h+=' <span style="font-size:9px;font-weight:400;color:var(--text3)">(solo lectura)</span>';
+  h+='</div>';
+  h+='<div class="falt-legend">';
+  h+='<span>✅ OK</span><span>⚠️ Con problema</span><span>❌ Faltante</span>';
+  h+='</div>';
+  h+='<div class="falt-list">';
+  faltItems.forEach(function(item){
+    var estado=estadosDoc[item.k]||'ok';
+    var clsCls='fi-'+estado;
+    var ico=estado==='ok'?'✅':estado==='problema'?'⚠️':'❌';
+    h+='<div class="falt-item3 '+clsCls+'" id="fi3_'+item.k+'">';
+    h+='<span style="font-size:13px">'+ico+'</span>';
+    h+='<span class="fi-lbl">'+item.lbl+'</span>';
+    if(puedeEditar){
+      h+='<select class="fi-sel" data-cod="'+item.k+'" onchange="onEstadoDocChange(this)">';
+      h+='<option value="ok"'+(estado==='ok'?' selected':'')+'>✅ OK</option>';
+      h+='<option value="problema"'+(estado==='problema'?' selected':'')+'>⚠️ Problema</option>';
+      h+='<option value="faltante"'+(estado==='faltante'?' selected':'')+'>❌ Faltante</option>';
+      h+='</select>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // Detalle / observaciones
+  h+='<div class="obs-panel">';
+  h+='<div class="obs-lbl">Observaciones</div>';
+  if(puedeEditar){
+    h+='<textarea class="falt-detail" id="falt_detail" placeholder="Detalle: ej. RIF vencido desde feb 2026, falta acta de ratificación de junta..." onchange="saveFaltantes()">'+esc(detText||obsClean)+'</textarea>';
+  } else {
+    h+='<textarea class="falt-detail" readonly placeholder="Sin observaciones">'+esc(detText||obsClean)+'</textarea>';
+  }
+  h+='</div>';
+  if(puedeEditar){
+    h+='<button class="btn btn-p btn-sm" style="margin-top:8px;width:100%" onclick="saveFaltantes()">💾 Guardar checklist</button>';
+  }
+  h+='</div>';
+
   document.getElementById('tab-documentos').innerHTML=h;
+}
+
+// Callback cuando cambia el select de estado de un documento
+function onEstadoDocChange(sel){
+  if(!sel)return;
+  var item=sel.closest('.falt-item3');
+  if(!item)return;
+  var estado=sel.value;
+  item.className='falt-item3 fi-'+estado;
+  var ico=item.querySelector('span');
+  if(ico)ico.textContent=estado==='ok'?'✅':estado==='problema'?'⚠️':'❌';
+  var lbl=item.querySelector('.fi-lbl');
+  // Auto-guardar
+  saveFaltantes();
+}
+
+// Callback para cambios de contacto en pestaña Documentos
+function docContactChanged(el,col){
+  if(!S.cur||!el)return;
+  S.cur[col]=el.value;
+  // Marcar visual
+  el.style.borderColor='var(--accent)';
 }
 
 // Toggle acordeón actas extra
@@ -2340,23 +2449,24 @@ function changeStatus(ns){
 
 function saveFaltantes(){
   if(!S.cur)return;
-  // Collect checked items
-  var items=[];
-  document.querySelectorAll('.falt-list input[type=checkbox]:not(:disabled)').forEach(function(cb){
-    if(cb.checked&&cb.id){items.push(cb.id.replace('falt_',''));}
+  // Recolectar estados de los selects
+  var partes=[];
+  document.querySelectorAll('.falt-item3 .fi-sel').forEach(function(sel){
+    var cod=sel.getAttribute('data-cod');
+    var val=sel.value||'ok';
+    if(cod)partes.push(cod+':'+val);
   });
   var detail=(document.getElementById('falt_detail')||{}).value||'';
-  // Build structured observacion
-  var baseObs=(document.getElementById('f_obs')||{}).value||'';
+
+  // Construir el campo Observacion con el nuevo formato
   var structured='';
-  if(items.length)structured+='[FALTANTES:'+items.join(',')+']';
+  if(partes.length)structured+='[DOCS:'+partes.join(',')+']';
   if(detail.trim())structured+=(structured?'\n':'')+'[DETALLE:'+detail.trim()+']';
-  var full=(structured?(structured+'\n'):'')+(baseObs||'');
-  S.cur['Observacion']=full;
-  // Persiste la observacion en DB_ANALISTAS via cambiarEstatus (misma accion, mismo estatus)
-  // Se usa el estatus actual para no cambiarlo; GAS v3 escribe Observacion si viene en el payload.
-  persistObs(full);
-  // Visual feedback
+
+  S.cur['Observacion']=structured;
+  persistObs(structured);
+
+  // Feedback visual
   var det=document.getElementById('falt_detail');
   if(det){det.style.borderColor='var(--green)';setTimeout(function(){det.style.borderColor='';},1200);}
 }
@@ -2384,39 +2494,36 @@ function persistObs(obsValue){
 
 function saveExp(){
   if(!S.cur)return;
-  // Merge faltantes into observacion before saving
+  // Guardar estados del checklist primero
   saveFaltantes();
-  var oldObs=S.cur['Observacion']||'';
-  var newObs=document.getElementById('f_obs')?.value||'';
-  // Preserve structured parts
-  var faltMatch=oldObs.match(/\[FALTANTES:[^\]]*\]/);
-  var detMatch=oldObs.match(/\[DETALLE:[^\]]*\]/);
-  var prefix=(faltMatch?faltMatch[0]:'')+(detMatch?('\n'+detMatch[0]):'');
-  var full=(prefix?(prefix+'\n'):'')+(newObs||'');
-  S.cur['Observacion']=full;
-  for(let i=1;i<=S.nReps;i++){
-    const ck=i===1?'CORREO_REPRESENTANTES':'CORREO_REPRESENTANTES'+i;
-    const nk=i===1?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES'+i;
+
+  // Recoger correo/teléfono de representantes (ahora viven en tab-documentos)
+  for(var i=1;i<=S.nReps;i++){
+    var ck=i===1?'CORREO_REPRESENTANTES':'CORREO_REPRESENTANTES'+i;
+    var nk=i===1?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES'+i;
     if(document.getElementById('fc'+i))S.cur[ck]=document.getElementById('fc'+i).value;
     if(document.getElementById('fn'+i))S.cur[nk]=document.getElementById('fn'+i).value;
   }
-  // Register changes in historial
-  if(newObs!==oldObs)regHistorial(S.cur,'Observacion',oldObs,newObs);
+  // Correo empresa y Proham (también en tab-documentos ahora)
+  if(document.getElementById('f_correo_emp'))S.cur['CORREO_EMPRESA']=document.getElementById('f_correo_emp').value;
+  if(document.getElementById('f_tel_proham'))S.cur['TELEFONO_PROHAM']=document.getElementById('f_tel_proham').value;
+
   // Sync S.all
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
   if(inAll)Object.assign(inAll,{
-    'Observacion':S.cur['Observacion'],
-    'CORREO_REPRESENTANTES':S.cur['CORREO_REPRESENTANTES'],
-    'NUMERO_REPRESENTANTES':S.cur['NUMERO_REPRESENTANTES'],
-    'CORREO_REPRESENTANTES2':S.cur['CORREO_REPRESENTANTES2'],
-    'NUMERO_REPRESENTANTES2':S.cur['NUMERO_REPRESENTANTES2'],
-    'ESTATUS_LEGAL':S.cur['ESTATUS_LEGAL']
+    'Observacion':       S.cur['Observacion'],
+    'CORREO_REPRESENTANTES':  S.cur['CORREO_REPRESENTANTES'],
+    'NUMERO_REPRESENTANTES':  S.cur['NUMERO_REPRESENTANTES'],
+    'CORREO_REPRESENTANTES2': S.cur['CORREO_REPRESENTANTES2'],
+    'NUMERO_REPRESENTANTES2': S.cur['NUMERO_REPRESENTANTES2'],
+    'CORREO_EMPRESA':    S.cur['CORREO_EMPRESA'],
+    'TELEFONO_PROHAM':   S.cur['TELEFONO_PROHAM'],
+    'ESTATUS_LEGAL':     S.cur['ESTATUS_LEGAL']
   });
   refreshTableRow(S.cur);
   toast('Cambios guardados ✓','ok');
-  // Persistir observacion en DB_ANALISTAS (faltantes + texto)
   persistObs(S.cur['Observacion']||'');
-  setTimeout(closeDrawer, 900);
+  setTimeout(closeDrawer,900);
 }
 
 function refreshTableRow(r){
@@ -3824,30 +3931,51 @@ function getMsgWA(tipo,r){
   var firma=N+'------------------'+N+(S.user||'Airtek')+N+cargo+' | Airtek Ventas Corporativas'+N+CC_CORP;
   var firmaAdmin=N+'------------------'+N+'Administración de Contratos | Airtek'+N+CC_CORP;
 
-  // Parse faltantes from observacion
+  // Parse estados de documentos — soporta nuevo formato [DOCS:...] y legado [FALTANTES:...]
   var obs=r?r['Observacion']||'':'';
-  var faltMatch=obs.match(/\[FALTANTES:([^\]]*?)\]/);
-  var detMatch=obs.match(/\[DETALLE:([^\]]*?)\]/);
-  var faltKeys=faltMatch?faltMatch[1].split(',').map(function(x){return x.trim();}).filter(Boolean):[];
+  var estadosDoc={};
+  var docsMatch=obs.match(/\[DOCS:([^\]]*)\]/);
+  var detMatch=obs.match(/\[DETALLE:([^\]]*)\]/);
+  var faltLegMatch=obs.match(/\[FALTANTES:([^\]]*)\]/);
+  if(docsMatch){
+    docsMatch[1].split(',').forEach(function(part){
+      var p=part.trim().split(':');
+      if(p.length>=2)estadosDoc[p[0].trim()]=p[1].trim();
+    });
+  } else if(faltLegMatch){
+    faltLegMatch[1].split(',').forEach(function(k){
+      if(k.trim())estadosDoc[k.trim()]='faltante';
+    });
+  }
   var detText=detMatch?detMatch[1].trim():'';
 
-  var faltLabels={
-    'CEDULA_REP':   'Cédula de identidad vigente del Representante Legal',
-    'RIF_REP':      'RIF personal vigente del Representante Legal',
+  // Labels por estado — texto diferente si está faltante vs con problema
+  var docLabelsMsg={
+    'CEDULA_REP':   'Cédula de identidad del Representante Legal',
+    'RIF_REP':      'RIF personal del Representante Legal',
     'RIF_EMPRESA':  'RIF vigente de la empresa',
     'ACTA_CONST':   'Acta Constitutiva',
-    'ACTA_ASAMBLEA':'Acta de Asamblea'+( detText?' — '+detText:''),
+    'ACTA_ASAMBLEA':'Acta de Asamblea'+(detText?' ('+detText+')':''),
     'CONATEL':      'Habilitación CONATEL'
   };
 
-  // Build faltantes list for client messages
+  // Construir lista de documentos para mensajes
   var listaFalt='';
-  if(faltKeys.length){
-    faltKeys.forEach(function(k){
-      if(faltLabels[k])listaFalt+='  • '+faltLabels[k]+N;
+  var tieneEstados=Object.keys(estadosDoc).length>0;
+  if(tieneEstados){
+    Object.keys(estadosDoc).forEach(function(k){
+      var est=estadosDoc[k];
+      if(est==='ok')return; // no incluir los OK
+      var lbl=docLabelsMsg[k]||k;
+      if(est==='faltante'){
+        listaFalt+='  • '+lbl+' — *pendiente de cargar*'+N;
+      } else if(est==='problema'){
+        listaFalt+='  • '+lbl+' — *requiere renovación o reemplazo*'+N;
+      }
     });
-  } else {
-    // Default full list if no faltantes marked
+  }
+  if(!listaFalt){
+    // Lista genérica si no hay estados definidos
     listaFalt='  • Cédula de identidad vigente del o los Representantes Legales'+N+
                '  • RIF personal vigente del o los Representantes Legales'+N+
                '  • RIF vigente de la empresa'+N+
