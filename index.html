@@ -353,8 +353,14 @@ tbody tr:hover td{background:var(--surface2)}
 .falt-item3.fi-ok .fi-lbl{color:var(--text3);text-decoration:line-through}
 .falt-item3.fi-problema{border-color:rgba(202,138,4,.3);background:rgba(202,138,4,.05)}
 .falt-item3.fi-problema .fi-lbl{color:var(--text)}
-.falt-item3.fi-faltante{border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.05)}
-.falt-item3.fi-faltante .fi-lbl{color:var(--text)}
+.falt-item3.fi-neutro{border-color:var(--border);background:var(--surface)}
+.falt-item3.fi-neutro .fi-lbl{color:var(--text2)}
+.fi-pills{display:flex;gap:3px;margin-left:auto;flex-shrink:0}
+.fi-pill{padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
+.fi-pill:hover{border-color:var(--text2);color:var(--text)}
+.fi-pill-active.fi-pill-ok{background:#0d2818;border-color:#16a34a;color:#4ade80}
+.fi-pill-active.fi-pill-warn{background:#1c1a08;border-color:#ca8a04;color:#facc15}
+.fi-pill-active.fi-pill-err{background:#2d0f0f;border-color:#dc2626;color:#f87171}
 .fi-sel{font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;cursor:pointer;outline:none}
 .fi-sel:focus{border-color:var(--accent)}
 .falt-readonly .fi-sel{pointer-events:none;opacity:.6}
@@ -1300,7 +1306,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1gIyF-pHMUsQrm6nBf7v_X4VK3ZXRQyewD7JsSXN2GAElqpgDEDLlgFQv5IYquWMoMw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqLF534PPO_yOnrBiXMWw8eVesKRLjn70uKKEmk2WhFXmiDD_XSuuvkTQZy5_pP-YBFA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1754,6 +1760,9 @@ function openExp(idx){
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
   renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
+  // Limpiar TODA selección visual al abrir un nuevo cliente
+  document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
+  if(_lastCard){clearTimeout(_lastCardTimer);_lastCard=null;}
   // Tab IA: solo Admin/Abogado cuando estatus es DOCUMENTOS EN REVISION
   var btnIA=document.getElementById('tab-btn-verificacion');
   var esDocRevision=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
@@ -2023,18 +2032,32 @@ function renderTabDocs(r){
   h+='</div>';
   h+='<div class="falt-list">';
   faltItems.forEach(function(item){
-    var estado=estadosDoc[item.k]||'ok';
-    var clsCls='fi-'+estado;
-    var ico=estado==='ok'?'✅':estado==='problema'?'⚠️':'❌';
+    // Estado por defecto: si tiene URL → ok, si no → neutro (sin marcar)
+    var colAsociada={
+      'CEDULA_REP':   'DOCUMENTOS_REPRESENTANTES',
+      'RIF_REP':      'DOCUMENTOS_REPRESENTANTES2',
+      'CEDULA_REP2':  'DOCUMENTOS_REPRESENTANTES3',
+      'RIF_REP2':     'DOCUMENTOS_REPRESENTANTES4',
+      'RIF_EMPRESA':  'RIF_VIGENTE',
+      'ACTA_CONST':   'ACTA CONSTITUTIVA',
+      'ACTA_ASAMBLEA':'ACTA_ASAMBLEA_JUNTA',
+      'CONATEL':      'HABILITACION_CONATEL'
+    }[item.k];
+    var tieneURL=colAsociada&&cleanDocUrl(r[colAsociada]||'').startsWith('http');
+    var estado=estadosDoc[item.k]||(tieneURL?'ok':'neutro');
+    var clsCls=estado==='ok'?'fi-ok':estado==='problema'?'fi-problema':estado==='faltante'?'fi-faltante':'fi-neutro';
     h+='<div class="falt-item3 '+clsCls+'" id="fi3_'+item.k+'">';
-    h+='<span style="font-size:13px">'+ico+'</span>';
     h+='<span class="fi-lbl">'+item.lbl+'</span>';
     if(puedeEditar){
-      h+='<select class="fi-sel" data-cod="'+item.k+'" onchange="onEstadoDocChange(this)">';
-      h+='<option value="ok"'+(estado==='ok'?' selected':'')+'>✅ OK</option>';
-      h+='<option value="problema"'+(estado==='problema'?' selected':'')+'>⚠️ Problema</option>';
-      h+='<option value="faltante"'+(estado==='faltante'?' selected':'')+'>❌ Faltante</option>';
-      h+='</select>';
+      h+='<div class="fi-pills">';
+      h+='<button class="fi-pill'+(estado==='ok'?' fi-pill-active fi-pill-ok':'')+'" onclick="setEstadoDoc(\''+item.k+'\',\'ok\',this)">OK</button>';
+      h+='<button class="fi-pill'+(estado==='problema'?' fi-pill-active fi-pill-warn':'')+'" onclick="setEstadoDoc(\''+item.k+'\',\'problema\',this)">!</button>';
+      h+='<button class="fi-pill'+(estado==='faltante'?' fi-pill-active fi-pill-err':'')+'" onclick="setEstadoDoc(\''+item.k+'\',\'faltante\',this)">✗</button>';
+      h+='</div>';
+    } else {
+      var ico=estado==='ok'?'OK':estado==='problema'?'!':estado==='faltante'?'✗':'—';
+      var clrPill=estado==='ok'?'var(--green)':estado==='problema'?'var(--amber)':estado==='faltante'?'var(--red)':'var(--text3)';
+      h+='<span style="font-size:10px;font-weight:700;color:'+clrPill+';padding:2px 7px;border-radius:4px;border:1px solid '+clrPill+'">'+ico+'</span>';
     }
     h+='</div>';
   });
@@ -2057,17 +2080,22 @@ function renderTabDocs(r){
   document.getElementById('tab-documentos').innerHTML=h;
 }
 
-// Callback cuando cambia el select de estado de un documento
-function onEstadoDocChange(sel){
-  if(!sel)return;
-  var item=sel.closest('.falt-item3');
+// Callback para los pills del checklist de documentos
+function setEstadoDoc(cod, estado, btn){
+  if(!btn)return;
+  var item=btn.closest('.falt-item3');
   if(!item)return;
-  var estado=sel.value;
+  // Actualizar clase del contenedor
   item.className='falt-item3 fi-'+estado;
-  var ico=item.querySelector('span');
-  if(ico)ico.textContent=estado==='ok'?'✅':estado==='problema'?'⚠️':'❌';
-  var lbl=item.querySelector('.fi-lbl');
-  // Auto-guardar
+  // Actualizar pills — quitar activo de todos, poner en el clickeado
+  item.querySelectorAll('.fi-pill').forEach(function(p){
+    p.classList.remove('fi-pill-active','fi-pill-ok','fi-pill-warn','fi-pill-err');
+  });
+  btn.classList.add('fi-pill-active');
+  if(estado==='ok')btn.classList.add('fi-pill-ok');
+  else if(estado==='problema')btn.classList.add('fi-pill-warn');
+  else btn.classList.add('fi-pill-err');
+  // Guardar automáticamente
   saveFaltantes();
 }
 
@@ -2458,24 +2486,22 @@ function changeStatus(ns){
 
 function saveFaltantes(){
   if(!S.cur)return;
-  // Recolectar estados de los selects
+  // Recolectar estados de los pills activos
   var partes=[];
-  document.querySelectorAll('.falt-item3 .fi-sel').forEach(function(sel){
-    var cod=sel.getAttribute('data-cod');
-    var val=sel.value||'ok';
-    if(cod)partes.push(cod+':'+val);
+  document.querySelectorAll('.falt-item3').forEach(function(item){
+    var id=item.id||'';
+    var cod=id.replace('fi3_','');
+    if(!cod)return;
+    var cls=item.className;
+    var estado=cls.indexOf('fi-ok')>=0?'ok':cls.indexOf('fi-problema')>=0?'problema':cls.indexOf('fi-faltante')>=0?'faltante':'neutro';
+    if(estado!=='neutro')partes.push(cod+':'+estado);
   });
   var detail=(document.getElementById('falt_detail')||{}).value||'';
-
-  // Construir el campo Observacion con el nuevo formato
   var structured='';
   if(partes.length)structured+='[DOCS:'+partes.join(',')+']';
   if(detail.trim())structured+=(structured?'\n':'')+'[DETALLE:'+detail.trim()+']';
-
   S.cur['Observacion']=structured;
   persistObs(structured);
-
-  // Feedback visual
   var det=document.getElementById('falt_detail');
   if(det){det.style.borderColor='var(--green)';setTimeout(function(){det.style.borderColor='';},1200);}
 }
@@ -2618,6 +2644,7 @@ function handleFile(input,col){
         nombre:S.cur['RAZON SOCIAL'],
         tipo:S.cur['TIPO_CLIENTE'],
         columna:col,
+        usuario:S.user||'',
         fileBase64:e.target.result.split(',')[1],
         fileName:fileName,
         mimeType:file.type
@@ -2635,7 +2662,13 @@ function handleFile(input,col){
           S.cur['ESTATUS_LEGAL']=rs.estatusNuevo;
           if(inAll)inAll['ESTATUS_LEGAL']=rs.estatusNuevo;
           refreshTableRow(S.cur);
-          toast('Documento subido ✓ — Estatus → '+rs.estatusNuevo,'ok');
+          renderStBtns(S.cur);
+          // Mostrar tab IA si aplica
+          var btnIA=document.getElementById('tab-btn-verificacion');
+          var rolIA=(S.rol==='ADMIN'||S.rol==='ABOGADO');
+          var esRevision=rs.estatusNuevo.toUpperCase()==='DOCUMENTOS EN REVISION';
+          if(btnIA)btnIA.style.display=(esRevision&&rolIA)?'':'none';
+          toast('✅ Todos los documentos subidos — Estatus → '+rs.estatusNuevo,'ok');
         }else{
           toast('Documento subido ✓','ok');
         }
@@ -2674,8 +2707,9 @@ function showTab(t){
   if(t==='verificacion'&&S.cur)renderTabVerificacion(S.cur);
 }
 function closeDrawer(){
-  // Limpiar selección móvil al cerrar
-  if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
+  // Limpiar TODA selección visual, no solo _lastCard
+  document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
+  if(_lastCard){clearTimeout(_lastCardTimer);_lastCard=null;}
   const bg=document.getElementById('drawerBg');
   const drawer=bg.querySelector('.drawer');
   if(drawer){
