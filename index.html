@@ -1130,11 +1130,13 @@ tbody tr:hover td{background:var(--surface2)}
       <button class="tab" onclick="showTab('documentos')">Documentos</button>
       <button class="tab" onclick="showTab('seguimiento_cli')">Seguimiento</button>
       <button class="tab" onclick="showTab('historial')">Historial</button>
+      <button class="tab" id="tab-btn-verificacion" style="display:none" onclick="showTab('verificacion')">🤖 IA</button>
     </div>
     <div class="tab-panel active" id="tab-datos"></div>
     <div class="tab-panel" id="tab-documentos"></div>
     <div class="tab-panel" id="tab-historial"></div>
     <div class="tab-panel" id="tab-seguimiento_cli"></div>
+    <div class="tab-panel" id="tab-verificacion"></div>
     <div class="drawer-status-bar" id="drawerStatusBar">
       <div class="dsb-current" id="dsbCurrent"></div>
       <div class="dsb-track" id="drawerStBtns"></div>
@@ -1319,7 +1321,7 @@ const SI = {
 const SO = Object.keys(SI);
 const RT = {
   ADMIN:   SO,
-  ABOGADO: ['DOCUMENTOS RECIBIDOS','PENDIENTE POR DOCUMENTOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'],
+  ABOGADO: SO,
   LIDER:   ['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS','DOCUMENTOS SOLICITADOS','DOCUMENTOS EN REVISION'],
 };
 
@@ -1752,12 +1754,19 @@ function openExp(idx){
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
   renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
+  // Tab IA: solo Admin/Abogado cuando estatus es DOCUMENTOS EN REVISION
+  var btnIA=document.getElementById('tab-btn-verificacion');
+  var esDocRevision=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
+  var rolIA=(S.rol==='ADMIN'||S.rol==='ABOGADO');
+  if(btnIA)btnIA.style.display=(esDocRevision&&rolIA)?'':'none';
+  // Resetear resultado IA al abrir otro cliente
+  S.iaResultado=null;
+  var panelIA=document.getElementById('tab-verificacion');
+  if(panelIA)panelIA.innerHTML='';
   showTab('datos');
   const bg=document.getElementById('drawerBg');
   bg.classList.add('open');
-  // Clear any lingering card selection
   if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
-  // Scroll drawer content to top
   setTimeout(()=>{
     const panel=document.querySelector('.tab-panel.active');
     if(panel)panel.scrollTop=0;
@@ -2646,18 +2655,23 @@ function handleFile(input,col){
 }
 
 function showTab(t){
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['datos','documentos','seguimiento_cli','historial'][i]===t));
+  document.querySelectorAll('.tab').forEach(function(b){
+    var m=(b.getAttribute('onclick')||'').match(/showTab\('([^']+)'\)/);
+    if(m)b.classList.toggle('active',m[1]===t);
+  });
   document.querySelectorAll('.tab-panel').forEach(p=>{
     p.classList.remove('active');
     p.style.animation='none';
   });
   const panel=document.getElementById('tab-'+t);
+  if(!panel)return;
   panel.style.animation='none';
   void panel.offsetWidth;
   panel.style.animation='';
   panel.classList.add('active');
   if(t==='historial'&&S.cur)renderTabHist(S.cur);
   if(t==='seguimiento_cli'&&S.cur)renderTabSegFromGAS(S.cur);
+  if(t==='verificacion'&&S.cur)renderTabVerificacion(S.cur);
 }
 function closeDrawer(){
   // Limpiar selección móvil al cerrar
@@ -4974,6 +4988,252 @@ function factMapOcultar(){
 // ── Fin submódulo Mapa ────────────────────────────────────────
 
 // ── Fin módulo Factibilidad ───────────────────────────────────
+
+
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: VERIFICACIÓN IA — v1.0
+// Tab 🤖 IA en drawer — solo Admin/Abogado en DOCUMENTOS EN REVISION
+// ═══════════════════════════════════════════════════════════════════
+
+(function(){
+  var st=document.createElement('style');
+  st.textContent=[
+    '.ia-wrap{padding:16px;display:flex;flex-direction:column;gap:14px}',
+    '.ia-hero{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}',
+    '.ia-hero-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}',
+    '.ia-hero-sub{font-size:11px;color:var(--text2)}',
+    '.ia-btn-start{display:block;width:100%;margin-top:12px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}',
+    '.ia-btn-start:hover{opacity:.85}.ia-btn-start:disabled{opacity:.5;cursor:not-allowed}',
+    '.ia-loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 0}',
+    '.ia-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ia-spin .8s linear infinite}',
+    '@keyframes ia-spin{to{transform:rotate(360deg)}}',
+    '.ia-loading-txt{font-size:12px;color:var(--text2);text-align:center}',
+    '.ia-veredicto{border-radius:10px;padding:12px 16px;font-size:13px;font-weight:600;text-align:center}',
+    '.ia-veredicto.APROBADO{background:#0d2818;color:#4ade80;border:1px solid #16a34a}',
+    '.ia-veredicto.OBSERVACIONES{background:#1c1a08;color:#facc15;border:1px solid #ca8a04}',
+    '.ia-veredicto.NO_APTO{background:#2d0f0f;color:#f87171;border:1px solid #dc2626}',
+    '.ia-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}',
+    '.ia-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;margin-bottom:6px}',
+    '.ia-card-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text)}',
+    '.ia-card-detail{font-size:11px;color:var(--text2);line-height:1.5}',
+    '.ia-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:auto}',
+    '.ia-badge.OK{background:#0d2818;color:#4ade80}.ia-badge.OBSERVACION{background:#1c1a08;color:#facc15}.ia-badge.FALTANTE{background:#2d0f0f;color:#f87171}.ia-badge.DUPLICADO{background:#1a1a2e;color:#a78bfa}',
+    '.ia-faltante-item{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:11px;margin-bottom:4px}',
+    '.ia-faltante-icon{font-size:14px;flex-shrink:0;margin-top:1px}',
+    '.ia-faltante-txt{color:var(--text);line-height:1.5}',
+    '.ia-resumen{font-size:11px;color:var(--text2);line-height:1.6;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}',
+    '.ia-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px}',
+    '.ia-btn-aprobar{padding:11px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}',
+    '.ia-btn-aprobar:hover{opacity:.85}.ia-btn-aprobar:disabled{opacity:.4;cursor:not-allowed}',
+    '.ia-btn-obs{padding:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}',
+    '.ia-btn-obs:hover{opacity:.85}',
+    '.ia-btn-reanalizar{padding:9px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;text-align:center}',
+    '.ia-btn-reanalizar:hover{opacity:.7}',
+    '.ia-error{padding:14px;background:#2d0f0f;border:1px solid #dc2626;border-radius:8px;color:#f87171;font-size:12px;line-height:1.5}',
+  ].join('');
+  document.head.appendChild(st);
+})();
+
+function renderTabVerificacion(r){
+  var el=document.getElementById('tab-verificacion');
+  if(!el)return;
+  if(S.iaResultado&&S.iaResultado._rif===r['RIF']){
+    el.innerHTML=iaConstruirHTML(S.iaResultado);
+    return;
+  }
+  var docsCount=0;
+  ['DOCUMENTOS_REPRESENTANTES','DOCUMENTOS_REPRESENTANTES2','DOCUMENTOS_REPRESENTANTES3',
+   'DOCUMENTOS_REPRESENTANTES4','RIF_VIGENTE','ACTA CONSTITUTIVA',
+   'ACTA_ASAMBLEA_JUNTA','ACTA_ASAMBLEA_JUNTA2','ACTA_ASAMBLEA_JUNTA3','ACTA_ASAMBLEA_JUNTA4',
+   'HABILITACION_CONATEL'].forEach(function(c){
+    if((r[c]||'').trim().startsWith('http'))docsCount++;
+  });
+  el.innerHTML='<div class="ia-wrap">'+
+    '<div class="ia-hero">'+
+      '<div class="ia-hero-title">🤖 Verificación Inteligente de Documentos</div>'+
+      '<div class="ia-hero-sub">'+docsCount+' documento'+(docsCount!==1?'s':'')+' disponible'+(docsCount!==1?'s':'')+' para analizar</div>'+
+      '<button class="ia-btn-start" onclick="iaIniciar()">Iniciar análisis IA</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function iaIniciar(){
+  if(!S.cur)return;
+  if(!APPS_SCRIPT_URL){
+    document.getElementById('tab-verificacion').innerHTML='<div class="ia-wrap"><div class="ia-error">⚠️ GAS URL no configurada (modo demo).</div></div>';
+    return;
+  }
+  var el=document.getElementById('tab-verificacion');
+  el.innerHTML='<div class="ia-wrap"><div class="ia-loading"><div class="ia-spinner"></div><div class="ia-loading-txt">Analizando documentos con Gemini IA...<br><span style="font-size:10px;margin-top:4px;display:block">Esto puede tomar 20-40 segundos</span></div></div></div>';
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'verificarDocumentosIA',
+    rif:S.cur['RIF'],
+    usuario:S.user||'Admin'
+  })})
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(!res.ok){
+      el.innerHTML='<div class="ia-wrap"><div class="ia-error">⚠️ '+esc(res.error||'Error desconocido')+'<br><br><button class="ia-btn-reanalizar" onclick="renderTabVerificacion(S.cur)">← Reintentar</button></div></div>';
+      return;
+    }
+    S.iaResultado=res.resultado;
+    if(S.iaResultado)S.iaResultado._rif=S.cur['RIF'];
+    el.innerHTML=iaConstruirHTML(S.iaResultado);
+  })
+  .catch(function(err){
+    el.innerHTML='<div class="ia-wrap"><div class="ia-error">⚠️ Error de red: '+esc(String(err))+'<br><br><button class="ia-btn-reanalizar" onclick="renderTabVerificacion(S.cur)">← Reintentar</button></div></div>';
+  });
+}
+
+function iaConstruirHTML(r){
+  if(!r)return '<div class="ia-wrap"><div class="ia-error">Sin resultado.</div></div>';
+  var v=r.veredicto||'OBSERVACIONES';
+  var vTxt={'APROBADO':'✅ EXPEDIENTE APROBADO','OBSERVACIONES':'⚠️ CON OBSERVACIONES','NO_APTO':'❌ NO APTO — FALTANTES CRÍTICOS'}[v]||v;
+  var h='<div class="ia-wrap">';
+  h+='<div class="ia-veredicto '+esc(v)+'">'+esc(vTxt)+'</div>';
+
+  // Representantes
+  var reps=r.representantes||[];
+  if(reps.length){
+    h+='<div><div class="ia-section-title">Representantes</div>';
+    reps.forEach(function(rep){
+      if(rep.es_duplicado){
+        h+='<div class="ia-card"><div class="ia-card-header">👤 Representante '+rep.numero+'<span class="ia-badge DUPLICADO">Duplicado</span></div><div class="ia-card-detail">Mismo documento que otro representante ya cargado.</div></div>';return;
+      }
+      var st=rep.estado||'OK';
+      var cedOk=rep.cedula_vigente===true?'✅':rep.cedula_vigente===null?'⚠️':'❌';
+      var rifOk=rep.rif_vigente===true?'✅':rep.rif_vigente===null?'⚠️':'❌';
+      h+='<div class="ia-card"><div class="ia-card-header">👤 Rep '+rep.numero+(rep.nombre_cedula?' — '+esc(rep.nombre_cedula):'')+' <span class="ia-badge '+esc(st)+'">'+esc(st)+'</span></div>';
+      h+='<div class="ia-card-detail">'+cedOk+' Cédula '+(rep.numero_cedula?esc(rep.numero_cedula):'-')+(rep.cedula_vencimiento?' · Vence '+esc(rep.cedula_vencimiento):'')+'<br>'+rifOk+' RIF '+(rep.rif_numero?esc(rep.rif_numero):'-')+(rep.rif_vencimiento?' · Vence '+esc(rep.rif_vencimiento):'')+'<br>'+(rep.nombre_coincide===false?'⚠️ Nombres no coinciden':'✅ Nombres coinciden')+(rep.notas?'<br><span style="color:var(--text3)">'+esc(rep.notas)+'</span>':'')+'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  // RIF Empresa
+  var re=r.rif_empresa_analisis||{};
+  if(re.nombre_en_rif){
+    var rifEmpOk=re.vigente===true?'✅':re.vigente===null?'⚠️':'❌';
+    h+='<div><div class="ia-section-title">RIF Empresa</div><div class="ia-card">';
+    h+='<div class="ia-card-header">🏢 '+esc(re.nombre_en_rif||r.empresa||'Empresa')+'</div>';
+    h+='<div class="ia-card-detail">'+rifEmpOk+' RIF '+(re.vigente===false?'VENCIDO':'Vigente')+(re.vencimiento?' hasta '+esc(re.vencimiento):'')+'<br>'+(re.domicilio_rif?'📍 '+esc(re.domicilio_rif)+'<br>':'')+(re.coincide_con_sistema===false?'⚠️ Nombre difiere del sistema':'✅ Coincide con sistema')+'</div></div></div>';
+  }
+
+  // Acta Constitutiva
+  var ac=r.acta_constitutiva||{};
+  if(ac.nombre_en_acta){
+    h+='<div><div class="ia-section-title">Acta Constitutiva</div><div class="ia-card">';
+    h+='<div class="ia-card-header">📄 '+esc(ac.nombre_en_acta)+'</div>';
+    h+='<div class="ia-card-detail">';
+    h+='📅 Inscrita: '+esc(ac.fecha_inscripcion||'No detectada')+'<br>';
+    h+='⏳ Empresa: '+(ac.empresa_vigente===false?'❌ VENCIDA':'✅ Vigente')+'<br>';
+    h+='✍️ Firma: '+(ac.tipo_firma==='conjunta'?'⚠️ CONJUNTA (2+ reps)':'✅ Separada')+'<br>';
+    h+='👥 Junta: '+(ac.junta_vigente===false?'❌ VENCIDA':'✅ Vigente')+'<br>';
+    h+='📍 Domicilio: '+(ac.domicilio_coincide_rif===false?(ac.tiene_clausula_sucursales?'⚠️ Difiere (excepción sucursales)':'❌ No coincide'):'✅ Coincide');
+    if(ac.notas)h+='<br><span style="color:var(--text3)">'+esc(ac.notas)+'</span>';
+    h+='</div></div></div>';
+  }
+
+  // Actas de Asamblea
+  var actas=r.actas_asamblea||[];
+  if(actas.length){
+    h+='<div><div class="ia-section-title">Actas de Asamblea ('+actas.length+')</div>';
+    actas.forEach(function(a,i){
+      var mapa={cambio_nombre:'Cambio nombre',cambio_domicilio:'Cambio domicilio',ratificacion_junta:'Ratificación junta',cambio_directores:'Cambio directores',prorroga_empresa:'Prórroga empresa',aumento_capital:'Aumento capital',cambio_presidente:'Cambio presidente'};
+      var res=(a.resuelve||[]).map(function(x){return mapa[x]||x;}).join(', ')||'Sin cambios';
+      h+='<div class="ia-card"><div class="ia-card-header">📋 Asamblea '+(i+1)+(a.fecha?' · '+esc(a.fecha):'')+'</div>';
+      h+='<div class="ia-card-detail">'+(a.es_misma_empresa===false?'⚠️ Verificar empresa<br>':'')+'→ '+esc(res)+(a.junta_vigente_hasta?'<br>✅ Junta hasta: '+esc(a.junta_vigente_hasta):'')+(a.notas?'<br><span style="color:var(--text3)">'+esc(a.notas)+'</span>':'')+'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  // Faltantes
+  var faltantes=r.faltantes||[];
+  if(faltantes.length){
+    h+='<div><div class="ia-section-title">Documentos faltantes ('+faltantes.length+')</div>';
+    faltantes.forEach(function(f){
+      h+='<div class="ia-faltante-item"><div class="ia-faltante-icon">'+(f.critico?'❌':'⚠️')+'</div><div class="ia-faltante-txt">'+esc(f.descripcion||f.codigo)+'</div></div>';
+    });
+    h+='</div>';
+  }
+
+  // Resumen
+  if(r.resumen){
+    h+='<div><div class="ia-section-title">Observaciones del análisis</div><div class="ia-resumen">'+esc(r.resumen)+'</div></div>';
+  }
+
+  // Acciones
+  var tieneCriticos=faltantes.some(function(f){return f.critico;});
+  h+='<div class="ia-actions">';
+  if(v==='APROBADO'||!tieneCriticos){
+    h+='<button class="ia-btn-aprobar" onclick="iaAprobar()">✅ Aprobar → DOCUMENTOS RECIBIDOS</button>';
+  } else {
+    h+='<button class="ia-btn-aprobar" disabled>✅ Aprobar (faltantes críticos pendientes)</button>';
+  }
+  h+='<button class="ia-btn-obs" onclick="iaAplicarFaltantes()">📤 Aplicar faltantes y notificar al Líder</button>';
+  h+='<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function iaAprobar(){
+  if(!S.cur)return;
+  if(!confirm('¿Confirmas aprobar este expediente y cambiar el estatus a DOCUMENTOS RECIBIDOS?'))return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'cambiarEstatus',rif:S.cur['RIF'],estatus:'DOCUMENTOS RECIBIDOS',
+    usuario:S.user||'Admin',observacion:'Aprobado por verificación IA — '+new Date().toLocaleDateString('es-VE')
+  })})
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(res.ok){
+      toast('✅ Estatus → DOCUMENTOS RECIBIDOS','ok');
+      S.cur['ESTATUS_LEGAL']='DOCUMENTOS RECIBIDOS';
+      var inAll=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
+      if(inAll)inAll['ESTATUS_LEGAL']='DOCUMENTOS RECIBIDOS';
+      renderStBtns(S.cur);
+      var btnIA=document.getElementById('tab-btn-verificacion');
+      if(btnIA)btnIA.style.display='none';
+      showTab('datos');
+      renderKPIs();renderTable();
+    } else {toast('Error: '+(res.error||''),'err');}
+  }).catch(function(){toast('Error de red al aprobar','err');});
+}
+
+function iaAplicarFaltantes(){
+  if(!S.cur||!S.iaResultado)return;
+  var faltantes=S.iaResultado.faltantes||[];
+  if(!faltantes.length){toast('No hay faltantes detectados','ok');return;}
+  var MAPA={
+    'cedula_rep_vencida_1':'CEDULA_REP','cedula_rep_vencida_2':'CEDULA_REP',
+    'rif_rep_vencido_1':'RIF_REP','rif_rep_vencido_2':'RIF_REP',
+    'rif_empresa_vencido':'RIF_EMPRESA','acta_cambio_nombre':'ACTA_ASAMBLEA',
+    'acta_cambio_domicilio':'ACTA_ASAMBLEA','acta_ratificacion_junta':'ACTA_ASAMBLEA',
+    'acta_prorroga_empresa':'ACTA_ASAMBLEA','acta_const_faltante':'ACTA_CONST',
+    'conatel_faltante':'CONATEL','rep_faltante_firma_conjunta':'CEDULA_REP'
+  };
+  var codigos=[];
+  faltantes.forEach(function(f){
+    var c=MAPA[f.codigo];
+    if(c&&codigos.indexOf(c)<0)codigos.push(c);
+  });
+  var detalle=faltantes.map(function(f){return f.descripcion||f.codigo;}).join('; ');
+  // Mapear a formato DOCS con estados
+  var partes=[];
+  var ALL_CODS=['CEDULA_REP','RIF_REP','RIF_EMPRESA','ACTA_CONST','ACTA_ASAMBLEA','CONATEL'];
+  ALL_CODS.forEach(function(c){
+    partes.push(c+':'+(codigos.indexOf(c)>=0?'faltante':'ok'));
+  });
+  var obsNueva='[DOCS:'+partes.join(',')+'][DETALLE:'+detalle+']';
+  S.cur['Observacion']=obsNueva;
+  persistObs(obsNueva);
+  var inAll=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
+  if(inAll)inAll['Observacion']=obsNueva;
+  toast('✅ Faltantes guardados en el expediente','ok');
+  showTab('documentos');
+  renderTabDocs(S.cur);
+}
+
+// ── Fin módulo Verificación IA ────────────────────────────────────
 
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
