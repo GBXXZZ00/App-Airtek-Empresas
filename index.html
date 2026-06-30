@@ -87,8 +87,14 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
   font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
   margin-top:8px;transition:transform .12s var(--ease-out),background .12s ease;border-radius:6px;
 }
+.auth-btn{display:flex;align-items:center;justify-content:center;gap:8px}
 .auth-btn:hover{background:var(--accent-hover)}
 .auth-btn:active{transform:scale(0.98)}
+.auth-btn:disabled{opacity:.75;cursor:not-allowed}
+.auth-btn:disabled:active{transform:none}
+.auth-btn-spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:none;flex-shrink:0}
+.auth-btn.loading .auth-btn-spin{display:inline-block}
+.auth-btn.loading .auth-btn-label{opacity:.9}
 .auth-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
 .auth-theme{position:fixed;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:2000;transition:all .15s}
 .auth-theme:hover{border-color:var(--border2)}
@@ -656,15 +662,14 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="login-team-badge">🏢 <span>Ventas Corporativas</span></div>
     <div class="auth-field">
       <label>Usuario</label>
-      <select id="loginUserSel">
-        <option value="">Selecciona tu nombre...</option>
-      </select>
+      <input id="loginUserInp" list="loginUserList" placeholder="Escribe o selecciona tu nombre..." autocomplete="off">
+      <datalist id="loginUserList"></datalist>
     </div>
     <div class="auth-field">
       <label>PIN</label>
       <input id="loginPin" type="password" placeholder="••••" maxlength="10">
     </div>
-    <button class="auth-btn" onclick="doLogin()">Ingresar →</button>
+    <button class="auth-btn" id="loginBtn" onclick="doLogin()"><span class="auth-btn-spin"></span><span class="auth-btn-label">Ingresar →</span></button>
     <div class="auth-err" id="authErr">Usuario o PIN incorrecto</div>
   </div>
 </div>
@@ -732,7 +737,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.19</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.21</div>
     </div>
   </div>
 
@@ -1356,14 +1361,76 @@ function toggleTheme(){
 }
 
 // AUTH
+const SESSION_KEY='at-session';
+const SESSION_MS=12*60*60*1000; // 12 horas
+
+function saveSession(){
+  try{
+    localStorage.setItem(SESSION_KEY,JSON.stringify({user:S.user,rol:S.rol,email:S.email,team:S.team,ts:Date.now()}));
+    localStorage.setItem('at-last-user',S.user);
+  }catch(e){}
+}
+function clearSession(){
+  try{localStorage.removeItem(SESSION_KEY);}catch(e){}
+}
+function loadSavedSession(){
+  try{
+    const raw=localStorage.getItem(SESSION_KEY);
+    if(!raw)return null;
+    const data=JSON.parse(raw);
+    if(!data||!data.user||!data.ts)return null;
+    if(Date.now()-data.ts>SESSION_MS){clearSession();return null;}
+    return data;
+  }catch(e){return null;}
+}
+
+async function restoreSession(sess){
+  S.user=sess.user;S.rol=sess.rol;S.email=sess.email;S.team=sess.team||'ventas';
+  document.getElementById('loader').classList.remove('off');
+  await loadData();
+  document.getElementById('screen0').classList.add('hidden');
+  document.getElementById('screen1').classList.add('hidden');
+  document.getElementById('app').style.display='block';
+  document.getElementById('avatarLetter').textContent=S.user.charAt(0).toUpperCase();
+  document.getElementById('menuName').textContent=S.user;
+  document.getElementById('menuRol').textContent=S.rol;
+  document.getElementById('sbUserInfo').textContent=S.user;
+  if(S.rol==='LIDER'){
+    var dc=document.getElementById('driveCard');if(dc)dc.style.display='none';
+    document.getElementById('df-lider-grp').style.display='none';
+  }
+  populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
+  document.getElementById('loader').classList.add('off');
+  if(PENDING_RIF){
+    var rifTarget=PENDING_RIF.toString().trim();
+    var idx=S.filtered.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+    if(idx>=0){
+      openExp(idx);
+    } else {
+      var idxAll=S.all.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+      if(idxAll>=0){
+        document.getElementById('searchInp').value='';
+        applyFilters();
+        var idx2=S.filtered.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
+        if(idx2>=0) openExp(idx2);
+      }
+    }
+  }
+}
+
 function selectTeam(t){
   S.team=t;
   document.getElementById('screen0').classList.add('hidden');
   document.getElementById('screen1').classList.remove('hidden');
   loadConfigForLogin();
 }
-// Si hay deep link con ?rif=, saltar directo al login (espera a que el DOM esté listo)
+// Al cargar: si hay sesión guardada vigente, entrar directo. Si no, respetar deep link normal.
 window.addEventListener('DOMContentLoaded', function(){
+  const sess=loadSavedSession();
+  if(sess){
+    restoreSession(sess);
+    return;
+  }
   if(PENDING_RIF){
     selectTeam('ventas');
   }
@@ -1378,8 +1445,10 @@ function goBack(){
 }
 
 async function loadConfigForLogin(){
-  const sel=document.getElementById('loginUserSel');
-  sel.innerHTML='<option value="">Cargando usuarios...</option>';
+  const inp=document.getElementById('loginUserInp');
+  const list=document.getElementById('loginUserList');
+  inp.placeholder='Cargando usuarios...';
+  inp.disabled=true;
   try{
     const r=await fetch(`${BASE}?gid=943629637&single=true&output=csv&t=${Date.now()}`);
     if(!r.ok) throw new Error('fetch error');
@@ -1388,31 +1457,50 @@ async function loadConfigForLogin(){
     console.warn('CONFIG fetch failed, usando fallback');
     S.cfg=[{ROL:'ADMIN',EJECUTIVO:'Gualfredo Baralt',CORREO:'gualfredo.baralt@airtek.com.ve',ACTIVO:'SI',PIN:'1234'}];
   }
-  sel.innerHTML='<option value="">Selecciona tu nombre...</option>';
+  inp.disabled=false;
+  inp.placeholder='Escribe o selecciona tu nombre...';
+  list.innerHTML='';
   S.cfg.filter(r=>(r.ACTIVO||'').toUpperCase()==='SI').forEach(r=>{
     const o=document.createElement('option');
-    o.value=r.EJECUTIVO;o.textContent=r.EJECUTIVO+' ('+r.ROL+')';
-    sel.appendChild(o);
+    o.value=r.EJECUTIVO;
+    list.appendChild(o);
   });
+  // Precargar el último usuario que entró desde este equipo
+  try{
+    const last=localStorage.getItem('at-last-user');
+    if(last&&S.cfg.some(r=>r.EJECUTIVO===last)){
+      inp.value=last;
+      document.getElementById('loginPin').focus();
+    }else{
+      inp.focus();
+    }
+  }catch(e){inp.focus();}
 }
 
 async function doLogin(){
-  const user=document.getElementById('loginUserSel').value;
+  const user=document.getElementById('loginUserInp').value.trim();
   const pin=document.getElementById('loginPin').value.trim();
   if(!user||!pin){showAuthErr('Selecciona usuario e ingresa PIN');return;}
+  const btn=document.getElementById('loginBtn');
+  btn.classList.add('loading');btn.disabled=true;
   document.getElementById('loader').classList.remove('off');
   await loadData();
   const found=S.cfg.find(r=>{
     return r.EJECUTIVO===user&&r.PIN.toString()===pin&&(r.ACTIVO||'').toUpperCase()==='SI';
   });
-  if(!found){document.getElementById('loader').classList.add('off');showAuthErr('PIN incorrecto');return;}
+  if(!found){
+    document.getElementById('loader').classList.add('off');
+    btn.classList.remove('loading');btn.disabled=false;
+    showAuthErr('PIN incorrecto');return;
+  }
   S.user=found.EJECUTIVO;S.rol=(found.ROL||'LIDER').toUpperCase();S.email=found.CORREO||'';
+  saveSession();
   document.getElementById('screen1').classList.add('hidden');
   document.getElementById('app').style.display='block';
   document.getElementById('avatarLetter').textContent=S.user.charAt(0).toUpperCase();
   document.getElementById('menuName').textContent=S.user;
   document.getElementById('menuRol').textContent=S.rol;
-  document.getElementById('sbUserInfo').textContent=S.user+' · '+S.rol;
+  document.getElementById('sbUserInfo').textContent=S.user;
   if(S.rol==='LIDER'){
     var dc=document.getElementById('driveCard');if(dc)dc.style.display='none';
     document.getElementById('df-lider-grp').style.display='none';
@@ -1422,6 +1510,7 @@ async function doLogin(){
   }
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
+  btn.classList.remove('loading');btn.disabled=false;
   // Deep link: si hay RIF pendiente, abrir ese expediente
   if(PENDING_RIF){
     var rifTarget=PENDING_RIF.toString().trim();
@@ -1443,6 +1532,7 @@ async function doLogin(){
 }
 
 function doLogout(){
+  clearSession();
   Object.assign(S,{user:null,rol:null,all:[],filtered:[],page:1,cur:null});
   document.getElementById('app').style.display='none';
   document.getElementById('screen1').classList.add('hidden');
@@ -2092,16 +2182,21 @@ function setEstadoDoc(cod, estado, btn){
   if(!btn)return;
   var item=btn.closest('.falt-item3');
   if(!item)return;
+  // Toggle: si el pill clickeado ya estaba activo, volver a estado neutro (deseleccionar)
+  var yaActivo=btn.classList.contains('fi-pill-active');
+  var nuevoEstado=yaActivo?'neutro':estado;
   // Actualizar clase del contenedor
-  item.className='falt-item3 fi-'+estado;
-  // Actualizar pills — quitar activo de todos, poner en el clickeado
+  item.className='falt-item3 fi-'+nuevoEstado;
+  // Actualizar pills — quitar activo de todos
   item.querySelectorAll('.fi-pill').forEach(function(p){
     p.classList.remove('fi-pill-active','fi-pill-ok','fi-pill-warn','fi-pill-err');
   });
-  btn.classList.add('fi-pill-active');
-  if(estado==='ok')btn.classList.add('fi-pill-ok');
-  else if(estado==='problema')btn.classList.add('fi-pill-warn');
-  else btn.classList.add('fi-pill-err');
+  if(nuevoEstado!=='neutro'){
+    btn.classList.add('fi-pill-active');
+    if(nuevoEstado==='ok')btn.classList.add('fi-pill-ok');
+    else if(nuevoEstado==='problema')btn.classList.add('fi-pill-warn');
+    else btn.classList.add('fi-pill-err');
+  }
   // Guardar automáticamente
   saveFaltantes();
 }
@@ -2405,6 +2500,9 @@ function renderDrawerComm(r){
     parts.push('</div>');
   }
 
+  // ── Bloque comunicación interna entre roles ──────────────────────────────
+  parts.push(renderInternalCommBlock(r));
+
   // ── Número puntual (no se guarda) ────────────────────────────────────────
   parts.push('<div class="comm-block comm-extra">');
   parts.push('<div class="comm-block-title" style="color:var(--text3)">Número puntual <span style="font-weight:400;font-size:9px">(no se guarda)</span></div>');
@@ -2417,6 +2515,41 @@ function renderDrawerComm(r){
 
   parts.push('</div>'); // end comm-panel
   return parts.join('');
+}
+
+// ── Comunicación interna entre roles (Abogado↔Admin, Líder↔Abogado, Líder↔Admin) ──
+function renderInternalCommBlock(r){
+  var admin=(S.cfg||[]).find(function(x){return (x.ROL||'').toUpperCase()==='ADMIN';})||{};
+  var abogado=(S.cfg||[]).find(function(x){return (x.ROL||'').toUpperCase()==='ABOGADO';})||{};
+  var numAdmin=admin.TELEFONO||admin.Numero?formatWANumber(admin.TELEFONO||admin.Numero):'';
+  var corrAdmin=admin.CORREO||'';
+  var numAbogado=abogado.TELEFONO||abogado.Numero?formatWANumber(abogado.TELEFONO||abogado.Numero):'';
+  var corrAbogado=abogado.CORREO||'';
+
+  var rows=[];
+  if(S.rol==='ABOGADO'&&(numAdmin||corrAdmin)){
+    rows.push({lbl:'Consultar a Admin',tipo:'abogado_a_admin',num:numAdmin,mail:corrAdmin,wid:'wa'});
+  }
+  if(S.rol==='LIDER'&&(numAbogado||corrAbogado)){
+    rows.push({lbl:'Consultar a Abogado',tipo:'lider_a_abogado',num:numAbogado,mail:corrAbogado,wid:'wal'});
+  }
+  if(S.rol==='LIDER'&&(numAdmin||corrAdmin)){
+    rows.push({lbl:'Escalar a Admin',tipo:'lider_a_admin',num:numAdmin,mail:corrAdmin,wid:'wal'});
+  }
+  if(!rows.length)return '';
+
+  var p=[];
+  p.push('<div class="comm-block">');
+  p.push('<div class="comm-block-title">🔁 Equipo interno</div>');
+  rows.forEach(function(row){
+    p.push('<div class="comm-row">');
+    p.push('<span class="comm-lbl" style="flex:1">'+row.lbl+'</span>');
+    if(row.num)p.push('<button class="comm-btn comm-wa" onclick="openWA(\''+row.num+'\',getMsgWA(\''+row.tipo+'\',S.cur),S.cur,\''+row.wid+'\')">WA</button>');
+    if(row.mail)p.push('<button class="comm-btn" onclick="segEmailBtn(S.cur,\''+row.tipo+'\',\''+row.mail+'\')">✉</button>');
+    p.push('</div>');
+  });
+  p.push('</div>');
+  return p.join('');
 }
 
 // Called when Rep phone is edited inline
@@ -2766,7 +2899,12 @@ function closeDrawer(){
     bg.classList.remove('open');
   }
 }
-function closeDrawerIf(e){if(e.target===document.getElementById('drawerBg'))closeDrawer();}
+function closeDrawerIf(e){
+  if(e.target!==document.getElementById('drawerBg'))return;
+  // En desktop (>=900px) el clic fuera no cierra el drawer — solo el botón ✕. En móvil sí, por espacio.
+  if(window.matchMedia('(min-width:900px)').matches)return;
+  closeDrawer();
+}
 
 // ══ DASHBOARD COMPLETO ══════════════════════════════════════
 const DASH_STATUS_COLORS = {
@@ -4186,6 +4324,40 @@ function getMsgWA(tipo,r){
       'El líder '+ejec+' está coordinando con el cliente.'+N+N+
       '🔗 Ver expediente: '+appLink+
       firmaAdmin,
+
+    // ── COMUNICACIÓN INTERNA ENTRE ROLES ────────────────────────────────────
+    abogado_a_admin:
+      '[Airtek Legal] Consulta sobre expediente'+N+N+
+      'Hola Gualfredo,'+N+N+
+      'Te escribo por el expediente del cliente '+nom+
+      ' (RIF: '+rif+', Líder: '+ejec+', Estatus: '+est+'). '+
+      'Necesito tu revisión o decisión sobre este caso antes de continuar '+
+      'con el proceso.'+N+N+
+      '🔗 Ver expediente: '+appLink+N+N+
+      'Quedo atenta a tu respuesta.'+N+
+      '------------------'+N+
+      'Reina'+N+'Consultor(a) Legal | Airtek Ventas Corporativas',
+
+    lider_a_abogado:
+      '[Airtek] Consulta sobre expediente'+N+N+
+      'Hola Reina,'+N+N+
+      'Te escribo por el cliente '+nom+
+      ' (RIF: '+rif+', Estatus: '+est+'). '+
+      'Tengo una duda sobre este expediente y necesito tu orientación '+
+      'antes de continuar con la gestión.'+N+N+
+      '🔗 Ver expediente: '+appLink+N+N+
+      'Quedo atento(a) a tu respuesta.'+
+      firma,
+
+    lider_a_admin:
+      '[Airtek] Caso requiere tu atención'+N+N+
+      'Hola Gualfredo,'+N+N+
+      'Te escribo por el cliente '+nom+
+      ' (RIF: '+rif+', Estatus: '+est+'). '+
+      'Este caso requiere tu atención o decisión directa.'+N+N+
+      '🔗 Ver expediente: '+appLink+N+N+
+      'Quedo atento(a) a tu respuesta.'+
+      firma,
   };
   return m[tipo]||('Gestión — '+nom);
 }
