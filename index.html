@@ -96,6 +96,10 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .auth-btn.loading .auth-btn-spin{display:inline-block}
 .auth-btn.loading .auth-btn-label{opacity:.9}
 .auth-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
+.sr-avatar{width:56px;height:56px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:var(--text);margin:22px auto 14px}
+.sr-text{font-size:14px;color:var(--text)}
+.sr-text strong{font-weight:600}
+.sr-sub{font-size:12px;color:var(--text3);margin-top:4px}
 .user-dd{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-height:200px;overflow-y:auto;display:none;z-index:50}
 .user-dd.open{display:block}
 .user-dd-item{padding:9px 12px;font-size:13px;color:var(--text);cursor:pointer;transition:background .12s ease}
@@ -634,6 +638,17 @@ tbody tr:hover td{background:var(--surface2)}
 <!-- LOADER -->
 <div class="loader" id="loader"><div class="spin"></div><div class="loader-txt">Cargando...</div></div>
 
+<!-- SESSION RESUME — pantalla de tránsito al restaurar sesión guardada -->
+<div class="auth-screen hidden" id="screenResume">
+  <div class="login-box" style="text-align:center">
+    <div class="auth-logo">AIRTEK<span style="color:var(--accent)">.</span></div>
+    <div class="sr-avatar" id="srAvatar">G</div>
+    <div class="sr-text">Entrando como <strong id="srUserName">—</strong></div>
+    <div class="sr-sub">Tu sesión sigue activa en este equipo</div>
+    <button class="auth-btn" style="margin-top:18px" onclick="cancelSessionResume()">No soy yo — cambiar usuario</button>
+  </div>
+</div>
+
 <!-- THEME BTN (auth) -->
 <button class="auth-theme" id="authThemeBtn" onclick="toggleTheme()">☀</button>
 
@@ -742,7 +757,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.22</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.23</div>
     </div>
   </div>
 
@@ -1316,7 +1331,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDXwT4LiErtjW8HktLGCk7T-xQegf6jNErvN8XU_KIw4ZYl3v_7Lniwr5xkSEzq_5w6Q/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpa7vi1fqs3FMxh7JoO0zydcIbePy_3jwuBCTdRu1Edc0iCjVP6L5WTLCqideBOcCQvw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1425,15 +1440,33 @@ async function restoreSession(sess){
 
 function selectTeam(t){
   S.team=t;
+  document.getElementById('screenResume').classList.add('hidden');
   document.getElementById('screen0').classList.add('hidden');
   document.getElementById('screen1').classList.remove('hidden');
   loadConfigForLogin();
 }
-// Al cargar: si hay sesión guardada vigente, entrar directo. Si no, respetar deep link normal.
+// Al cargar: si hay sesión guardada vigente, mostrar pantalla de tránsito 6s antes de entrar.
+// Si no hay sesión, respetar deep link normal.
+var SR_TIMER=null;
+function showSessionResume(sess){
+  document.getElementById('srAvatar').textContent=sess.user.charAt(0).toUpperCase();
+  document.getElementById('srUserName').textContent=sess.user;
+  document.getElementById('screenResume').classList.remove('hidden');
+  SR_TIMER=setTimeout(function(){
+    document.getElementById('screenResume').classList.add('hidden');
+    restoreSession(sess);
+  },6000);
+}
+function cancelSessionResume(){
+  if(SR_TIMER){clearTimeout(SR_TIMER);SR_TIMER=null;}
+  clearSession();
+  document.getElementById('screenResume').classList.add('hidden');
+  document.getElementById('screen0').classList.remove('hidden');
+}
 window.addEventListener('DOMContentLoaded', function(){
   const sess=loadSavedSession();
   if(sess){
-    restoreSession(sess);
+    showSessionResume(sess);
     return;
   }
   if(PENDING_RIF){
@@ -2476,11 +2509,22 @@ function renderTabHist(r){
   }
   if(!APPS_SCRIPT_URL){renderEntries([],false);return;}
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarCambios',rif:rif})})
-  .then(function(res){return res.json();})
-  .then(function(data){
-    renderEntries(data.ok&&data.registros?data.registros:[],false);
+  .then(function(res){
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return res.json();
   })
-  .catch(function(){renderEntries([],true);});
+  .then(function(data){
+    if(!data.ok){
+      console.warn('[Historial] GAS respondió error:',data.error);
+      renderEntries([],true);
+      return;
+    }
+    renderEntries(data.registros||[],false);
+  })
+  .catch(function(err){
+    console.warn('[Historial] fetch falló:',err);
+    renderEntries([],true);
+  });
 }
 
 function renderDrawerComm(r){
