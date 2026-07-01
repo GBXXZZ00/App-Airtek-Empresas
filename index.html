@@ -772,7 +772,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.30</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.31</div>
     </div>
   </div>
 
@@ -1954,11 +1954,10 @@ function openExp(idx){
   // Limpiar TODA selección visual al abrir un nuevo cliente
   document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
   if(_lastCard){clearTimeout(_lastCardTimer);_lastCard=null;}
-  // Tab IA: solo Admin/Abogado cuando estatus es DOCUMENTOS EN REVISION
+  // Tab IA: visible siempre para Admin/Abogado (el botón de analizar se controla internamente)
   var btnIA=document.getElementById('tab-btn-verificacion');
-  var esDocRevision=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
   var rolIA=(S.rol==='ADMIN'||S.rol==='ABOGADO');
-  if(btnIA)btnIA.style.display=(esDocRevision&&rolIA)?'':'none';
+  if(btnIA)btnIA.style.display=rolIA?'':'none';
   // Resetear resultado IA al abrir otro cliente
   S.iaResultado=null;
   var panelIA=document.getElementById('tab-verificacion');
@@ -3016,11 +3015,10 @@ function handleFile(input,col,urlVieja){
           if(inAll)inAll['ESTATUS_LEGAL']=rs.estatusNuevo;
           refreshTableRow(S.cur);
           renderStBtns(S.cur);
-          // Mostrar tab IA si aplica
+          // Tab IA siempre visible para Admin/Abogado
           var btnIA=document.getElementById('tab-btn-verificacion');
           var rolIA=(S.rol==='ADMIN'||S.rol==='ABOGADO');
-          var esRevision=rs.estatusNuevo.toUpperCase()==='DOCUMENTOS EN REVISION';
-          if(btnIA)btnIA.style.display=(esRevision&&rolIA)?'':'none';
+          if(btnIA)btnIA.style.display=rolIA?'':'none';
           toast('✅ Todos los documentos subidos — Estatus → '+rs.estatusNuevo,'ok');
         }else{
           toast('Documento subido ✓','ok');
@@ -5575,11 +5573,14 @@ function iaCargarHistorialYRenderizar(r,docsCount){
 function iaRenderizarSinHistorial(r,docsCount,registros){
   var el=document.getElementById('tab-verificacion');
   if(!el)return;
+  var puedeAnalizar=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
   el.innerHTML='<div class="ia-wrap">'+
     '<div class="ia-hero">'+
       '<div class="ia-hero-title">🤖 Verificación Inteligente de Documentos</div>'+
       '<div class="ia-hero-sub">'+docsCount+' documento'+(docsCount!==1?'s':'')+' disponible'+(docsCount!==1?'s':'')+' para analizar</div>'+
-      '<button class="ia-btn-start" onclick="iaIniciar()">Iniciar análisis IA</button>'+
+      (puedeAnalizar
+        ? '<button class="ia-btn-start" onclick="iaIniciar()">Iniciar análisis IA</button>'
+        : '<div style="margin-top:10px;font-size:11px;color:var(--text3)">El análisis IA solo está disponible cuando el expediente está en <strong>DOCUMENTOS EN REVISION</strong>.</div>')+
     '</div>'+
   '</div>';
 }
@@ -5644,7 +5645,10 @@ function iaRenderizarConHistorial(r,docsCount,registros){
     h+='</div>';
   }
 
-  h+='<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar con IA</button>';
+  var puedeAnalizar=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
+  h+=puedeAnalizar
+    ? '<button class="ia-btn-reanalizar" onclick="iaIniciar()">🔄 Volver a analizar con IA</button>'
+    : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">Solo se puede analizar en estatus <strong>DOCUMENTOS EN REVISION</strong></div>';
   h+='</div>';
   el.innerHTML=h;
 }
@@ -5816,7 +5820,10 @@ function iaConstruirHTML(r){
   if(v!=='APROBADO'&&faltantes.length){
     h+='<button class="ia-btn-obs" onclick="iaAplicarFaltantes()">📤 Aplicar faltantes y notificar al Líder</button>';
   }
-  h+='<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar</button>';
+  var puedeReanalizarBtn=(S.cur&&(S.cur['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION');
+  h+=puedeReanalizarBtn
+    ? '<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar</button>'
+    : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">Solo se puede analizar en estatus <strong>DOCUMENTOS EN REVISION</strong></div>';
   h+='</div></div>';
   return h;
 }
@@ -5836,8 +5843,7 @@ function iaAprobar(){
       var inAll=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
       if(inAll)inAll['ESTATUS_LEGAL']='DOCUMENTOS RECIBIDOS';
       renderStBtns(S.cur);
-      var btnIA=document.getElementById('tab-btn-verificacion');
-      if(btnIA)btnIA.style.display='none';
+      // Tab IA sigue visible para consultar historial
       showTab('datos');
       renderKPIs();renderTable();
     } else {toast('Error: '+(res.error||''),'err');}
