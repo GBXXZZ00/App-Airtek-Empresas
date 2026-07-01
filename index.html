@@ -759,7 +759,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.27</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.28</div>
     </div>
   </div>
 
@@ -1419,6 +1419,7 @@ function loadSavedSession(){
 
 async function restoreSession(sess){
   S.user=sess.user;S.rol=sess.rol;S.email=sess.email;S.team=sess.team||'ventas';
+  document.getElementById('authThemeBtn').style.display='none';
   document.getElementById('loader').classList.remove('off');
   await loadData();
   document.getElementById('screen0').classList.add('hidden');
@@ -1468,7 +1469,7 @@ function showSessionResume(sess){
   SR_TIMER=setTimeout(function(){
     document.getElementById('screenResume').classList.add('hidden');
     restoreSession(sess);
-  },6000);
+  },2000);
 }
 function cancelSessionResume(){
   if(SR_TIMER){clearTimeout(SR_TIMER);SR_TIMER=null;}
@@ -1580,6 +1581,7 @@ async function doLogin(){
   }
   S.user=found.EJECUTIVO;S.rol=(found.ROL||'LIDER').toUpperCase();S.email=found.CORREO||'';
   saveSession();
+  document.getElementById('authThemeBtn').style.display='none';
   document.getElementById('screen1').classList.add('hidden');
   document.getElementById('app').style.display='block';
   document.getElementById('avatarLetter').textContent=S.user.charAt(0).toUpperCase();
@@ -1619,6 +1621,7 @@ async function doLogin(){
 function doLogout(){
   clearSession();
   Object.assign(S,{user:null,rol:null,all:[],filtered:[],page:1,cur:null});
+  document.getElementById('authThemeBtn').style.display='';
   document.getElementById('app').style.display='none';
   document.getElementById('screen1').classList.add('hidden');
   document.getElementById('screen0').classList.remove('hidden');
