@@ -96,6 +96,14 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .auth-btn.loading .auth-btn-spin{display:inline-block}
 .auth-btn.loading .auth-btn-label{opacity:.9}
 .auth-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
+.regimen-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.regimen-card{background:var(--surface2);border:2px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s var(--ease-out)}
+.regimen-card:hover{border-color:var(--border2);background:var(--surface3)}
+.regimen-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+.regimen-card.selected .rc-icon{color:var(--accent)}
+.regimen-card.selected .rc-lbl{color:var(--accent);font-weight:600}
+.rc-icon{font-size:18px;margin-bottom:4px}
+.rc-lbl{font-size:10px;font-weight:500;color:var(--text2);line-height:1.3}
 .sr-avatar{width:56px;height:56px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:var(--text);margin:22px auto 14px}
 .sr-text{font-size:14px;color:var(--text)}
 .sr-text strong{font-weight:600}
@@ -197,7 +205,12 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .fs-row::-webkit-scrollbar{height:2px}
 .fs-row::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .fs-lbl{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);width:46px;min-width:46px;flex-shrink:0}
-@media(max-width:768px){.filter-strip{gap:4px}.fs-row{flex-wrap:nowrap}.fs-lbl{font-size:9px;width:36px;min-width:36px}}
+@media(max-width:768px){
+  .filter-strip{gap:4px}
+  .fs-row{flex-wrap:nowrap;padding-bottom:4px}
+  .fs-lbl{font-size:9px;width:36px;min-width:36px}
+  .qf-btn{font-size:10px;padding:4px 9px;white-space:nowrap}
+}
 .fc{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px}
 
 /* fp-grid removed — now using filter-strip */
@@ -759,7 +772,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.28</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.29</div>
     </div>
   </div>
 
@@ -2003,11 +2016,20 @@ function renderTabDatos(r){
   h+='<div class="sec-lbl">Régimen de Firma <span style="font-weight:400;font-size:9px;color:var(--text3)">(detectado por IA al analizar el Acta, ajustable manualmente)</span></div>';
   h+='<div class="fg full"><div class="field">';
   if(puedeEditarRegimen){
-    h+='<select id="f_regimen_firma" onchange="cambiarRegimenFirma(this.value)">';
-    h+='<option value=""'+(regimenActual===''?' selected':'')+'>Sin definir</option>';
-    h+='<option value="INDIVIDUAL"'+(regimenActual==='INDIVIDUAL'?' selected':'')+'>Individual / Separada — basta 1 representante</option>';
-    h+='<option value="CONJUNTA"'+(regimenActual==='CONJUNTA'?' selected':'')+'>Conjunta — se necesitan ambos representantes</option>';
-    h+='</select>';
+    h+='<div class="regimen-cards">';
+    var opciones=[
+      {val:'',icon:'❓',lbl:'Sin definir'},
+      {val:'INDIVIDUAL',icon:'👤',lbl:'Individual / Separada'},
+      {val:'CONJUNTA',icon:'👥',lbl:'Conjunta'},
+    ];
+    opciones.forEach(function(op){
+      var sel=regimenActual===op.val?'selected':'';
+      h+='<div class="regimen-card '+sel+'" onclick="cambiarRegimenFirma(\''+op.val+'\')" title="'+op.lbl+'">'
+        +'<div class="rc-icon">'+op.icon+'</div>'
+        +'<div class="rc-lbl">'+op.lbl+'</div>'
+        +'</div>';
+    });
+    h+='</div>';
   } else {
     var regimenTxt=regimenActual==='INDIVIDUAL'?'Individual / Separada':regimenActual==='CONJUNTA'?'Conjunta':'Sin definir';
     h+='<input readonly value="'+esc(regimenTxt)+'">';
@@ -3507,6 +3529,8 @@ function copyWAMsg(){
 
 // NAV
 function showView(v){
+  // Líder no puede acceder a Centro de Control
+  if(v==='seguimiento'&&S.rol==='LIDER'){toast('Sin acceso a esta sección','err');return;}
   document.querySelectorAll('.view').forEach(el=>{
     el.classList.remove('active');
   });
@@ -4487,51 +4511,86 @@ function getMsgWA(tipo,r){
     abogado_a_admin:
       '[Airtek Legal] Consulta sobre expediente'+N+N+
       'Hola Gualfredo,'+N+N+
-      'Te escribo por el expediente del cliente '+nom+
-      ' (RIF: '+rif+', Líder: '+ejec+', Estatus: '+est+'). '+
-      'Necesito tu revisión o decisión sobre este caso antes de continuar '+
-      'con el proceso.'+N+N+
+      'Te escribo por el expediente del cliente *'+nom+'* (RIF: '+rif+', Líder: '+ejec+').'+N+N+
+      (est==='DOCUMENTOS EN REVISION'
+        ? 'Estoy revisando actualmente los documentos y tengo una observación que requiere tu decisión antes de continuar con el proceso legal.'
+        : est==='DOCUMENTOS RECIBIDOS'
+          ? 'El expediente fue aprobado y está en proceso de elaboración de contrato. Hay un punto que necesito aclarar contigo antes de avanzar.'
+          : est==='PENDIENTE POR FIRMAR'
+            ? 'El contrato está listo y pendiente de firma. Necesito tu intervención para coordinar el cierre con el cliente.'
+            : 'El expediente se encuentra en estatus "'+est+'" y hay una situación que requiere tu atención directa.')+N+N+
+      (r&&r['Observacion']&&r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()
+        ? 'Observación registrada: '+r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()+N+N
+        : '')+
       '🔗 Ver expediente: '+appLink+N+N+
       'Quedo atenta a tu respuesta.'+N+
       '------------------'+N+
       'Reina'+N+'Consultor(a) Legal | Airtek Ventas Corporativas',
 
     lider_a_abogado:
-      '[Airtek] Consulta sobre expediente'+N+N+
+      '[Airtek] Consulta legal sobre expediente'+N+N+
       'Hola Reina,'+N+N+
-      'Te escribo por el cliente '+nom+
-      ' (RIF: '+rif+', Estatus: '+est+'). '+
-      'Tengo una duda sobre este expediente y necesito tu orientación '+
-      'antes de continuar con la gestión.'+N+N+
+      'Te escribo por el cliente *'+nom+'* (RIF: '+rif+').'+N+N+
+      (est==='DOCUMENTOS SOLICITADOS'
+        ? 'Llevo '+dy+' días gestionando la entrega de documentos y el cliente no ha respondido. Antes de escalar o tomar otra acción, quería consultarte cómo proceder desde el lado legal.'
+        : est==='PENDIENTE POR DOCUMENTOS'
+          ? 'El expediente lleva '+dy+' días en pendiente de documentos. ¿Hay algún requisito legal específico que deba comunicarle al cliente para desbloquearlo?'
+          : est==='DOCUMENTOS EN REVISION'
+            ? 'El expediente está en revisión. ¿Tienes alguna observación sobre los documentos recibidos que deba gestionar con el cliente antes de que lo apruebes?'
+            : 'El expediente está en "'+est+'" y tengo una duda antes de continuar con la gestión.'+N+'Días en gestión: '+dy+'.')+N+N+
       '🔗 Ver expediente: '+appLink+N+N+
       'Quedo atento(a) a tu respuesta.'+
       firma,
 
     lider_a_admin:
-      '[Airtek] Caso requiere tu atención'+N+N+
+      '[Airtek] Caso requiere tu atención — '+nom+N+N+
       'Hola Gualfredo,'+N+N+
-      'Te escribo por el cliente '+nom+
-      ' (RIF: '+rif+', Estatus: '+est+'). '+
-      'Este caso requiere tu atención o decisión directa.'+N+N+
+      'Te escribo por el cliente *'+nom+'* (RIF: '+rif+') que lleva *'+dy+' días* en gestión.'+N+N+
+      (est==='GRANDES NEGOCIOS'
+        ? 'El cliente fue instalado hace '+dy+' días y aún no ha iniciado el proceso de documentación. He intentado contactarlo sin éxito y necesito orientación sobre cómo proceder.'
+        : est==='PENDIENTE POR DOCUMENTOS'||est==='DOCUMENTOS SOLICITADOS'
+          ? 'El cliente lleva mucho tiempo sin entregar los documentos requeridos. He realizado varios seguimientos sin respuesta. ¿Autorizas alguna acción adicional o escalamiento?'
+          : est==='PENDIENTE POR FIRMAR'
+            ? 'El contrato lleva '+dy+' días esperando la firma del cliente. Necesito tu apoyo para coordinar el cierre o tomar una decisión.'
+            : 'Estatus actual: "'+est+'". Este caso requiere tu atención o decisión directa.')+N+N+
+      (r&&r['Observacion']&&r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()
+        ? 'Observación: '+r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()+N+N
+        : '')+
       '🔗 Ver expediente: '+appLink+N+N+
       'Quedo atento(a) a tu respuesta.'+
       firma,
 
     admin_a_abogado:
-      '[Airtek] Consulta sobre expediente'+N+N+
+      '[Airtek Legal] Acción requerida — '+nom+N+N+
       'Hola Reina,'+N+N+
-      'Te escribo por el cliente '+nom+
-      ' (RIF: '+rif+', Estatus: '+est+'). '+
-      'Necesito tu opinión legal sobre este caso.'+N+N+
+      'Te escribo sobre el expediente de *'+nom+'* (RIF: '+rif+', Líder: '+ejec+').'+N+N+
+      (est==='DOCUMENTOS RECIBIDOS'
+        ? 'El expediente fue marcado como Documentos Recibidos. Por favor procede con la revisión legal y la elaboración del contrato a la brevedad.'
+        : est==='DOCUMENTOS EN REVISION'
+          ? 'El expediente lleva '+dy+' días en revisión. ¿Hay algún inconveniente o faltante que deba gestionar con el líder o el cliente para desbloquearlo?'
+          : est==='CONTRATO EN CURSO'
+            ? 'El contrato está en elaboración. Por favor confirma el tiempo estimado de entrega para coordinar la firma con el cliente.'
+            : est==='PENDIENTE POR FIRMAR'
+              ? 'El contrato está listo y pendiente de firma desde hace varios días. Necesito que coordines con el líder '+ejec+' para cerrar este caso.'
+              : 'El expediente está en "'+est+'" y requiere tu revisión legal.')+N+N+
       '🔗 Ver expediente: '+appLink+N+N+
       'Quedo atento a tu respuesta.'+
       firmaAdmin,
 
     admin_a_lider_consulta:
-      '[Airtek] Consulta puntual sobre expediente'+N+N+
+      '[Airtek] Consulta sobre tu cliente — '+nom+N+N+
       'Hola '+ejec+','+N+N+
-      'Tengo una pregunta puntual sobre el cliente '+nom+
-      ' (RIF: '+rif+', Estatus: '+est+').'+N+N+
+      'Te escribo sobre el expediente de *'+nom+'* (RIF: '+rif+') que lleva *'+dy+' días* en gestión.'+N+N+
+      (est==='GRANDES NEGOCIOS'||est==='PENDIENTE POR DOCUMENTOS'||est==='DOCUMENTOS SOLICITADOS'
+        ? '¿Cuál es el estado actual de la gestión con este cliente? ¿Has logrado contactarlo recientemente?'
+        : est==='DOCUMENTOS EN REVISION'
+          ? '¿Tienes alguna información adicional sobre este cliente que pueda ser útil para la revisión legal? Reina está analizando el expediente.'
+          : est==='PENDIENTE POR FIRMAR'
+            ? '¿Has coordinado ya con el cliente la firma del contrato? Por favor actualiza el estatus del expediente.'
+            : '¿Puedes comentarme el estado actual de la gestión con este cliente?')+N+N+
+      (r&&r['Observacion']&&r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()
+        ? 'Última observación registrada: '+r['Observacion'].replace(/\[DOCS:[^\]]*\]|\[FALTANTES:[^\]]*\]|\[DETALLE:[^\]]*\]/g,'').trim()+N+N
+        : '')+
       '🔗 Ver expediente: '+appLink+N+N+
       'Quedo atento a tu respuesta.'+
       firmaAdmin,
@@ -4558,6 +4617,9 @@ var FACT_STATE = {
 function factInitNav(){
   var btn = document.getElementById('nav-factibilidad');
   if(btn) btn.style.display = (S.rol === 'ABOGADO') ? 'none' : '';
+  // Centro de Control: solo Admin y Abogado
+  var btnSeg = document.getElementById('nav-seguimiento');
+  if(btnSeg) btnSeg.style.display = (S.rol === 'LIDER') ? 'none' : '';
 }
 
 // ── Inicialización al entrar a la vista ──────────────────────
@@ -5464,10 +5526,12 @@ function factMapOcultar(){
 function renderTabVerificacion(r){
   var el=document.getElementById('tab-verificacion');
   if(!el)return;
+  // Si hay resultado en memoria para este cliente → mostrarlo directamente
   if(S.iaResultado&&S.iaResultado._rif===r['RIF']){
     el.innerHTML=iaConstruirHTML(S.iaResultado);
     return;
   }
+  // Estado de carga: consultar historial primero
   var docsCount=0;
   ['DOCUMENTOS_REPRESENTANTES','DOCUMENTOS_REPRESENTANTES2','DOCUMENTOS_REPRESENTANTES3',
    'DOCUMENTOS_REPRESENTANTES4','RIF_VIGENTE','ACTA CONSTITUTIVA',
@@ -5475,45 +5539,146 @@ function renderTabVerificacion(r){
    'HABILITACION_CONATEL'].forEach(function(c){
     if((r[c]||'').trim().startsWith('http'))docsCount++;
   });
+  // Mostrar skeleton mientras carga el historial
+  el.innerHTML='<div class="ia-wrap"><div class="ia-loading"><div class="ia-spinner"></div><div class="ia-loading-txt" style="font-size:11px">Cargando historial...</div></div></div>';
+  iaCargarHistorialYRenderizar(r,docsCount);
+}
+
+// ── Historial IA: carga primero, decide qué mostrar ──────────
+function iaCargarHistorialYRenderizar(r,docsCount){
+  var el=document.getElementById('tab-verificacion');
+  var rif=(r['RIF']||'').toString().trim();
+  if(!APPS_SCRIPT_URL){
+    iaRenderizarSinHistorial(r,docsCount,[]);
+    return;
+  }
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarAnalisisIA',rif:rif})})
+  .then(function(res){return res.json();})
+  .then(function(data){
+    el=document.getElementById('tab-verificacion');
+    if(!el)return;
+    var registros=(data.ok&&data.registros)||[];
+    if(registros.length>0){
+      // HAY historial → mostrar último resultado con opción de volver a analizar
+      iaRenderizarConHistorial(r,docsCount,registros);
+    } else {
+      // SIN historial → pantalla de inicio
+      iaRenderizarSinHistorial(r,docsCount,[]);
+    }
+  })
+  .catch(function(){
+    el=document.getElementById('tab-verificacion');
+    if(el)iaRenderizarSinHistorial(r,docsCount,[]);
+  });
+}
+
+function iaRenderizarSinHistorial(r,docsCount,registros){
+  var el=document.getElementById('tab-verificacion');
+  if(!el)return;
   el.innerHTML='<div class="ia-wrap">'+
     '<div class="ia-hero">'+
       '<div class="ia-hero-title">🤖 Verificación Inteligente de Documentos</div>'+
       '<div class="ia-hero-sub">'+docsCount+' documento'+(docsCount!==1?'s':'')+' disponible'+(docsCount!==1?'s':'')+' para analizar</div>'+
       '<button class="ia-btn-start" onclick="iaIniciar()">Iniciar análisis IA</button>'+
     '</div>'+
-    '<div id="ia-historial-wrap"></div>'+
   '</div>';
-  iaCargarHistorial(r['RIF']);
 }
 
-// ── Sub-sección: Análisis anteriores guardados en ANALISIS_IA_LOG ──────────
-function iaCargarHistorial(rif){
-  var wrap=document.getElementById('ia-historial-wrap');
-  if(!wrap||!APPS_SCRIPT_URL)return;
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarAnalisisIA',rif:rif})})
-  .then(function(r){return r.json();})
-  .then(function(res){
-    wrap=document.getElementById('ia-historial-wrap'); // re-obtener por si el drawer cambió de tab mientras tanto
-    if(!wrap)return;
-    if(!res.ok||!res.registros||!res.registros.length){wrap.innerHTML='';return;}
-    var vTxt={'APROBADO':'✅ Aprobado','OBSERVACIONES':'⚠️ Con observaciones','NO_APTO':'❌ No apto'};
-    var h='<div style="margin-top:4px"><div class="ia-section-title">Análisis anteriores ('+res.registros.length+')</div>';
-    res.registros.forEach(function(reg,idx){
+function iaRenderizarConHistorial(r,docsCount,registros){
+  var el=document.getElementById('tab-verificacion');
+  if(!el)return;
+  var vTxt={'APROBADO':'✅ Aprobado','OBSERVACIONES':'⚠️ Con observaciones','NO_APTO':'❌ No apto'};
+  var vCls={'APROBADO':'APROBADO','OBSERVACIONES':'OBSERVACIONES','NO_APTO':'NO_APTO'};
+  var ultimo=registros[0]; // más reciente primero (ya viene ordenado del GAS)
+
+  // Intentar parsear el JSON completo del último análisis
+  var resultadoParsed=null;
+  if(ultimo.jsonCompleto){
+    try{resultadoParsed=JSON.parse(ultimo.jsonCompleto);}catch(e){}
+  }
+
+  var h='<div class="ia-wrap">';
+
+  // Banner del último resultado
+  h+='<div class="ia-veredicto '+(vCls[ultimo.veredicto]||'OBSERVACIONES')+'" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
+  h+='<span>'+(vTxt[ultimo.veredicto]||ultimo.veredicto||'Análisis')+'</span>';
+  h+='<span style="font-size:10px;font-weight:400;opacity:.8">'+esc(ultimo.fecha)+'</span>';
+  h+='</div>';
+
+  // Resumen del último análisis
+  if(ultimo.resumen){
+    h+='<div class="ia-resumen">'+esc(ultimo.resumen)+'</div>';
+  }
+
+  // Si tenemos el JSON completo, mostrar el análisis detallado
+  if(resultadoParsed){
+    S.iaResultado=resultadoParsed;
+    S.iaResultado._rif=r['RIF'];
+    // Mostrar análisis completo reutilizando iaConstruirHTML pero sin el wrapper externo
+    el.innerHTML=iaConstruirHTML(resultadoParsed);
+    // Agregar historial colapsable al final
+    iaAgregarHistorialColapsable(registros,vTxt);
+    return;
+  }
+
+  // Si no hay JSON completo: mostrar resumen y botón de nuevo análisis
+  if(ultimo.regimenFirma){
+    h+='<div><div class="ia-section-title">Régimen de firma detectado</div>';
+    h+='<div class="ia-card"><div class="ia-card-header">'+(ultimo.regimenFirma==='INDIVIDUAL'||ultimo.regimenFirma==='separada'?'✅ Individual/Separada — basta 1 representante':'⚠️ Conjunta — se requieren ambos representantes')+'</div></div></div>';
+  }
+
+  // Historial colapsable (análisis anteriores)
+  if(registros.length>1){
+    h+='<div><div class="ia-section-title">Análisis anteriores ('+registros.length+')</div>';
+    registros.forEach(function(reg,idx){
       var ddId='ia-hist-'+idx+'-'+Math.random().toString(36).slice(2,6);
       h+='<div class="ia-card" style="cursor:pointer" onclick="iaToggleHistItem(\''+ddId+'\')">';
       h+='<div class="ia-card-header">'+(vTxt[reg.veredicto]||reg.veredicto||'Análisis')+
          '<span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:400">'+esc(reg.fecha)+'</span></div>';
-      h+='<div class="ia-card-detail">Por '+esc(reg.usuario||'—')+(reg.regimenFirma?' · Régimen: '+esc(reg.regimenFirma==='conjunta'?'Conjunta':'Individual/Separada'):'')+'</div>';
+      h+='<div class="ia-card-detail">Por '+esc(reg.usuario||'—')+(reg.regimenFirma?' · Régimen: '+esc(reg.regimenFirma==='CONJUNTA'||reg.regimenFirma==='conjunta'?'Conjunta':'Individual/Separada'):'')+'</div>';
       if(reg.resumen){
         h+='<div id="'+ddId+'" style="display:none;margin-top:4px;font-size:11px;color:var(--text2);line-height:1.5;border-top:1px solid var(--border);padding-top:6px">'+esc(reg.resumen)+'</div>';
       }
       h+='</div>';
     });
     h+='</div>';
-    wrap.innerHTML=h;
-  })
-  .catch(function(){ if(wrap)wrap.innerHTML=''; });
+  }
+
+  h+='<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar con IA</button>';
+  h+='</div>';
+  el.innerHTML=h;
 }
+
+function iaAgregarHistorialColapsable(registros,vTxt){
+  // Agrega al final del tab-verificacion el historial colapsable
+  var el=document.getElementById('tab-verificacion');
+  if(!el||registros.length<=1)return;
+  var wrap=el.querySelector('.ia-wrap');
+  if(!wrap)return;
+  var h='<div style="margin-top:8px"><div class="ia-section-title">Análisis anteriores ('+registros.length+')</div>';
+  registros.forEach(function(reg,idx){
+    if(idx===0)return; // El primero ya se muestra arriba
+    var ddId='ia-hist2-'+idx+'-'+Math.random().toString(36).slice(2,6);
+    h+='<div class="ia-card" style="cursor:pointer" onclick="iaToggleHistItem(\''+ddId+'\')">';
+    h+='<div class="ia-card-header">'+(vTxt[reg.veredicto]||reg.veredicto||'Análisis')+
+       '<span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:400">'+esc(reg.fecha)+'</span></div>';
+    h+='<div class="ia-card-detail">Por '+esc(reg.usuario||'—')+'</div>';
+    if(reg.resumen){
+      h+='<div id="'+ddId+'" style="display:none;margin-top:4px;font-size:11px;color:var(--text2);line-height:1.5;border-top:1px solid var(--border);padding-top:6px">'+esc(reg.resumen)+'</div>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  // Agregar antes del último elemento (botón Volver a analizar)
+  var reanalizar=wrap.querySelector('.ia-btn-reanalizar');
+  if(reanalizar){
+    var div=document.createElement('div');div.innerHTML=h;
+    wrap.insertBefore(div.firstElementChild,reanalizar);
+  } else {
+    wrap.insertAdjacentHTML('beforeend',h);
+  }
+}
+
 function iaToggleHistItem(id){
   var el=document.getElementById(id);
   if(el)el.style.display=el.style.display==='none'?'block':'none';
@@ -5550,6 +5715,10 @@ function iaIniciar(){
         S.cur['REGIMEN_FIRMA']=regimenNormalizado;
         var inAllIA=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
         if(inAllIA)inAllIA['REGIMEN_FIRMA']=regimenNormalizado;
+        // Re-renderizar Datos para que las tarjetas de régimen se actualicen sin cerrar el drawer
+        S.nReps=countReps(S.cur);
+        renderTabDatos(S.cur);
+        renderTabDocs(S.cur);
       }
     }
     el.innerHTML=iaConstruirHTML(S.iaResultado);
@@ -5643,7 +5812,10 @@ function iaConstruirHTML(r){
   } else {
     h+='<button class="ia-btn-aprobar" disabled>✅ Aprobar (faltantes críticos pendientes)</button>';
   }
-  h+='<button class="ia-btn-obs" onclick="iaAplicarFaltantes()">📤 Aplicar faltantes y notificar al Líder</button>';
+  // Solo mostrar "Aplicar faltantes" si hay faltantes reales (veredicto NO_APTO u OBSERVACIONES)
+  if(v!=='APROBADO'&&faltantes.length){
+    h+='<button class="ia-btn-obs" onclick="iaAplicarFaltantes()">📤 Aplicar faltantes y notificar al Líder</button>';
+  }
   h+='<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar</button>';
   h+='</div></div>';
   return h;
