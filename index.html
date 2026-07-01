@@ -772,7 +772,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.31</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.32</div>
     </div>
   </div>
 
@@ -5553,6 +5553,7 @@ function iaCargarHistorialYRenderizar(r,docsCount){
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarAnalisisIA',rif:rif})})
   .then(function(res){return res.json();})
   .then(function(data){
+    console.log('[IA Historial] RIF consultado:',rif,'Respuesta:',JSON.stringify(data).slice(0,300));
     el=document.getElementById('tab-verificacion');
     if(!el)return;
     var registros=(data.ok&&data.registros)||[];
