@@ -772,7 +772,7 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-bottom">
-      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.32</div>
+      <div class="sb-version" id="sbUserInfo">—</div><div class="sb-version" style="color:var(--text3);opacity:.5">v1.33</div>
     </div>
   </div>
 
@@ -5565,7 +5565,8 @@ function iaCargarHistorialYRenderizar(r,docsCount){
       iaRenderizarSinHistorial(r,docsCount,[]);
     }
   })
-  .catch(function(){
+  .catch(function(err){
+    console.error('[IA Historial] ERROR en fetch o render:',err);
     el=document.getElementById('tab-verificacion');
     if(el)iaRenderizarSinHistorial(r,docsCount,[]);
   });
@@ -5587,57 +5588,54 @@ function iaRenderizarSinHistorial(r,docsCount,registros){
 }
 
 function iaRenderizarConHistorial(r,docsCount,registros){
+  try{
   var el=document.getElementById('tab-verificacion');
   if(!el)return;
   var vTxt={'APROBADO':'✅ Aprobado','OBSERVACIONES':'⚠️ Con observaciones','NO_APTO':'❌ No apto'};
   var vCls={'APROBADO':'APROBADO','OBSERVACIONES':'OBSERVACIONES','NO_APTO':'NO_APTO'};
-  var ultimo=registros[0]; // más reciente primero (ya viene ordenado del GAS)
+  var ultimo=registros[0];
 
   // Intentar parsear el JSON completo del último análisis
   var resultadoParsed=null;
   if(ultimo.jsonCompleto){
-    try{resultadoParsed=JSON.parse(ultimo.jsonCompleto);}catch(e){}
+    try{resultadoParsed=JSON.parse(ultimo.jsonCompleto);}
+    catch(e){console.warn('[IA Historial] jsonCompleto no parseable:',e.message);}
   }
 
+  // Si tenemos JSON completo válido → mostrar análisis detallado completo
+  if(resultadoParsed){
+    S.iaResultado=resultadoParsed;
+    S.iaResultado._rif=r['RIF'];
+    el.innerHTML=iaConstruirHTML(resultadoParsed);
+    iaAgregarHistorialColapsable(registros,vTxt);
+    return;
+  }
+
+  // Sin JSON completo → mostrar resumen simple + historial colapsable
+  var puedeAnalizar=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
   var h='<div class="ia-wrap">';
 
-  // Banner del último resultado
+  // Banner veredicto
   h+='<div class="ia-veredicto '+(vCls[ultimo.veredicto]||'OBSERVACIONES')+'" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
   h+='<span>'+(vTxt[ultimo.veredicto]||ultimo.veredicto||'Análisis')+'</span>';
   h+='<span style="font-size:10px;font-weight:400;opacity:.8">'+esc(ultimo.fecha)+'</span>';
   h+='</div>';
 
-  // Resumen del último análisis
+  // Resumen
   if(ultimo.resumen){
     h+='<div class="ia-resumen">'+esc(ultimo.resumen)+'</div>';
   }
 
-  // Si tenemos el JSON completo, mostrar el análisis detallado
-  if(resultadoParsed){
-    S.iaResultado=resultadoParsed;
-    S.iaResultado._rif=r['RIF'];
-    // Mostrar análisis completo reutilizando iaConstruirHTML pero sin el wrapper externo
-    el.innerHTML=iaConstruirHTML(resultadoParsed);
-    // Agregar historial colapsable al final
-    iaAgregarHistorialColapsable(registros,vTxt);
-    return;
-  }
-
-  // Si no hay JSON completo: mostrar resumen y botón de nuevo análisis
-  if(ultimo.regimenFirma){
-    h+='<div><div class="ia-section-title">Régimen de firma detectado</div>';
-    h+='<div class="ia-card"><div class="ia-card-header">'+(ultimo.regimenFirma==='INDIVIDUAL'||ultimo.regimenFirma==='separada'?'✅ Individual/Separada — basta 1 representante':'⚠️ Conjunta — se requieren ambos representantes')+'</div></div></div>';
-  }
-
-  // Historial colapsable (análisis anteriores)
+  // Historial colapsable
   if(registros.length>1){
-    h+='<div><div class="ia-section-title">Análisis anteriores ('+registros.length+')</div>';
+    h+='<div style="margin-top:8px"><div class="ia-section-title">Análisis anteriores ('+registros.length+')</div>';
     registros.forEach(function(reg,idx){
-      var ddId='ia-hist-'+idx+'-'+Math.random().toString(36).slice(2,6);
+      if(idx===0)return;
+      var ddId='ia-h-'+idx+'-'+Math.random().toString(36).slice(2,5);
       h+='<div class="ia-card" style="cursor:pointer" onclick="iaToggleHistItem(\''+ddId+'\')">';
       h+='<div class="ia-card-header">'+(vTxt[reg.veredicto]||reg.veredicto||'Análisis')+
          '<span style="margin-left:auto;font-size:10px;color:var(--text3);font-weight:400">'+esc(reg.fecha)+'</span></div>';
-      h+='<div class="ia-card-detail">Por '+esc(reg.usuario||'—')+(reg.regimenFirma?' · Régimen: '+esc(reg.regimenFirma==='CONJUNTA'||reg.regimenFirma==='conjunta'?'Conjunta':'Individual/Separada'):'')+'</div>';
+      h+='<div class="ia-card-detail">Por '+esc(reg.usuario||'—')+'</div>';
       if(reg.resumen){
         h+='<div id="'+ddId+'" style="display:none;margin-top:4px;font-size:11px;color:var(--text2);line-height:1.5;border-top:1px solid var(--border);padding-top:6px">'+esc(reg.resumen)+'</div>';
       }
@@ -5646,12 +5644,17 @@ function iaRenderizarConHistorial(r,docsCount,registros){
     h+='</div>';
   }
 
-  var puedeAnalizar=(r['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION';
+  // Botón analizar condicional
   h+=puedeAnalizar
-    ? '<button class="ia-btn-reanalizar" onclick="iaIniciar()">🔄 Volver a analizar con IA</button>'
-    : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">Solo se puede analizar en estatus <strong>DOCUMENTOS EN REVISION</strong></div>';
+    ? '<button class="ia-btn-reanalizar" onclick="iaIniciar()" style="margin-top:8px">🔄 Nuevo análisis IA</button>'
+    : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">Análisis disponible solo en <strong>DOCUMENTOS EN REVISION</strong></div>';
+
   h+='</div>';
   el.innerHTML=h;
+  }catch(e){
+    console.error('[IA Historial] Error en iaRenderizarConHistorial:',e);
+    document.getElementById('tab-verificacion').innerHTML='<div class="ia-wrap"><div class="ia-error">⚠️ Error al mostrar historial: '+esc(e.message)+'</div></div>';
+  }
 }
 
 function iaAgregarHistorialColapsable(registros,vTxt){
