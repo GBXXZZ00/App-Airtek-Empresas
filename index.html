@@ -1346,7 +1346,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyUq_LIA8h_rz9dnMUNwmwAT71CeYZyLQ4Ogl7HB5QIbbiYmbIu3wOOe7OAxrj2cblwOw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz90eesZw4cCHpzqc-eWkxnqLeMGFs8FHtqOlNYh_iQt0wQY_a1aQkl9t_3hLE_z2m9dg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -5755,8 +5755,11 @@ function iaConstruirHTML(r){
       var st=rep.estado||'OK';
       var cedOk=rep.cedula_vigente===true?'✅':rep.cedula_vigente===null?'⚠️':'❌';
       var rifOk=rep.rif_vigente===true?'✅':rep.rif_vigente===null?'⚠️':'❌';
+      var dirLinea='';
+      if(rep.es_director_vigente===true) dirLinea='<br>✅ Es director vigente de la junta';
+      else if(rep.es_director_vigente===false) dirLinea='<br>❌ NO aparece en la junta directiva vigente — verificar facultad de firma';
       h+='<div class="ia-card"><div class="ia-card-header">👤 Rep '+rep.numero+(rep.nombre_cedula?' — '+esc(rep.nombre_cedula):'')+' <span class="ia-badge '+esc(st)+'">'+esc(st)+'</span></div>';
-      h+='<div class="ia-card-detail">'+cedOk+' Cédula '+(rep.numero_cedula?esc(rep.numero_cedula):'-')+(rep.cedula_vencimiento?' · Vence '+esc(rep.cedula_vencimiento):'')+'<br>'+rifOk+' RIF '+(rep.rif_numero?esc(rep.rif_numero):'-')+(rep.rif_vencimiento?' · Vence '+esc(rep.rif_vencimiento):'')+'<br>'+(rep.nombre_coincide===false?'⚠️ Nombres no coinciden':'✅ Nombres coinciden')+(rep.notas?'<br><span style="color:var(--text3)">'+esc(rep.notas)+'</span>':'')+'</div></div>';
+      h+='<div class="ia-card-detail">'+cedOk+' Cédula '+(rep.numero_cedula?esc(rep.numero_cedula):'-')+(rep.cedula_vencimiento?' · Vence '+esc(rep.cedula_vencimiento):'')+'<br>'+rifOk+' RIF '+(rep.rif_numero?esc(rep.rif_numero):'-')+(rep.rif_vencimiento?' · Vence '+esc(rep.rif_vencimiento):'')+'<br>'+(rep.nombre_coincide===false?'⚠️ Nombres no coinciden':'✅ Nombres coinciden')+dirLinea+(rep.notas?'<br><span style="color:var(--text3)">'+esc(rep.notas)+'</span>':'')+'</div></div>';
     });
     h+='</div>';
   }
@@ -5779,7 +5782,10 @@ function iaConstruirHTML(r){
     h+='📅 Inscrita: '+esc(ac.fecha_inscripcion||'No detectada')+'<br>';
     h+='⏳ Empresa: '+(ac.empresa_vigente===false?'❌ VENCIDA':'✅ Vigente')+'<br>';
     h+='✍️ Régimen de firma: '+(ac.tipo_firma==='conjunta'?'⚠️ CONJUNTA — se requieren ambos representantes':'✅ Individual/Separada — basta 1 representante actuando solo')+'<br>';
-    h+='👥 Junta: '+(ac.junta_vigente===false?'❌ VENCIDA':'✅ Vigente')+'<br>';
+    h+='👥 Junta: '+(ac.junta_vigente===false?'❌ VENCIDA':ac.junta_vigente===null?'⚠️ No calculable':'✅ Vigente')+(ac.junta_vence_calculado?' hasta '+esc(ac.junta_vence_calculado):'')+'<br>';
+    if(ac.junta_motivo_calculo){
+      h+='<span style="color:var(--text3);font-size:10px">'+esc(ac.junta_motivo_calculo)+'</span><br>';
+    }
     h+='📍 Domicilio: '+(ac.domicilio_coincide_rif===false?(ac.tiene_clausula_sucursales?'⚠️ Difiere (excepción sucursales)':'❌ No coincide'):'✅ Coincide');
     if(ac.notas)h+='<br><span style="color:var(--text3)">'+esc(ac.notas)+'</span>';
     h+='</div></div></div>';
