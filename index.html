@@ -1346,7 +1346,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz90eesZw4cCHpzqc-eWkxnqLeMGFs8FHtqOlNYh_iQt0wQY_a1aQkl9t_3hLE_z2m9dg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8GKOD3N-TYrm80lVLgX-HNB33lilzb8UcnbjqgUYPN9PZENhLrBJNlAgMiTH48lT6/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1979,13 +1979,10 @@ function countReps(r){
            cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES4']).startsWith('http');
   if(!has2)return 1;
 
-  // REGIMEN_FIRMA: si es INDIVIDUAL y Rep1 ya está completo (cédula+RIF), Rep2 es opcional → se oculta.
-  var regimen=(r['REGIMEN_FIRMA']||'').toString().trim().toUpperCase();
-  if(regimen==='INDIVIDUAL'){
-    var rep1Completo=cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES']).startsWith('http')&&
-                      cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES2']).startsWith('http');
-    if(rep1Completo)return 1;
-  }
+  // Si Rep2 ya tiene datos/documentos reales cargados, se muestra SIEMPRE,
+  // sin importar el régimen de firma. El régimen INDIVIDUAL solo hace que
+  // Rep2 sea opcional cuando no hay nada cargado — ese caso ya lo cubre el
+  // "if(!has2)return 1" de arriba.
   return 2;
 }
 
@@ -5786,7 +5783,10 @@ function iaConstruirHTML(r){
     if(ac.junta_motivo_calculo){
       h+='<span style="color:var(--text3);font-size:10px">'+esc(ac.junta_motivo_calculo)+'</span><br>';
     }
-    h+='📍 Domicilio: '+(ac.domicilio_coincide_rif===false?(ac.tiene_clausula_sucursales?'⚠️ Difiere (excepción sucursales)':'❌ No coincide'):'✅ Coincide');
+    h+='📍 Domicilio: '+(ac.domicilio_coincide_rif===true?'✅ Coincide':ac.domicilio_coincide_rif===false?'❌ No coincide':'⚠️ No se pudo verificar');
+    if(ac.domicilio_motivo_calculo){
+      h+='<br><span style="color:var(--text3);font-size:10px">'+esc(ac.domicilio_motivo_calculo)+'</span>';
+    }
     if(ac.notas)h+='<br><span style="color:var(--text3)">'+esc(ac.notas)+'</span>';
     h+='</div></div></div>';
   }
