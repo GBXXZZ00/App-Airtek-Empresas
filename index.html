@@ -1346,7 +1346,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8GKOD3N-TYrm80lVLgX-HNB33lilzb8UcnbjqgUYPN9PZENhLrBJNlAgMiTH48lT6/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxm1NUbondlTlE8QKV76O1LoZURg3tlHmSa4iyq7k_u5x34EGDqKtBtrbjSf_3jkklaw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -5754,7 +5754,9 @@ function iaConstruirHTML(r){
       var rifOk=rep.rif_vigente===true?'✅':rep.rif_vigente===null?'⚠️':'❌';
       var dirLinea='';
       if(rep.es_director_vigente===true) dirLinea='<br>✅ Es director vigente de la junta';
-      else if(rep.es_director_vigente===false) dirLinea='<br>❌ NO aparece en la junta directiva vigente — verificar facultad de firma';
+      else if(rep.es_director_vigente===false) dirLinea=rep.director_bloqueante===false
+        ?'<br>⚠️ No aparece en junta, pero no bloquea (otro representante sí tiene facultad)'
+        :'<br>❌ NO aparece en la junta directiva vigente — verificar facultad de firma';
       h+='<div class="ia-card"><div class="ia-card-header">👤 Rep '+rep.numero+(rep.nombre_cedula?' — '+esc(rep.nombre_cedula):'')+' <span class="ia-badge '+esc(st)+'">'+esc(st)+'</span></div>';
       h+='<div class="ia-card-detail">'+cedOk+' Cédula '+(rep.numero_cedula?esc(rep.numero_cedula):'-')+(rep.cedula_vencimiento?' · Vence '+esc(rep.cedula_vencimiento):'')+'<br>'+rifOk+' RIF '+(rep.rif_numero?esc(rep.rif_numero):'-')+(rep.rif_vencimiento?' · Vence '+esc(rep.rif_vencimiento):'')+'<br>'+(rep.nombre_coincide===false?'⚠️ Nombres no coinciden':'✅ Nombres coinciden')+dirLinea+(rep.notas?'<br><span style="color:var(--text3)">'+esc(rep.notas)+'</span>':'')+'</div></div>';
     });
