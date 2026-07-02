@@ -5827,7 +5827,7 @@ function iaConstruirHTML(r){
   }
   var puedeReanalizarBtn=(S.cur&&(S.cur['ESTATUS_LEGAL']||'').trim().toUpperCase()==='DOCUMENTOS EN REVISION');
   h+=puedeReanalizarBtn
-    ? '<button class="ia-btn-reanalizar" onclick="S.iaResultado=null;renderTabVerificacion(S.cur)">🔄 Volver a analizar</button>'
+    ? '<button class="ia-btn-reanalizar" onclick="iaIniciar()">🔄 Volver a analizar</button>'
     : '<div style="font-size:11px;color:var(--text3);text-align:center;padding:8px 0">Solo se puede analizar en estatus <strong>DOCUMENTOS EN REVISION</strong></div>';
   h+='</div></div>';
   return h;
