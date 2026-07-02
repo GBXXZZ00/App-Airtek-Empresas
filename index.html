@@ -5677,11 +5677,12 @@ function iaAgregarHistorialColapsable(registros,vTxt){
     h+='</div>';
   });
   h+='</div>';
-  // Agregar antes del último elemento (botón Volver a analizar)
-  var reanalizar=wrap.querySelector('.ia-btn-reanalizar');
-  if(reanalizar){
+  // Agregar antes del bloque de acciones (.ia-actions SÍ es hijo directo de .ia-wrap;
+  // .ia-btn-reanalizar está anidado dentro de .ia-actions, por eso insertBefore fallaba)
+  var actionsBlock=wrap.querySelector('.ia-actions');
+  if(actionsBlock){
     var div=document.createElement('div');div.innerHTML=h;
-    wrap.insertBefore(div.firstElementChild,reanalizar);
+    wrap.insertBefore(div.firstElementChild,actionsBlock);
   } else {
     wrap.insertAdjacentHTML('beforeend',h);
   }
