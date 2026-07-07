@@ -224,16 +224,17 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .seg-dest-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:6px 12px;font-family:Inter,sans-serif;font-size:11px;cursor:pointer;border-radius:4px;transition:all .15s;white-space:nowrap}
 .seg-dest-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .seg-dest-btn:hover{border-color:var(--blue);color:var(--text)}
-.segmod-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px}
-.segmod-tab{background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:10px 16px;font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px;transition:transform 120ms ease-out,border-color 120ms ease-out,background 120ms ease-out;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.segmod-tab:active{transform:scale(.97)}
-.segmod-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.segmod-tab .segmod-badge{background:rgba(0,0,0,.25);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
-.segmod-tab:not(.active) .segmod-badge{background:var(--red);color:#fff}
+.tab-badge{background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px}
 .gestion-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:9px;letter-spacing:.02em;white-space:nowrap}
 .gestion-badge.g-sin{background:rgba(239,68,68,.15);color:var(--red)}
 .gestion-badge.g-sinavance{background:rgba(245,158,11,.15);color:var(--amber)}
 .gestion-badge.g-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.seg-check{margin:2px 0}
+.seg-doc-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);padding:3px 0}
+.seg-doc-row .ok{color:var(--green)}
+.seg-doc-row .no{color:var(--red)}
+.seg-summary{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:14px}
+.seg-section-hd{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 
 .chip:hover{border-color:var(--border2);color:var(--text)}
 .chip.on{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
@@ -1016,10 +1017,13 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
 
       <!-- SUB-MÓDULOS (pestañas por etapa del pipeline) -->
-      <div id="segModTabs" class="segmod-tabs"></div>
+      <div class="tabs" id="segModTabs" style="margin-bottom:14px"></div>
 
       <!-- RADAR DE GESTIÓN (contextual al sub-módulo activo) -->
-      <div id="segRadar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+      <div id="segRadar" class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px"></div>
+
+      <!-- Chips de estatus específico dentro del sub-módulo -->
+      <div id="segEstatusChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
 
       <!-- FILTROS -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:12px">
@@ -1044,18 +1048,19 @@ tbody tr:hover td{background:var(--surface2)}
               <option>DEDICADO ISP + PYME</option>
             </select>
           </div>
-          <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="segDesde" onchange="applySegFilters()"></div>
-          <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="applySegFilters()"></div>
+          <div class="fp-group"><label>Desde</label><input type="date" class="fp-sel" id="segDesde" onchange="segManualDateChange()"></div>
+          <div class="fp-group"><label>Hasta</label><input type="date" class="fp-sel" id="segHasta" onchange="segManualDateChange()"></div>
           <div class="fp-group">
             <label>Atajos</label>
-            <div style="display:flex;gap:4px">
-              <button class="btn btn-g btn-sm" onclick="segQuickRange('mesActual')" style="font-size:10px;padding:4px 8px">Este mes</button>
-              <button class="btn btn-g btn-sm" onclick="segQuickRange('mesAnterior')" style="font-size:10px;padding:4px 8px">Mes anterior</button>
+            <div style="display:flex;gap:6px">
+              <button class="qf-btn" id="segQuickMes" onclick="segQuickRange('mesActual')">Este mes</button>
+              <button class="qf-btn" id="segQuickMesAnt" onclick="segQuickRange('mesAnterior')">Mes anterior</button>
             </div>
           </div>
           <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-self:flex-end">
             <button class="btn btn-p btn-sm" onclick="segSendAll()">✉ Gestionar seleccionados</button>
             <button class="btn btn-g btn-sm" onclick="segSelectSinGestion()" style="border-color:var(--red);color:var(--red)">☑ Sin gestión</button>
+            <button class="btn btn-g btn-sm" onclick="segEnviarCorreoIndividualSinGestion()">✉ Correo a sin gestión</button>
             <button class="btn btn-g btn-sm" onclick="segSelectAll()">☑ Todos</button>
             <button class="btn btn-g btn-sm" onclick="exportSegCSV()">⬇ CSV</button>
             <button class="btn btn-g btn-sm" onclick="clearSegFilters()">✕ Limpiar</button>
@@ -1095,7 +1100,10 @@ tbody tr:hover td{background:var(--surface2)}
             <div class="rpt-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                 <div class="rpt-title" style="margin-bottom:0">📱 Mensaje para el grupo</div>
-                <button class="btn btn-g btn-sm" onclick="copyResumenGrupal()">📋 Copiar</button>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-g btn-sm" onclick="copyResumenGrupal()">📋 Copiar</button>
+                  <button class="btn btn-g btn-sm" onclick="abrirWAResumenGrupal()" style="color:#25d366;border-color:#25d366">📱 Abrir WhatsApp</button>
+                </div>
               </div>
               <textarea id="resumenGrupalBox" readonly style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:5px;resize:vertical;min-height:260px;outline:none"></textarea>
             </div>
@@ -1997,6 +2005,11 @@ function smartPgs(c,t){if(t<=7)return Array.from({length:t},(_,i)=>i+1);if(c<=4)
 // ═══════════════════════════════════════════════════════════════════
 function openExp(idx){
   const r=S.filtered[idx];if(!r)return;
+  openExpRecord(r);
+}
+
+function openExpRecord(r){
+  if(!r)return;
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
   var docsBadge=document.getElementById('drawerDocsBadge');
@@ -3713,6 +3726,8 @@ var segLog=[];var histLog=[];var segSelected={};
 var SEG_GESTION_DATA={}; // rif -> {estatusChangeTs, ultimaGestionTs, etapa, canal}
 var SEG_AVANCE_DIAS=3;   // días sin avance tras el último contacto para alertar
 var SEG_RADAR_ACTIVE='';
+var SEG_ESTATUS_SUB='';
+var SEG_QUICK_ACTIVE='';
 var SEG_PAGE=1;
 const SEG_PS=25;
 
@@ -3740,6 +3755,7 @@ function getGestionStatus(rif){
 function getSegData(){
   var mod=getSegModule();
   var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&mod.estatus.indexOf(r['ESTATUS_LEGAL'])>=0;});
+  if(SEG_ESTATUS_SUB)base=base.filter(function(r){return r['ESTATUS_LEGAL']===SEG_ESTATUS_SUB;});
   var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
   var lid=(document.getElementById('segLider')||{}).value||'';
   var tipo=(document.getElementById('segTipoFil')||{}).value||'';
@@ -3769,16 +3785,16 @@ function getSegRadarSubset(base){
   };
 }
 
-// ── Pestañas de sub-módulo ─────────────────────────────────────────────────
+// ── Pestañas de sub-módulo (reutiliza .tabs/.tab del sistema de diseño) ────
 function renderSegModTabs(){
   var el=document.getElementById('segModTabs');if(!el)return;
   el.innerHTML=SEG_MODULES.map(function(m){
     var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&m.estatus.indexOf(r['ESTATUS_LEGAL'])>=0;});
     var sinGestion=base.filter(function(r){return getGestionStatus(r['RIF']).estado==='sin';}).length;
     var isActive=SEG_MOD_ACTIVE===m.key;
-    return '<button class="segmod-tab'+(isActive?' active':'')+'" data-modkey="'+m.key+'">'
+    return '<button class="tab'+(isActive?' active':'')+'" data-modkey="'+m.key+'">'
       +m.icon+' '+m.label
-      +(sinGestion?'<span class="segmod-badge">'+sinGestion+'</span>':'')
+      +(sinGestion?'<span class="tab-badge">'+sinGestion+'</span>':'')
     +'</button>';
   }).join('');
   el.querySelectorAll('[data-modkey]').forEach(function(btn){
@@ -3786,21 +3802,41 @@ function renderSegModTabs(){
   });
 }
 
+// ── Chips de estatus específico dentro del sub-módulo activo ───────────────
+function renderSegEstatusChips(){
+  var el=document.getElementById('segEstatusChips');if(!el)return;
+  var mod=getSegModule();
+  var opts=[''].concat(mod.estatus); // '' = Todos
+  el.innerHTML=opts.map(function(est){
+    var lbl=est||'Todos ('+mod.label+')';
+    var isActive=SEG_ESTATUS_SUB===est;
+    return '<button class="qf-btn'+(isActive?' active':'')+'" data-estsub="'+est+'">'+lbl+'</button>';
+  }).join('');
+  el.querySelectorAll('[data-estsub]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      SEG_ESTATUS_SUB=btn.getAttribute('data-estsub');
+      SEG_PAGE=1;SEG_RADAR_ACTIVE='';
+      renderSegEstatusChips();renderSegRadar();renderSegTab();
+    });
+  });
+}
+
 function segSwitchModule(key){
   if(SEG_MOD_ACTIVE===key)return;
   SEG_MOD_ACTIVE=key;
-  SEG_RADAR_ACTIVE='';SEG_PAGE=1;segSelected={};
+  SEG_RADAR_ACTIVE='';SEG_PAGE=1;segSelected={};SEG_ESTATUS_SUB='';
   var mod=getSegModule();
   var sub=document.getElementById('segSub');
   if(sub)sub.textContent=mod.label+' · '+mod.estatus.join(' + ');
   var rr=document.getElementById('resumenGrupalResult');if(rr)rr.style.display='none';
-  renderSegModTabs();renderSegRadar();renderSegTab();
+  renderSegModTabs();renderSegEstatusChips();renderSegRadar();renderSegTab();
 }
 
-// ── Radar (tarjetas contextuales al sub-módulo activo) ─────────────────────
+// ── Radar (tarjetas contextuales al sub-módulo activo, mismo estilo que el Dashboard) ──
 function renderSegRadar(){
   var mod=getSegModule();
   var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&mod.estatus.indexOf(r['ESTATUS_LEGAL'])>=0;});
+  if(SEG_ESTATUS_SUB)base=base.filter(function(r){return r['ESTATUS_LEGAL']===SEG_ESTATUS_SUB;});
   var periodo=(document.getElementById('segPeriodo')||{}).value||'6m';
   var lid=(document.getElementById('segLider')||{}).value||'';
   var tipo=(document.getElementById('segTipoFil')||{}).value||'';
@@ -3822,11 +3858,10 @@ function renderSegRadar(){
   if(!el)return;
   el.innerHTML=cards.map(function(c){
     var isActive=!!c.key&&SEG_RADAR_ACTIVE===c.key;
-    var border=isActive?'border-color:'+c.color+';box-shadow:0 0 0 2px '+c.color+'44':'';
-    return '<div data-radarkey="'+c.key+'" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 10px;cursor:'+(c.key?'pointer':'default')+';transition:border-color 120ms ease-out,box-shadow 120ms ease-out;text-align:center;'+border+'">'
-      +'<div style="font-size:18px;margin-bottom:4px">'+c.icon+'</div>'
-      +'<div style="font-size:22px;font-weight:700;color:'+c.color+';line-height:1;margin-bottom:4px">'+c.n+'</div>'
-      +'<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1.3">'+c.label+'</div>'
+    var ring=isActive?';box-shadow:0 0 0 2px '+c.color+'55':'';
+    return '<div class="kpi" data-radarkey="'+c.key+'" style="border-top-color:'+c.color+';cursor:'+(c.key?'pointer':'default')+ring+'">'
+      +'<div class="kpi-val" style="color:'+c.color+'">'+c.icon+' '+c.n+'</div>'
+      +'<div class="kpi-lbl">'+c.label+'</div>'
     +'</div>';
   }).join('');
   el.querySelectorAll('[data-radarkey]').forEach(function(card){
@@ -3845,6 +3880,12 @@ function segRadarFilter(key){
 
 // ── Tabla principal ───────────────────────────────────────────────────────
 function applySegFilters(){SEG_PAGE=1;SEG_RADAR_ACTIVE='';renderSegRadar();renderSegTab();}
+function segManualDateChange(){SEG_QUICK_ACTIVE='';segSyncQuickBtns();applySegFilters();}
+function segSyncQuickBtns(){
+  var m=document.getElementById('segQuickMes');var ma=document.getElementById('segQuickMesAnt');
+  if(m)m.classList.toggle('active',SEG_QUICK_ACTIVE==='mesActual');
+  if(ma)ma.classList.toggle('active',SEG_QUICK_ACTIVE==='mesAnterior');
+}
 
 function renderSegTab(){
   var data=getSegData();
@@ -3870,16 +3911,16 @@ function renderSegTab(){
     var gs=getGestionStatus(rif);
     var gHtml='<span class="gestion-badge '+gs.cls+'">'+esc(gs.label)+'</span>';
     var sinCarp=!cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
-    var carpBtn=sinCarp&&S.rol==='ADMIN'?'<button onclick="segCrearCarpeta(\"'+rif+'\")" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:14px;padding:0 4px" title="Crear carpeta Drive">📁</button>':'';
+    var carpBtn=sinCarp&&S.rol==='ADMIN'?'<button onclick="event.stopPropagation();segCrearCarpeta(\"'+rif+'\")" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:14px;padding:0 4px" title="Crear carpeta Drive">📁</button>':'';
     var globalIdx=(SEG_PAGE-1)*SEG_PS+i;
-    html+='<tr>'
-      +'<td><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td>'
-      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer" onclick="openSegGest(['+globalIdx+'])" title="Gestionar"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
+    html+='<tr onclick="openSegGest(['+globalIdx+'])" style="cursor:pointer">'
+      +'<td onclick="event.stopPropagation()"><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td>'
+      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Gestionar"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
       +'<td style="font-size:12px;color:var(--text2)">'+esc((r['EJECUTIVO']||'').split(' ')[0])+'</td>'
       +'<td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td>'
       +'<td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td>'
       +'<td>'+gHtml+'</td>'
-      +'<td style="display:flex;gap:4px;align-items:center">'
+      +'<td style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">'
         +'<button class="btn btn-p btn-sm" onclick="openSegGest(['+globalIdx+'])" style="font-size:10px;padding:3px 8px">Gestionar</button>'
         +'<button class="btn btn-g btn-sm" onclick="segWADirecto('+globalIdx+')" style="font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366">WA</button>'
         +carpBtn
@@ -3965,6 +4006,53 @@ function openSegGest(indices){
   bg.classList.add('open');
   // Generate initial message
   segGestGenerateMsg();
+  // Cargar historial solo cuando es un único cliente
+  if(!isMasivo)cargarSegHistorialDrawer(clients[0]);
+}
+
+// ── Tipos de mensaje relevantes según el estatus actual del cliente ────────
+var SEG_TIPOS_TODOS=[
+  {lbl:'🆕 Cliente nuevo',         key:'lider_nuevo'},
+  {lbl:'🔔 Recordatorio líder',     key:'lider_recordatorio'},
+  {lbl:'🔴 Urgente',               key:'lider_urgente'},
+  {lbl:'✍️ Pend. firma (líder)',   key:'lider_firma'},
+  {lbl:'🏢 Solicitar docs cliente',key:'cliente_docs'},
+  {lbl:'🔔 Recordatorio cliente',  key:'cliente_recordatorio'},
+  {lbl:'✍️ Firma (cliente)',       key:'cliente_firma'},
+  {lbl:'⚖ Avisar a Reina',        key:'abogada_listo'},
+  {lbl:'✏ Libre',                  key:'libre'}
+];
+var SEG_TIPOS_POR_ESTATUS={
+  'GRANDES NEGOCIOS':          ['lider_nuevo','lider_recordatorio','cliente_docs'],
+  'DOCUMENTOS SOLICITADOS':    ['lider_recordatorio','lider_urgente','cliente_docs','cliente_recordatorio'],
+  'PENDIENTE POR DOCUMENTOS':  ['lider_recordatorio','lider_urgente','cliente_docs','cliente_recordatorio'],
+  'DOCUMENTOS EN REVISION':    ['lider_recordatorio','abogada_listo'],
+  'DOCUMENTOS RECIBIDOS':      ['abogada_listo','lider_recordatorio'],
+  'CONTRATO EN CURSO':         ['abogada_listo','lider_recordatorio'],
+  'PENDIENTE POR FIRMAR':      ['lider_firma','cliente_firma','lider_urgente'],
+  'CONTRATO FIRMADO':          []
+};
+function getTiposParaClientes(clients){
+  var keys=[];
+  clients.forEach(function(r){
+    (SEG_TIPOS_POR_ESTATUS[r['ESTATUS_LEGAL']]||[]).forEach(function(k){if(keys.indexOf(k)<0)keys.push(k);});
+  });
+  keys.push('libre'); // siempre disponible
+  return SEG_TIPOS_TODOS.filter(function(t){return keys.indexOf(t.key)>=0;});
+}
+
+// ── Checklist rápido de documentos (contexto para Gestión Documental) ──────
+function buildSegDocChecklist(r){
+  var items=[
+    {lbl:'RIF Vigente',        col:'RIF_VIGENTE'},
+    {lbl:'Acta Constitutiva',  col:'ACTA CONSTITUTIVA'},
+    {lbl:'Docs. Representante',col:'DOCUMENTOS_REPRESENTANTES'},
+    {lbl:'Contrato',           col:'CONTRATO'}
+  ];
+  return items.map(function(it){
+    var ok=cleanDocUrl(r[it.col]||'').startsWith('http');
+    return '<div class="seg-doc-row"><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span> '+esc(it.lbl)+'</div>';
+  }).join('');
 }
 
 function buildSegGestBody(clients){
@@ -3980,63 +4068,129 @@ function buildSegGestBody(clients){
   numLider=getLiderWANum(lid)||'';
   var correoCliente=(!isMasivo?(clients[0]['CORREO_REPRESENTANTES']||''):'');
   var numCliente=(!isMasivo?formatWANumber(clients[0]['NUMERO_REPRESENTANTES']||''):'');
-  // Store for use in sendSegGest
   window._segGestCfg={lid:lid,correoLider:correoLider,correoAbogado:correoAbogado,correoAdmin:correoAdmin,numLider:numLider,correoCliente:correoCliente,numCliente:numCliente,isMasivo:isMasivo};
   var html='';
-  // Lista de clientes
-  html+='<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Clientes</div>';
-  clients.forEach(function(r){
+
+  // ── Resumen del cliente (contexto) — solo en modo individual ──────────
+  if(!isMasivo){
+    var r=clients[0];
     var dy=calcDays(r['Fecha de Instalacion Cliente']);
-    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:4px">'
-      +'<span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'" style="font-size:9px">'+esc(r['ESTATUS_LEGAL'])+'</span>'
-      +'<span style="font-size:12px;font-weight:600;flex:1">'+esc(r['RAZON SOCIAL'])+'</span>'
-      +(dy!==null?'<span style="font-size:10px;color:var(--text3)">'+dy+'d</span>':'')
-    +'</div>';
-  });
-  html+='</div>';
-  // Para (destinatario)
-  html+='<div style="margin-bottom:14px"><div class="sec-lbl" style="margin-bottom:6px">Enviar a</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgDestOpts">';
+    var gs=getGestionStatus(r['RIF']);
+    html+='<div class="seg-summary">';
+    html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
+      +'<span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'">'+esc(r['ESTATUS_LEGAL'])+'</span>'
+      +(dy!==null?'<span class="days">'+dy+'d instalado</span>':'')
+      +'<span class="gestion-badge '+gs.cls+'">'+esc(gs.label)+'</span>'
+      +'</div>';
+    html+='<div style="font-size:12px;color:var(--text2);margin-bottom:6px">RIF '+esc(r['RIF']||'—')+' · Ejecutivo: '+esc(r['EJECUTIVO']||'—')+'</div>';
+    if(r['Observacion']&&r['Observacion'].trim())html+='<div style="font-size:12px;color:var(--text);background:var(--surface2);border-radius:4px;padding:6px 8px;margin-bottom:8px">📝 '+esc(r['Observacion'])+'</div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-bottom:8px">'+buildSegDocChecklist(r)+'</div>';
+    html+='<button class="btn btn-g btn-sm" onclick="segVerExpediente(\''+r['RIF']+'\')">📂 Ver expediente completo →</button>';
+    html+='</div>';
+  } else {
+    html+='<div style="margin-bottom:14px"><div class="seg-section-hd">Clientes ('+clients.length+')</div>';
+    clients.forEach(function(r){
+      var dy2=calcDays(r['Fecha de Instalacion Cliente']);
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:4px">'
+        +'<span class="badge '+(SI[r['ESTATUS_LEGAL']]||{c:'b-gn'}).c+'" style="font-size:9px">'+esc(r['ESTATUS_LEGAL'])+'</span>'
+        +'<span style="font-size:12px;font-weight:600;flex:1">'+esc(r['RAZON SOCIAL'])+'</span>'
+        +(dy2!==null?'<span style="font-size:10px;color:var(--text3)">'+dy2+'d</span>':'')
+      +'</div>';
+    });
+    html+='</div>';
+  }
+
+  // ── Historial — sub-módulo del drawer (solo individual) ────────────────
+  if(!isMasivo){
+    html+='<div style="margin-bottom:14px"><div class="seg-section-hd">📜 Historial de contactos</div><div id="sgHistorialBox" style="max-height:180px;overflow-y:auto">Cargando…</div></div>';
+  }
+
+  // ── Enviar a — WhatsApp primero (uso principal), correo secundario ─────
+  html+='<div style="margin-bottom:14px"><div class="seg-section-hd">Enviar a</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgDestOpts">';
   var dests=[];
-  if(correoLider)dests.push({lbl:'✉ Líder: '+lid.split(' ')[0],val:correoLider,tipo:'correo'});
-  if(numLider)dests.push({lbl:'📱 WA Líder',val:numLider,tipo:'wa'});
+  if(numLider)dests.push({lbl:'📱 WA Líder: '+lid.split(' ')[0],val:numLider,tipo:'wa'});
+  if(numCliente&&!isMasivo)dests.push({lbl:'📱 WA Cliente',val:numCliente,tipo:'wa'});
+  if(correoLider)dests.push({lbl:'✉ Líder',val:correoLider,tipo:'correo'});
   if(correoAbogado)dests.push({lbl:'✉ Reina (Legal)',val:correoAbogado,tipo:'correo'});
   if(correoCliente&&!isMasivo)dests.push({lbl:'✉ Cliente',val:correoCliente,tipo:'correo'});
-  if(numCliente&&!isMasivo)dests.push({lbl:'📱 WA Cliente',val:numCliente,tipo:'wa'});
   dests.push({lbl:'✉ Admin (yo)',val:correoAdmin,tipo:'correo'});
   window._sgDests=dests;
   html+=dests.map(function(d,i){
     return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-val="'+d.val+'" data-tipo="'+d.tipo+'" onclick="sgSelDest(this)">'+d.lbl+'</button>';
   }).join('');
   html+='</div></div>';
-  // Tipo de mensaje — usa los mismos tipos de getMsgWA
-  html+='<div style="margin-bottom:14px"><div class="sec-lbl" style="margin-bottom:6px">Tipo de mensaje</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgTipoOpts">';
-  var tipos=[
-    {lbl:'🆕 Cliente nuevo',         key:'lider_nuevo'},
-    {lbl:'🔔 Recordatorio',           key:'lider_recordatorio'},
-    {lbl:'🔴 Urgente',               key:'lider_urgente'},
-    {lbl:'✍️ Pend. firma (líder)',   key:'lider_firma'},
-    {lbl:'🏢 Solicitar docs cliente',key:'cliente_docs'},
-    {lbl:'🔔 Recordatorio cliente',  key:'cliente_recordatorio'},
-    {lbl:'✍️ Firma (cliente)',       key:'cliente_firma'},
-    {lbl:'⚖ Avisar a Reina',        key:'abogada_listo'},
-    {lbl:'✏ Libre',                  key:'libre'},
-  ];
-  html+=tipos.map(function(t,i){
+
+  // ── Tipo de mensaje — filtrado por el estatus real del/los cliente(s) ──
+  html+='<div style="margin-bottom:14px"><div class="seg-section-hd">Tipo de mensaje</div><div style="display:flex;flex-wrap:wrap;gap:6px" id="sgTipoOpts">';
+  var tiposAplican=getTiposParaClientes(clients);
+  html+=tiposAplican.map(function(t,i){
     return '<button class="seg-dest-btn'+(i===0?' active':'')+'" data-key="'+t.key+'" onclick="sgSelTipo(this)">'+t.lbl+'</button>';
   }).join('');
   html+='</div></div>';
-  // Asunto y cuerpo
-  html+='<div style="margin-bottom:8px"><div class="sec-lbl" style="margin-bottom:4px">Asunto</div>'
-    +'<input id="sgMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none"></div>';
+
+  // ── Mensaje (siempre visible, WA y correo comparten el mismo texto) ────
   html+='<div style="margin-bottom:12px"><div class="sec-lbl" style="margin-bottom:4px">Mensaje</div>'
-    +'<textarea id="sgMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:4px;resize:vertical;min-height:200px;outline:none"></textarea></div>';
-  // Botones de acción
-  html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<textarea id="sgMsgBody" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;font-family:Inter,sans-serif;font-size:12px;line-height:1.7;border-radius:4px;resize:vertical;min-height:180px;outline:none"></textarea></div>';
+
+  // ── Botones de acción — WA primero ──────────────────────────────────────
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<button class="btn btn-p btn-sm" onclick="sgOpenWA()" style="background:#25d366;border-color:#25d366">📱 Abrir WhatsApp</button>'
     +'<button class="btn btn-g btn-sm" onclick="copySegGestMsg()">📋 Copiar</button>'
-    +'<button class="btn btn-g btn-sm" onclick="sgOpenWA()" style="color:#25d366;border-color:#25d366">📱 Abrir WA</button>'
-    +'<button class="btn btn-p btn-sm" onclick="sendSegGest()">✉ Enviar correo</button>'
     +'</div>';
+
+  // ── Opción de correo — colapsada, no estorba si solo usas WA ───────────
+  html+='<div style="border-top:1px solid var(--border);padding-top:10px">'
+    +'<div style="cursor:pointer;font-size:11px;color:var(--text2);margin-bottom:8px" onclick="sgToggleCorreoBox()">✉ Enviar por correo en su lugar <span id="sgCorreoChevron">▾</span></div>'
+    +'<div id="sgCorreoBox" style="display:none">'
+      +'<div style="margin-bottom:8px"><div class="sec-lbl" style="margin-bottom:4px">Asunto</div>'
+      +'<input id="sgMsgSubj" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-family:Inter,sans-serif;font-size:12px;border-radius:4px;outline:none"></div>'
+      +'<button class="btn btn-p btn-sm" onclick="sendSegGest()">✉ Enviar correo</button>'
+    +'</div>'
+  +'</div>';
   return html;
+}
+
+function sgToggleCorreoBox(){
+  var box=document.getElementById('sgCorreoBox');var ch=document.getElementById('sgCorreoChevron');
+  if(!box)return;
+  var open=box.style.display!=='none';
+  box.style.display=open?'none':'block';
+  if(ch)ch.textContent=open?'▾':'▴';
+}
+
+// ── Ver expediente completo desde el Centro de Control ─────────────────────
+function segVerExpediente(rif){
+  var r=S.all.find(function(x){return (x['RIF']||'').toString().trim()===rif.toString().trim();});
+  if(!r){toast('Cliente no encontrado','err');return;}
+  closeSegGest();
+  openExpRecord(r);
+}
+
+// ── Historial embebido en el drawer de gestión ──────────────────────────────
+function cargarSegHistorialDrawer(r){
+  var box=document.getElementById('sgHistorialBox');
+  if(!box)return;
+  var rif=(r['RIF']||'').toString().trim();
+  if(!APPS_SCRIPT_URL){box.innerHTML='<div style="color:var(--text3);font-size:12px">Sin conexión al backend</div>';return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
+  .then(function(res){return res.json();})
+  .then(function(data){
+    var logs=data.ok&&data.registros?data.registros:[];
+    var boxNow=document.getElementById('sgHistorialBox');if(!boxNow)return;
+    if(!logs.length){boxNow.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Sin contactos registrados</div>';return;}
+    boxNow.innerHTML=logs.slice(0,15).map(function(entry){
+      var ic=tlIcon(entry.tipo||entry.fuente||'');
+      return '<div class="tl-entry">'
+        +'<div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'
+        +'<div class="tl-body">'
+          +'<div class="tl-header"><span class="tl-tipo">'+esc(entry.tipo||'Gestión')+'</span><span class="tl-ts">'+esc(entry.fecha||'')+'</span></div>'
+          +(entry.nota?'<div class="tl-nota">'+esc(entry.nota)+'</div>':'')
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }).catch(function(){
+    var boxNow=document.getElementById('sgHistorialBox');if(boxNow)boxNow.innerHTML='<div style="color:var(--text3);font-size:12px">Error al cargar historial</div>';
+  });
 }
 
 function sgSelDest(btn){document.querySelectorAll('#sgDestOpts .seg-dest-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');segGestGenerateMsg();}
@@ -4169,7 +4323,7 @@ function cargarGestionMasiva(cb){
 // ── Refresh y filtros ─────────────────────────────────────────────────────
 function refreshSeg(){
   cargarGestionMasiva(function(){
-    renderSegModTabs();renderSegRadar();renderSegTab();
+    renderSegModTabs();renderSegEstatusChips();renderSegRadar();renderSegTab();
     var rp=document.getElementById('rankingPanel');
     if(rp&&rp.style.display!=='none')renderRanking();
     var pend=getBase().filter(function(r){return(r['NOTIF_LIDER_ENVIADA']||'').trim()==='PENDIENTE';}).length;
@@ -4181,12 +4335,22 @@ function refreshSeg(){
 function clearSegFilters(){
   ['segLider','segTipoFil','segDesde','segHasta'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var per=document.getElementById('segPeriodo');if(per)per.value='6m';
-  SEG_RADAR_ACTIVE='';SEG_PAGE=1;
-  renderSegModTabs();renderSegRadar();renderSegTab();
+  SEG_RADAR_ACTIVE='';SEG_PAGE=1;SEG_ESTATUS_SUB='';SEG_QUICK_ACTIVE='';
+  segSyncQuickBtns();
+  renderSegModTabs();renderSegEstatusChips();renderSegRadar();renderSegTab();
 }
 
-// ── Atajos de período (meses completos) ────────────────────────────────────
+// ── Atajos de período (meses completos) — togglables ───────────────────────
 function segQuickRange(kind){
+  var de=document.getElementById('segDesde');var ha=document.getElementById('segHasta');
+  if(SEG_QUICK_ACTIVE===kind){
+    // Ya estaba activo: al volver a pulsarlo, se quita el filtro de fecha
+    SEG_QUICK_ACTIVE='';
+    if(de)de.value='';
+    if(ha)ha.value='';
+    var per0=document.getElementById('segPeriodo');if(per0)per0.value='6m';
+    segSyncQuickBtns();applySegFilters();return;
+  }
   var now=new Date();
   var desde,hasta;
   if(kind==='mesActual'){
@@ -4197,10 +4361,11 @@ function segQuickRange(kind){
     hasta=new Date(now.getFullYear(),now.getMonth(),0);
   } else return;
   var toInput=function(d){var m=(d.getMonth()+1).toString().padStart(2,'0');var day=d.getDate().toString().padStart(2,'0');return d.getFullYear()+'-'+m+'-'+day;};
-  var de=document.getElementById('segDesde');var ha=document.getElementById('segHasta');
   if(de)de.value=toInput(desde);
   if(ha)ha.value=toInput(hasta);
   var per=document.getElementById('segPeriodo');if(per)per.value='all';
+  SEG_QUICK_ACTIVE=kind;
+  segSyncQuickBtns();
   applySegFilters();
 }
 
@@ -4248,6 +4413,43 @@ function copyResumenGrupal(){
   var box=document.getElementById('resumenGrupalBox');
   if(!box)return;
   navigator.clipboard.writeText(box.value).then(function(){toast('Resumen copiado ✓','ok');}).catch(function(){toast('Error al copiar','err');});
+}
+
+// Abre WhatsApp sin número — deja que el usuario elija a quién o a qué grupo enviarlo
+function abrirWAResumenGrupal(){
+  var box=document.getElementById('resumenGrupalBox');
+  if(!box||!box.value){toast('Genera el resumen primero','err');return;}
+  window.open('https://wa.me/?text='+encodeURIComponent(box.value),'_blank');
+}
+
+// ── Envío individual por correo a todos los "sin gestión" del sub-módulo activo ──
+function segEnviarCorreoIndividualSinGestion(){
+  var data=getSegData().filter(function(r){return getGestionStatus(r['RIF']).estado==='sin';});
+  var conCorreo=data.filter(function(r){return (r['CORREO_REPRESENTANTES']||'').trim();});
+  if(!conCorreo.length){toast('No hay clientes sin gestión con correo registrado','err');return;}
+  if(!confirm('Se enviará un correo individual a '+conCorreo.length+' cliente(s) sin gestión. ¿Continuar?'))return;
+  var etapa=getSegModule().etapa;
+  var enviados=0,fallidos=0;
+  toast('Enviando 1/'+conCorreo.length+'...','');
+  function enviarSiguiente(i){
+    if(i>=conCorreo.length){
+      toast('Completado: '+enviados+' enviados'+(fallidos?', '+fallidos+' con error':''),fallidos?'err':'ok');
+      cargarGestionMasiva(function(){renderSegModTabs();renderSegRadar();renderSegTab();});
+      return;
+    }
+    var r=conCorreo[i];
+    var asunto='[Airtek] Documentación pendiente — '+r['RAZON SOCIAL'];
+    var cuerpo=getMsgWA('cliente_docs',r);
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'enviarSeguimiento',para:r['CORREO_REPRESENTANTES'],cc:'',asunto:asunto,cuerpo:cuerpo,
+      rif:r['RIF']||'',cliente:r['RAZON SOCIAL']||'',ejecutivo:r['EJECUTIVO']||'',etapa:etapa
+    })}).then(function(res){return res.json();}).then(function(rs){
+      if(rs.ok)enviados++;else fallidos++;
+      toast('Enviando '+(i+2)+'/'+conCorreo.length+'...','');
+      enviarSiguiente(i+1);
+    }).catch(function(){fallidos++;enviarSiguiente(i+1);});
+  }
+  enviarSiguiente(0);
 }
 
 function exportSegCSV(){
