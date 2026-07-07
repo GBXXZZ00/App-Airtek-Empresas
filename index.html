@@ -814,6 +814,11 @@ tbody tr:hover td{background:var(--surface2)}
           <button class="qf-btn" data-tipo="CORPORATIVO" onclick="qfToggleTipo(this)">Corporativo</button>
           <button class="qf-btn" data-tipo="ISP" onclick="qfToggleTipo(this)">ISP</button>
         </div>
+        <!-- Row: documentos cargados (independiente del estatus) -->
+        <div class="fs-row" id="fsDocsRow">
+          <span class="fs-lbl">Documentos</span>
+          <button class="qf-btn" id="qfConDocs" onclick="qfToggleConDocs()">📎 Con documentos cargados</button>
+        </div>
         <!-- Row 3: status chips -->
         <div class="fs-row" id="fsStatusRow">
           <span class="fs-lbl">Estatus</span>
@@ -1169,6 +1174,7 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="drawer">
     <div class="drawer-hd">
       <div class="drawer-title" id="drawerTitle">Expediente</div>
+      <span id="drawerDocsBadge" style="display:none;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;margin-left:8px;white-space:nowrap">📎 Con documentos</span>
       <button class="drawer-close" onclick="closeDrawer()">✕</button>
     </div>
     <div class="tabs">
@@ -1820,6 +1826,20 @@ function initChips(){
 
 // Tipo filter: PYMES | Corporativo | ISP (inclusive — matches combined types too)
 var S_qfTipo = null; // null = all, 'PYMES', 'CORPORATIVO', 'ISP'
+var S_qfConDocs = false; // filtro: solo clientes con al menos 1 documento cargado, sin importar estatus
+
+// ¿Este cliente tiene AL MENOS un documento cargado? (RIF, Acta, actas de asamblea, representantes)
+function tieneAlgunDocumento(r){
+  var cols=['RIF_VIGENTE','ACTA CONSTITUTIVA',
+            'ACTA_ASAMBLEA_JUNTA','ACTA_ASAMBLEA_JUNTA2','ACTA_ASAMBLEA_JUNTA3','ACTA_ASAMBLEA_JUNTA4',
+            'DOCUMENTOS_REPRESENTANTES','DOCUMENTOS_REPRESENTANTES2','DOCUMENTOS_REPRESENTANTES3','DOCUMENTOS_REPRESENTANTES4'];
+  return cols.some(function(c){ return cleanDocUrl(r[c]).startsWith('http'); });
+}
+function qfToggleConDocs(){
+  S_qfConDocs=!S_qfConDocs;
+  document.getElementById('qfConDocs').classList.toggle('active',S_qfConDocs);
+  applyFilters();
+}
 
 function qfToggleTipo(btn){
   var t=btn.dataset.tipo;
@@ -1878,6 +1898,7 @@ function applyFilters(){
       if(S_qfTipo==='ISP'&&!tc.includes('ISP'))return false;
     }
     if(ss.length&&!ss.includes(r['ESTATUS_LEGAL']))return false;
+    if(S_qfConDocs&&!tieneAlgunDocumento(r))return false;
     if(d||h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt)return false;if(d&&dt<new Date(d))return false;if(h&&dt>new Date(h))return false;}
     // Quick filter: last 6 months (only when no manual date range set)
     if(cutoff6m&&!d&&!h){const dt=parseDate(r['Fecha de Instalacion Cliente']);if(!dt||dt<cutoff6m)return false;}
@@ -1950,6 +1971,8 @@ function openExp(idx){
   const r=S.filtered[idx];if(!r)return;
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
+  var docsBadge=document.getElementById('drawerDocsBadge');
+  if(docsBadge)docsBadge.style.display=tieneAlgunDocumento(r)?'inline-block':'none';
   renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
   // Limpiar TODA selección visual al abrir un nuevo cliente
   document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
