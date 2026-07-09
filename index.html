@@ -1388,7 +1388,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsY8pVQ6A_RwXsr2EYYhDam9AczqCZ1LDXrIisP0olm3o-phlzWUwnyUL689OEJugWbw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqYoN6Q8F5soGEp4CmuIS3aTMsxlY4BdZTgkoUdt6rwCOcCtB83wAP-spMQSRhiYsYVQ/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -2210,11 +2210,20 @@ function renderTabDocs(r){
   repSections.forEach(function(s){s.docs.forEach(function(d){allRepDocs.push(d);});});
   var allDocs=allRepDocs.concat(empDocs);
   var loaded=allDocs.filter(function(d){return cleanDocUrl(r[d.col]||'').startsWith('http');}).length;
+  // REGIMEN_FIRMA decide si el contacto del Rep 2 es obligatorio — misma
+  // lógica que ya se usa para los documentos (checklistOk en el GAS).
+  // Rep 1 siempre se exige (es el contacto por defecto); Rep 2 solo si
+  // el régimen es CONJUNTA. En SEPARADA/INDIVIDUAL, un Rep 2 incompleto
+  // no es un faltante real — basta con que Rep 1 esté completo.
+  var regimenFirmaDoc=(r['REGIMEN_FIRMA']||'').toString().trim().toUpperCase();
+  var exigeRep2Contacto=regimenFirmaDoc==='CONJUNTA';
+
   var ckOk=cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES']||'').startsWith('http')&&
             cleanDocUrl(r['ACTA CONSTITUTIVA']||'').startsWith('http')&&
             cleanDocUrl(r['RIF_VIGENTE']||'').startsWith('http')&&
             (r['CORREO_REPRESENTANTES']||'').trim()&&
             (r['NUMERO_REPRESENTANTES']||'').trim()&&
+            (!exigeRep2Contacto||((r['CORREO_REPRESENTANTES2']||'').trim()&&(r['NUMERO_REPRESENTANTES2']||'').trim()))&&
             (!esISP||cleanDocUrl(r['HABILITACION_CONATEL']||'').startsWith('http'));
 
   var h='';
@@ -2247,8 +2256,10 @@ function renderTabDocs(r){
     h+='<div class="rep-contact-blk">';
     h+='<div class="rep-contact-lbl">Datos de contacto</div>';
     h+='<div class="rep-contact-row">';
-    h+='<div class="field" style="margin:0"><label>Correo</label><input type="email" id="fc'+sec.idx+'" value="'+esc(r[sec.ck]||'')+'" placeholder="correo@empresa.com" oninput="docContactChanged(this,\''+sec.ck+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
-    h+='<div class="field" style="margin:0"><label>Teléfono</label><input type="tel" id="fn'+sec.idx+'" value="'+esc(r[sec.nk]||'')+'" placeholder="+584121234567" oninput="docContactChanged(this,\''+sec.nk+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
+    var faltaCorreoRep=!(r[sec.ck]||'').toString().trim();
+    var faltaNumRep=!(r[sec.nk]||'').toString().trim();
+    h+='<div class="field" style="margin:0"><label>Correo'+(faltaCorreoRep?' <span style="color:var(--red);font-weight:700">· falta</span>':'')+'</label><input type="email" id="fc'+sec.idx+'" value="'+esc(r[sec.ck]||'')+'" placeholder="correo@empresa.com" style="'+(faltaCorreoRep?'border-color:var(--red)':'')+'" oninput="docContactChanged(this,\''+sec.ck+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
+    h+='<div class="field" style="margin:0"><label>Teléfono'+(faltaNumRep?' <span style="color:var(--red);font-weight:700">· falta</span>':'')+'</label><input type="tel" id="fn'+sec.idx+'" value="'+esc(r[sec.nk]||'')+'" placeholder="+584121234567" style="'+(faltaNumRep?'border-color:var(--red)':'')+'" oninput="docContactChanged(this,\''+sec.nk+'\')" '+(puedeEditarContacto?'':'readonly')+'></div>';
     h+='</div></div>';
 
     // Archivos del representante
@@ -2310,6 +2321,8 @@ function renderTabDocs(r){
   var faltItems=[
     {k:'CEDULA_REP',   lbl:'Cédula del Representante Legal'},
     {k:'RIF_REP',      lbl:'RIF personal del Representante Legal'},
+    {k:'CORREO_REP',   lbl:'Correo del Representante'},
+    {k:'NUMERO_REP',   lbl:'Número (WhatsApp) del Representante'},
     {k:'RIF_EMPRESA',  lbl:'RIF vigente de la empresa'},
     {k:'ACTA_CONST',   lbl:'Acta Constitutiva'},
     {k:'ACTA_ASAMBLEA',lbl:'Acta de Asamblea'},
@@ -2336,7 +2349,10 @@ function renderTabDocs(r){
       'ACTA_ASAMBLEA':'ACTA_ASAMBLEA_JUNTA',
       'CONATEL':      'HABILITACION_CONATEL'
     }[item.k];
-    var tieneURL=colAsociada&&cleanDocUrl(r[colAsociada]||'').startsWith('http');
+    var tieneURL;
+    if(item.k==='CORREO_REP')      tieneURL=!!(r['CORREO_REPRESENTANTES']||'').toString().trim();
+    else if(item.k==='NUMERO_REP') tieneURL=!!(r['NUMERO_REPRESENTANTES']||'').toString().trim();
+    else                            tieneURL=colAsociada&&cleanDocUrl(r[colAsociada]||'').startsWith('http');
     var estado=estadosDoc[item.k]||(tieneURL?'ok':'neutro');
     var clsCls=estado==='ok'?'fi-ok':estado==='problema'?'fi-problema':estado==='faltante'?'fi-faltante':'fi-neutro';
     h+='<div class="falt-item3 '+clsCls+'" id="fi3_'+item.k+'">';
@@ -3021,6 +3037,13 @@ function cambiarRegimenFirma(valor){
 function handleFile(input,col,urlVieja){
   var file=input.files[0];if(!file)return;
   if(file.size>10*1024*1024){toast('Archivo muy grande (máx 10MB)','err');return;}
+  var extCheck=(file.name.split('.').pop()||'').toLowerCase();
+  var extsValidas=['pdf','jpg','jpeg','png'];
+  if(extsValidas.indexOf(extCheck)<0){
+    toast('Solo se aceptan PDF o imágenes (.pdf, .jpg, .png) — "'+file.name+'" no es válido','err');
+    input.value='';
+    return;
+  }
   // Build descriptive filename: LABEL_RIF_RAZON_SOCIAL.ext
   var docLabels={
     'DOCUMENTOS_REPRESENTANTES' :'Cedula_Rep1',
@@ -4049,10 +4072,15 @@ function buildSegDocChecklist(r){
     {lbl:'Docs. Representante',col:'DOCUMENTOS_REPRESENTANTES'},
     {lbl:'Contrato',           col:'CONTRATO'}
   ];
-  return items.map(function(it){
+  var html=items.map(function(it){
     var ok=cleanDocUrl(r[it.col]||'').startsWith('http');
     return '<div class="seg-doc-row"><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span> '+esc(it.lbl)+'</div>';
   }).join('');
+  var okCorreo=!!(r['CORREO_REPRESENTANTES']||r['CORREO_REPRESENTANTES2']||'').toString().trim();
+  var okNum=!!(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'').toString().trim();
+  html+='<div class="seg-doc-row"><span class="'+(okCorreo?'ok':'no')+'">'+(okCorreo?'✓':'✗')+'</span> Correo de contacto</div>';
+  html+='<div class="seg-doc-row"><span class="'+(okNum?'ok':'no')+'">'+(okNum?'✓':'✗')+'</span> Número de contacto</div>';
+  return html;
 }
 
 function buildSegGestBody(clients){
@@ -4066,8 +4094,8 @@ function buildSegGestBody(clients){
     if((cf.ROL||'')==='ABOGADO'&&!correoAbogado)correoAbogado=cf.CORREO||'';
   });
   numLider=getLiderWANum(lid)||'';
-  var correoCliente=(!isMasivo?(clients[0]['CORREO_REPRESENTANTES']||''):'');
-  var numCliente=(!isMasivo?formatWANumber(clients[0]['NUMERO_REPRESENTANTES']||''):'');
+  var correoCliente=(!isMasivo?(clients[0]['CORREO_REPRESENTANTES']||clients[0]['CORREO_REPRESENTANTES2']||''):'');
+  var numCliente=(!isMasivo?formatWANumber(clients[0]['NUMERO_REPRESENTANTES']||clients[0]['NUMERO_REPRESENTANTES2']||''):'');
   window._segGestCfg={lid:lid,correoLider:correoLider,correoAbogado:correoAbogado,correoAdmin:correoAdmin,numLider:numLider,correoCliente:correoCliente,numCliente:numCliente,isMasivo:isMasivo};
   var html='';
 
@@ -4425,7 +4453,7 @@ function abrirWAResumenGrupal(){
 // ── Envío individual por correo a todos los "sin gestión" del sub-módulo activo ──
 function segEnviarCorreoIndividualSinGestion(){
   var data=getSegData().filter(function(r){return getGestionStatus(r['RIF']).estado==='sin';});
-  var conCorreo=data.filter(function(r){return (r['CORREO_REPRESENTANTES']||'').trim();});
+  var conCorreo=data.filter(function(r){return (r['CORREO_REPRESENTANTES']||r['CORREO_REPRESENTANTES2']||'').trim();});
   if(!conCorreo.length){toast('No hay clientes sin gestión con correo registrado','err');return;}
   if(!confirm('Se enviará un correo individual a '+conCorreo.length+' cliente(s) sin gestión. ¿Continuar?'))return;
   var etapa=getSegModule().etapa;
@@ -4441,7 +4469,7 @@ function segEnviarCorreoIndividualSinGestion(){
     var asunto='[Airtek] Documentación pendiente — '+r['RAZON SOCIAL'];
     var cuerpo=getMsgWA('cliente_docs',r);
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-      action:'enviarSeguimiento',para:r['CORREO_REPRESENTANTES'],cc:'',asunto:asunto,cuerpo:cuerpo,
+      action:'enviarSeguimiento',para:r['CORREO_REPRESENTANTES']||r['CORREO_REPRESENTANTES2']||'',cc:'',asunto:asunto,cuerpo:cuerpo,
       rif:r['RIF']||'',cliente:r['RAZON SOCIAL']||'',ejecutivo:r['EJECUTIVO']||'',etapa:etapa
     })}).then(function(res){return res.json();}).then(function(rs){
       if(rs.ok)enviados++;else fallidos++;
@@ -4720,6 +4748,8 @@ function getMsgWA(tipo,r){
   var docLabelsMsg={
     'CEDULA_REP':   'Cédula de identidad del Representante Legal',
     'RIF_REP':      'RIF personal del Representante Legal',
+    'CORREO_REP':   'Correo del Representante',
+    'NUMERO_REP':   'Número (WhatsApp) del Representante',
     'RIF_EMPRESA':  'RIF vigente de la empresa',
     'ACTA_CONST':   'Acta Constitutiva',
     'ACTA_ASAMBLEA':'Acta de Asamblea'+(detText?' ('+detText+')':''),
@@ -4749,6 +4779,9 @@ function getMsgWA(tipo,r){
                '  • Acta Constitutiva'+N+
                '  • Acta de Asamblea'+N;
   }
+  // Detalle específico guardado por el análisis (incluye nombres de representantes
+  // cuando el faltante es de una persona puntual, ej. "Cédula vencida — Rep 1: Juan Pérez")
+  if(detText)listaFalt+=N+'Detalle: '+detText+N;
 
   var m={
     // ── CLIENTE ──────────────────────────────────────────────────────────
@@ -6233,7 +6266,8 @@ function iaAplicarFaltantes(){
     'rif_empresa_vencido':'RIF_EMPRESA','acta_cambio_nombre':'ACTA_ASAMBLEA',
     'acta_cambio_domicilio':'ACTA_ASAMBLEA','acta_ratificacion_junta':'ACTA_ASAMBLEA',
     'acta_prorroga_empresa':'ACTA_ASAMBLEA','acta_const_faltante':'ACTA_CONST',
-    'conatel_faltante':'CONATEL','rep_faltante_firma_conjunta':'CEDULA_REP'
+    'conatel_faltante':'CONATEL','rep_faltante_firma_conjunta':'CEDULA_REP',
+    'correo_contacto_faltante':'CORREO_REP','numero_contacto_faltante':'NUMERO_REP'
   };
   var codigos=[];
   faltantes.forEach(function(f){
@@ -6243,7 +6277,7 @@ function iaAplicarFaltantes(){
   var detalle=faltantes.map(function(f){return f.descripcion||f.codigo;}).join('; ');
   // Mapear a formato DOCS con estados
   var partes=[];
-  var ALL_CODS=['CEDULA_REP','RIF_REP','RIF_EMPRESA','ACTA_CONST','ACTA_ASAMBLEA','CONATEL'];
+  var ALL_CODS=['CEDULA_REP','RIF_REP','CORREO_REP','NUMERO_REP','RIF_EMPRESA','ACTA_CONST','ACTA_ASAMBLEA','CONATEL'];
   ALL_CODS.forEach(function(c){
     partes.push(c+':'+(codigos.indexOf(c)>=0?'faltante':'ok'));
   });
