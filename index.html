@@ -4731,6 +4731,7 @@ function getMsgWA(tipo,r){
   var estadosDoc={};
   var docsMatch=obs.match(/\[DOCS:([^\]]*)\]/);
   var detMatch=obs.match(/\[DETALLE:([^\]]*)\]/);
+  var nomMatch=obs.match(/\[NOMBRES:([^\]]*)\]/);
   var faltLegMatch=obs.match(/\[FALTANTES:([^\]]*)\]/);
   if(docsMatch){
     docsMatch[1].split(',').forEach(function(part){
@@ -4743,21 +4744,43 @@ function getMsgWA(tipo,r){
     });
   }
   var detText=detMatch?detMatch[1].trim():'';
+  // [NOMBRES:CODIGO:Nombre|CODIGO2:Nombre2] — quién es el representante afectado
+  // por cada documento. Esto SÍ es apto para el cliente (dice de quién es el
+  // documento). El detText de arriba es el razonamiento técnico interno y
+  // JAMÁS debe llegar al mensaje del cliente — solo se usa en el panel interno.
+  var nombresPorCod={};
+  if(nomMatch){
+    nomMatch[1].split('|').forEach(function(pair){
+      var p=pair.split(':');
+      if(p.length>=2)nombresPorCod[p[0].trim()]=p.slice(1).join(':').trim();
+    });
+  }
+  function conNombre(base,cod,generico){
+    var nom=nombresPorCod[cod];
+    return nom?(base+' de '+nom):(base+' '+generico);
+  }
 
-  // Labels por estado — texto diferente si está faltante vs con problema
+  // Labels por estado — texto simple y accionable, sin razonamiento legal ni
+  // técnico (eso se queda en el panel interno). Si se conoce el nombre del
+  // representante afectado, se usa; si no, cae a la frase genérica de siempre.
   var docLabelsMsg={
-    'CEDULA_REP':   'Cédula de identidad del Representante Legal',
-    'RIF_REP':      'RIF personal del Representante Legal',
-    'CORREO_REP':   'Correo del Representante',
-    'NUMERO_REP':   'Número (WhatsApp) del Representante',
+    'CEDULA_REP':   conNombre('Cédula de identidad','CEDULA_REP','del Representante Legal'),
+    'RIF_REP':      conNombre('RIF personal','RIF_REP','del Representante Legal'),
+    'CORREO_REP':   conNombre('Correo de contacto','CORREO_REP','del Representante'),
+    'NUMERO_REP':   conNombre('Número (WhatsApp) de contacto','NUMERO_REP','del Representante'),
+    'CEDULA_REP2':  conNombre('Cédula de identidad','CEDULA_REP2','del segundo Representante'),
+    'RIF_REP2':     conNombre('RIF personal','RIF_REP2','del segundo Representante'),
+    'CORREO_REP2':  conNombre('Correo de contacto','CORREO_REP2','del segundo Representante'),
+    'NUMERO_REP2':  conNombre('Número (WhatsApp) de contacto','NUMERO_REP2','del segundo Representante'),
     'RIF_EMPRESA':  'RIF vigente de la empresa',
     'ACTA_CONST':   'Acta Constitutiva',
-    'ACTA_ASAMBLEA':'Acta de Asamblea'+(detText?' ('+detText+')':''),
+    'ACTA_ASAMBLEA':'Acta de Asamblea que ratifique la Junta Directiva',
     'CONATEL':      'Habilitación CONATEL'
   };
 
-  // Construir lista de documentos para mensajes
-  var listaFalt='';
+  // Construir lista de documentos para mensajes — un bullet por línea,
+  // con una línea en blanco entre cada uno para que se lea holgado.
+  var faltItems=[];
   var tieneEstados=Object.keys(estadosDoc).length>0;
   if(tieneEstados){
     Object.keys(estadosDoc).forEach(function(k){
@@ -4765,23 +4788,28 @@ function getMsgWA(tipo,r){
       if(est==='ok')return; // no incluir los OK
       var lbl=docLabelsMsg[k]||k;
       if(est==='faltante'){
-        listaFalt+='  • '+lbl+' — *pendiente de cargar*'+N;
+        faltItems.push('  • '+lbl+' — *pendiente de cargar*');
       } else if(est==='problema'){
-        listaFalt+='  • '+lbl+' — *requiere renovación o reemplazo*'+N;
+        faltItems.push('  • '+lbl+' — *requiere renovación o reemplazo*');
       }
     });
   }
-  if(!listaFalt){
+  if(!faltItems.length){
     // Lista genérica si no hay estados definidos
-    listaFalt='  • Cédula de identidad vigente del o los Representantes Legales'+N+
-               '  • RIF personal vigente del o los Representantes Legales'+N+
-               '  • RIF vigente de la empresa'+N+
-               '  • Acta Constitutiva'+N+
-               '  • Acta de Asamblea'+N;
+    faltItems=[
+      '  • Cédula de identidad vigente del o los Representantes Legales',
+      '  • RIF personal vigente del o los Representantes Legales',
+      '  • RIF vigente de la empresa',
+      '  • Acta Constitutiva',
+      '  • Acta de Asamblea'
+    ];
   }
-  // Detalle específico guardado por el análisis (incluye nombres de representantes
-  // cuando el faltante es de una persona puntual, ej. "Cédula vencida — Rep 1: Juan Pérez")
-  if(detText)listaFalt+=N+'Detalle: '+detText+N;
+  var listaFalt=faltItems.join(N+N);
+  // NOTA: el [DETALLE:...] (razonamiento técnico/legal interno del análisis)
+  // ya NO se agrega al mensaje del cliente — solo se usa en el panel interno
+  // (tarjetas ia-faltante-item). El cliente solo ve la lista de documentos
+  // de arriba, con nombre de representante cuando aplica.
+
 
   var m={
     // ── CLIENTE ──────────────────────────────────────────────────────────
@@ -4793,7 +4821,7 @@ function getMsgWA(tipo,r){
       'elaboración de su contrato de servicio y garantizar la continuidad '+
       'de los beneficios que le ofrece Airtek Empresas.'+N+N+
       'Para continuar, requerimos los siguientes documentos:'+N+N+
-      listaFalt+N+
+      listaFalt+N+N+
       'Puede hacernos llegar los documentos por este medio o al correo '+
       CC_CORP+' — quedamos atentos a su respuesta.'+
       firma,
@@ -4804,7 +4832,7 @@ function getMsgWA(tipo,r){
       'expediente legal en Airtek aún se encuentra incompleto.'+N+N+
       'Luego de la revisión realizada por nuestro equipo, los documentos '+
       'pendientes son los siguientes:'+N+N+
-      listaFalt+N+
+      listaFalt+N+N+
       'Le instamos a gestionar el envío a la brevedad posible, ya que '+
       'de ello depende la elaboración de su contrato de servicio y la '+
       'plena regularización de su relación comercial con Airtek Empresas.'+N+N+
@@ -4849,7 +4877,7 @@ function getMsgWA(tipo,r){
       'Te escribo para recordarte que el expediente del cliente '+
       nom+' lleva '+dy+' días sin avance.'+N+N+
       '  Estatus actual:  '+est+N+
-      (listaFalt?('  Documentos pendientes:'+N+listaFalt):'')+N+
+      (listaFalt?('  Documentos pendientes:'+N+N+listaFalt+N):'')+N+
       'Te solicito gestionar este caso a la brevedad y actualizar '+
       'el expediente con cualquier novedad en la plataforma.'+N+N+
       '🔗 Ver expediente: '+appLink+
@@ -6260,9 +6288,24 @@ function iaAplicarFaltantes(){
   if(!S.cur||!S.iaResultado)return;
   var faltantes=S.iaResultado.faltantes||[];
   if(!faltantes.length){toast('No hay faltantes detectados','ok');return;}
+
+  // Nombres de representantes por número (1 o 2) — para poder decir "de quién"
+  // en el mensaje al cliente, en vez de solo "Representante Legal" genérico.
+  var repsIA=S.iaResultado.representantes||[];
+  var repNombre={};
+  repsIA.forEach(function(r){ if(r&&r.numero)repNombre[r.numero]=(r.nombre_cedula||'').trim(); });
+
+  // Detecta "Rep 1" / "Rep 2" dentro de una descripción — los faltantes de
+  // correo/número de contacto no traen el número en el código (a diferencia
+  // de cédula/RIF, que sí lo traen como sufijo _1/_2), solo en el texto.
+  function repDeDescripcion(desc){
+    var m=(desc||'').match(/Rep\s*(\d+)/i);
+    return m?m[1]:'';
+  }
+
   var MAPA={
-    'cedula_rep_vencida_1':'CEDULA_REP','cedula_rep_vencida_2':'CEDULA_REP',
-    'rif_rep_vencido_1':'RIF_REP','rif_rep_vencido_2':'RIF_REP',
+    'cedula_rep_vencida_1':'CEDULA_REP','cedula_rep_vencida_2':'CEDULA_REP2',
+    'rif_rep_vencido_1':'RIF_REP','rif_rep_vencido_2':'RIF_REP2',
     'rif_empresa_vencido':'RIF_EMPRESA','acta_cambio_nombre':'ACTA_ASAMBLEA',
     'acta_cambio_domicilio':'ACTA_ASAMBLEA','acta_ratificacion_junta':'ACTA_ASAMBLEA',
     'acta_prorroga_empresa':'ACTA_ASAMBLEA','acta_const_faltante':'ACTA_CONST',
@@ -6270,18 +6313,32 @@ function iaAplicarFaltantes(){
     'correo_contacto_faltante':'CORREO_REP','numero_contacto_faltante':'NUMERO_REP'
   };
   var codigos=[];
+  var nombrePorCod={}; // código DOCS (ej. RIF_REP2) → nombre del representante afectado
   faltantes.forEach(function(f){
     var c=MAPA[f.codigo];
-    if(c&&codigos.indexOf(c)<0)codigos.push(c);
+    if(!c)return;
+    // correo/número no distinguen Rep en el código — se infiere de la descripción
+    if((c==='CORREO_REP'||c==='NUMERO_REP')&&repDeDescripcion(f.descripcion)==='2'){
+      c=c+'2';
+    }
+    if(codigos.indexOf(c)<0)codigos.push(c);
+    var repNum=(c.indexOf('2')>=0)?2:1;
+    if(repNombre[repNum])nombrePorCod[c]=repNombre[repNum];
   });
+
   var detalle=faltantes.map(function(f){return f.descripcion||f.codigo;}).join('; ');
-  // Mapear a formato DOCS con estados
   var partes=[];
-  var ALL_CODS=['CEDULA_REP','RIF_REP','CORREO_REP','NUMERO_REP','RIF_EMPRESA','ACTA_CONST','ACTA_ASAMBLEA','CONATEL'];
+  var ALL_CODS=['CEDULA_REP','RIF_REP','CORREO_REP','NUMERO_REP',
+    'CEDULA_REP2','RIF_REP2','CORREO_REP2','NUMERO_REP2',
+    'RIF_EMPRESA','ACTA_CONST','ACTA_ASAMBLEA','CONATEL'];
   ALL_CODS.forEach(function(c){
     partes.push(c+':'+(codigos.indexOf(c)>=0?'faltante':'ok'));
   });
-  var obsNueva='[DOCS:'+partes.join(',')+'][DETALLE:'+detalle+']';
+  // [NOMBRES:...] es exclusivamente para personalizar el mensaje al cliente
+  // (qué representante). [DETALLE:...] sigue siendo el razonamiento técnico
+  // interno — nunca se debe mandar tal cual al cliente.
+  var nombresStr=Object.keys(nombrePorCod).map(function(c){return c+':'+nombrePorCod[c];}).join('|');
+  var obsNueva='[DOCS:'+partes.join(',')+']'+(nombresStr?'[NOMBRES:'+nombresStr+']':'')+'[DETALLE:'+detalle+']';
   S.cur['Observacion']=obsNueva;
   persistObs(obsNueva);
   var inAll=S.all.find(function(c){return c['RIF']===S.cur['RIF'];});
