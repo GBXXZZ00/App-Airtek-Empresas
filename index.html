@@ -189,6 +189,34 @@ html,body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
 .kpi-lbl{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
 .kpi-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
+/* ── Stepper de sub-módulos del Centro de Control ── */
+.stepper{display:flex;align-items:stretch;justify-content:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 10px 10px;border-radius:8px;cursor:pointer;position:relative;background:none;border:none;font-family:inherit;color:var(--text2);transition:background .15s ease,color .15s ease}
+.step:hover{background:var(--surface2);color:var(--text)}
+.step.active{background:var(--surface2);color:var(--text)}
+.step-top{display:flex;align-items:center;gap:8px}
+.step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--surface3);color:var(--text3);flex-shrink:0;transition:background .15s ease,color .15s ease}
+.step.active .step-num{background:var(--accent);color:#fff}
+.step.done .step-num{background:var(--green-dim);color:var(--green)}
+.step-icon{font-size:15px}
+.step-label{font-size:12.5px;font-weight:600}
+.step-count{font-size:10px;color:var(--text3);font-weight:500}
+.step.active .step-count{color:var(--accent)}
+.step-badge{position:absolute;top:8px;right:10px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+
+/* ── Fila con cambio de estatus reciente + pill de observación (tabla del Centro de Control) ── */
+tr.seg-row-changed td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tr.seg-row-changed{background:linear-gradient(90deg, var(--accent-dim) 0%, transparent 18%)}
+.seg-change-tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--accent);background:var(--accent-dim);border:1px solid rgba(0,132,255,.35);border-radius:5px;padding:2px 6px;margin-top:5px;max-width:260px}
+.seg-gest-line{font-size:11px;margin-top:2px}
+.seg-gest-line.ok{color:var(--green)}
+.seg-gest-line.mid{color:var(--amber)}
+.seg-gest-line.high{color:var(--red)}
+.seg-gest-line.muted{color:var(--text3)}
+.seg-obs-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:help;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg-obs-pill .seg-obs-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0}
+@media(max-width:640px){.stepper{flex-wrap:wrap}.step{flex:1 1 calc(50% - 4px);min-width:130px}}
+
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .qf-bar{display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
 .qf-btn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:all .12s ease;white-space:nowrap;letter-spacing:.02em}
@@ -1016,11 +1044,20 @@ tbody tr:hover td{background:var(--surface2)}
         <button class="btn btn-g btn-sm" onclick="refreshSeg()">↻ Actualizar</button>
       </div>
 
-      <!-- SUB-MÓDULOS (pestañas por etapa del pipeline) -->
-      <div class="tabs" id="segModTabs" style="margin-bottom:14px"></div>
+      <!-- SUB-MÓDULOS (stepper por etapa del pipeline) -->
+      <div class="stepper" id="segModTabs" style="margin-bottom:14px"></div>
 
       <!-- RADAR DE GESTIÓN (contextual al sub-módulo activo) -->
       <div id="segRadar" class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px"></div>
+
+      <!-- ACTIVIDAD RECIENTE — cambios de estatus + contactos, cronológico -->
+      <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--surface)" onclick="toggleSegActividad()">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">📣 Actividad reciente</span>
+          <span id="segActividadChevron" style="color:var(--text3);font-size:11px;margin-left:auto">▶ Ver</span>
+        </div>
+        <div id="segActividadPanel" style="display:none;padding:6px 16px 14px;max-height:340px;overflow-y:auto"></div>
+      </div>
 
       <!-- Chips de estatus específico dentro del sub-módulo -->
       <div id="segEstatusChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
@@ -1077,8 +1114,8 @@ tbody tr:hover td{background:var(--surface2)}
               <th>Cliente</th>
               <th>Ejecutivo</th>
               <th>Estatus</th>
-              <th>Días</th>
               <th>Gestión</th>
+              <th>Observación</th>
               <th>Acción</th>
             </tr>
           </thead>
@@ -3639,8 +3676,6 @@ function copyWAMsg(){
 
 // NAV
 function showView(v){
-  // Líder no puede acceder a Centro de Control
-  if(v==='seguimiento'&&S.rol==='LIDER'){toast('Sin acceso a esta sección','err');return;}
   document.querySelectorAll('.view').forEach(el=>{
     el.classList.remove('active');
   });
@@ -3792,14 +3827,47 @@ var SEG_MODULES=[
 var SEG_MOD_ACTIVE='nuevos';
 function getSegModule(){return SEG_MODULES.find(function(m){return m.key===SEG_MOD_ACTIVE;})||SEG_MODULES[0];}
 
+// Días desde recientes (ej. "hace 3h", "hace 2d") — usado en el feed y en la fila
+function segRelTime(ts){
+  if(!ts)return'';
+  var diffMs=Date.now()-ts;
+  var mins=Math.floor(diffMs/60000);
+  if(mins<1)return'ahora';
+  if(mins<60)return'hace '+mins+'min';
+  var horas=Math.floor(mins/60);
+  if(horas<24)return'hace '+horas+'h';
+  var dias=Math.floor(horas/24);
+  return'hace '+dias+'d';
+}
+
 // ── Estado de gestión por cliente — vigente en el ESTATUS_LEGAL actual ─────
 // (se reinicia cada vez que el cliente cambia de estatus, ver consultarGestionMasiva)
+// "Días sin gestión" cuenta desde el último contacto si lo hubo, o si no,
+// desde el último cambio de estatus (nunca desde la fecha de instalación).
+// Si el cliente nunca tuvo cambio de estatus ni gestión, son 0 días.
+var SEG_CAMBIO_RECIENTE_DIAS=5; // ventana para mostrar la etiqueta de "cambio reciente" en la fila
 function getGestionStatus(rif){
-  var g=SEG_GESTION_DATA[rif];
-  if(!g||!g.ultimaGestionTs)return {estado:'sin',label:'Sin gestión',cls:'g-sin'};
-  var dias=Math.floor((Date.now()-g.ultimaGestionTs)/86400000);
-  if(dias>=SEG_AVANCE_DIAS)return {estado:'sinavance',label:'Sin avance '+dias+'d',cls:'g-sinavance',dias:dias};
-  return {estado:'ok',label:'Al día ('+dias+'d)',cls:'g-ok',dias:dias};
+  var g=SEG_GESTION_DATA[rif]||{};
+  var tieneContacto=!!g.ultimaGestionTs;
+  var estado,label,cls,dias;
+  if(!tieneContacto){
+    // Nunca hubo gestión en este estatus: los días cuentan desde el último
+    // cambio de estatus (no desde instalación). Si tampoco hay cambio de
+    // estatus registrado, son 0 días.
+    dias=g.estatusChangeTs?Math.floor((Date.now()-g.estatusChangeTs)/86400000):0;
+    estado='sin';label='Sin gestión ('+dias+'d)';cls='g-sin';
+  } else {
+    dias=Math.floor((Date.now()-g.ultimaGestionTs)/86400000);
+    if(dias>=SEG_AVANCE_DIAS){estado='sinavance';label='Sin avance '+dias+'d';cls='g-sinavance';}
+    else{estado='ok';label='Al día ('+dias+'d)';cls='g-ok';}
+  }
+  var ultimoContactoTxt=tieneContacto?segRelTime(g.ultimaGestionTs):'Sin contacto aún';
+  var cambio=null;
+  if(g.cambioA&&g.estatusChangeTs){
+    var esReciente=(Date.now()-g.estatusChangeTs)<=(SEG_CAMBIO_RECIENTE_DIAS*86400000);
+    cambio={de:g.cambioDe||'—',a:g.cambioA,usuario:g.cambioUsuario||'—',ts:g.estatusChangeTs,hace:segRelTime(g.estatusChangeTs),reciente:esReciente};
+  }
+  return {estado:estado,label:label,cls:cls,dias:dias,ultimoContactoTxt:ultimoContactoTxt,cambio:cambio};
 }
 
 // ── Datos filtrados del Centro de Control (siempre acotado al sub-módulo activo) ──
@@ -3825,6 +3893,13 @@ function getSegData(){
     base=rd[SEG_RADAR_ACTIVE]||base;
   }
   base.sort(function(a,b){return(calcDays(b['Fecha de Instalacion Cliente'])||0)-(calcDays(a['Fecha de Instalacion Cliente'])||0);});
+  // Orden secundario y estable: los clientes con cambio de estatus reciente
+  // (ver SEG_CAMBIO_RECIENTE_DIAS) suben al principio de su sub-módulo.
+  base.sort(function(a,b){
+    var ca=getGestionStatus(a['RIF']).cambio,cb=getGestionStatus(b['RIF']).cambio;
+    var ra=(ca&&ca.reciente)?1:0,rb=(cb&&cb.reciente)?1:0;
+    return rb-ra;
+  });
   return base;
 }
 
@@ -3836,16 +3911,20 @@ function getSegRadarSubset(base){
   };
 }
 
-// ── Pestañas de sub-módulo (reutiliza .tabs/.tab del sistema de diseño) ────
+// ── Stepper de sub-módulo (pipeline de 4 etapas) ────────────────────────────
 function renderSegModTabs(){
   var el=document.getElementById('segModTabs');if(!el)return;
-  el.innerHTML=SEG_MODULES.map(function(m){
+  var activeIdx=SEG_MODULES.findIndex(function(m){return m.key===SEG_MOD_ACTIVE;});
+  el.innerHTML=SEG_MODULES.map(function(m,i){
     var base=getBase().filter(function(r){return r['TIPO_CLIENTE']!=='PERSONA NATURAL'&&m.estatus.indexOf(r['ESTATUS_LEGAL'])>=0;});
     var sinGestion=base.filter(function(r){return getGestionStatus(r['RIF']).estado==='sin';}).length;
     var isActive=SEG_MOD_ACTIVE===m.key;
-    return '<button class="tab'+(isActive?' active':'')+'" data-modkey="'+m.key+'">'
-      +m.icon+' '+m.label
-      +(sinGestion?'<span class="tab-badge">'+sinGestion+'</span>':'')
+    var isDone=i<activeIdx;
+    return '<button class="step'+(isActive?' active':'')+(isDone?' done':'')+'" data-modkey="'+m.key+'">'
+      +(sinGestion?'<span class="step-badge">'+sinGestion+'</span>':'')
+      +'<div class="step-top"><span class="step-num">'+(i+1)+'</span><span class="step-icon">'+m.icon+'</span></div>'
+      +'<span class="step-label">'+m.label+'</span>'
+      +'<span class="step-count">'+base.length+' clientes</span>'
     +'</button>';
   }).join('');
   el.querySelectorAll('[data-modkey]').forEach(function(btn){
@@ -3955,22 +4034,27 @@ function renderSegTab(){
   var html='';
   slice.forEach(function(r,i){
     var si=SI[r['ESTATUS_LEGAL']]||{c:'b-gn'};
-    var dy=calcDays(r['Fecha de Instalacion Cliente']);
-    var dc=dy===null?'':dy<=30?'d-ok':dy<=90?'d-mid':'d-high';
     var rif=r['RIF']||'';
     var chk=segSelected[rif]?'checked':'';
     var gs=getGestionStatus(rif);
-    var gHtml='<span class="gestion-badge '+gs.cls+'">'+esc(gs.label)+'</span>';
+    var gLineCls=gs.estado==='ok'?'ok':gs.estado==='sinavance'?'high':'muted';
+    var gHtml='<div class="seg-gest-line '+gLineCls+'"><span class="gestion-badge '+gs.cls+'">'+esc(gs.label)+'</span></div>'
+      +'<div class="seg-gest-line muted">Últ. contacto: '+esc(gs.ultimoContactoTxt)+'</div>';
+    var cambioTag=(gs.cambio&&gs.cambio.reciente)
+      ?'<div class="seg-change-tag" title="'+esc(gs.cambio.de+' → '+gs.cambio.a)+'">🔄 <b>'+esc((gs.cambio.usuario||'').split(' ')[0])+'</b>: '+esc(gs.cambio.de)+' → '+esc(gs.cambio.a)+' · '+gs.cambio.hace+'</div>'
+      :'';
+    var obs=(r['Observacion']||'').toString().trim();
+    var obsHtml=obs?'<span class="seg-obs-pill" title="'+esc(obs)+'"><span class="seg-obs-dot"></span>'+esc(obs)+'</span>':'<span style="color:var(--text3)">—</span>';
     var sinCarp=!cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
     var carpBtn=sinCarp&&S.rol==='ADMIN'?'<button onclick="event.stopPropagation();segCrearCarpeta(\"'+rif+'\")" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:14px;padding:0 4px" title="Crear carpeta Drive">📁</button>':'';
     var globalIdx=(SEG_PAGE-1)*SEG_PS+i;
-    html+='<tr onclick="openSegGest(['+globalIdx+'])" style="cursor:pointer">'
+    html+='<tr onclick="openSegGest(['+globalIdx+'])" style="cursor:pointer" class="'+(cambioTag?'seg-row-changed':'')+'">'
       +'<td onclick="event.stopPropagation()"><input type="checkbox" data-rif="'+rif+'" '+chk+' onchange="segToggleOne(this)"></td>'
-      +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Gestionar"><strong>'+esc(r['RAZON SOCIAL'])+'</strong></td>'
+      +'<td style="max-width:200px" title="Gestionar"><strong style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">'+esc(r['RAZON SOCIAL'])+'</strong>'+cambioTag+'</td>'
       +'<td style="font-size:12px;color:var(--text2)">'+esc((r['EJECUTIVO']||'').split(' ')[0])+'</td>'
       +'<td><span class="badge '+si.c+'" style="font-size:10px">'+esc(r['ESTATUS_LEGAL'])+'</span></td>'
-      +'<td>'+(dy!==null?'<span class="days '+dc+'">'+dy+'d</span>':'—')+'</td>'
       +'<td>'+gHtml+'</td>'
+      +'<td>'+obsHtml+'</td>'
       +'<td style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">'
         +'<button class="btn btn-p btn-sm" onclick="openSegGest(['+globalIdx+'])" style="font-size:10px;padding:3px 8px">Gestionar</button>'
         +'<button class="btn btn-g btn-sm" onclick="segWADirecto('+globalIdx+')" style="font-size:10px;padding:3px 6px;color:#25d366;border-color:#25d366">WA</button>'
@@ -4386,6 +4470,47 @@ function refreshSeg(){
     var badge=document.getElementById('segBadge');
     if(badge){badge.textContent=pend;badge.style.display=pend?'inline':'none';}
   });
+  cargarSegActividadReciente();
+}
+
+// ── Actividad reciente — panel colapsable, cerrado por defecto ─────────────
+var SEG_ACTIVIDAD=[];
+function toggleSegActividad(){
+  var panel=document.getElementById('segActividadPanel');
+  var chev=document.getElementById('segActividadChevron');
+  if(!panel)return;
+  var open=panel.style.display!=='none';
+  panel.style.display=open?'none':'block';
+  if(chev)chev.textContent=open?'▶ Ver':'▼ Ocultar';
+  if(!open&&!SEG_ACTIVIDAD.length)cargarSegActividadReciente();
+}
+function cargarSegActividadReciente(){
+  if(!APPS_SCRIPT_URL)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarActividadReciente',limite:30})})
+  .then(function(r){return r.json();})
+  .then(function(rs){
+    SEG_ACTIVIDAD=(rs.ok&&rs.eventos)?rs.eventos:[];
+    renderSegActividad();
+  }).catch(function(){});
+}
+function renderSegActividad(){
+  var box=document.getElementById('segActividadPanel');if(!box)return;
+  // Solo eventos de clientes visibles para el rol actual (Líder ve solo su cartera)
+  var rifsPermitidos={};
+  getBase().forEach(function(r){rifsPermitidos[(r['RIF']||'').toString().trim()]=true;});
+  var eventos=SEG_ACTIVIDAD.filter(function(e){return rifsPermitidos[e.rif];});
+  if(!eventos.length){box.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:16px 0">Sin actividad reciente</div>';return;}
+  box.innerHTML=eventos.map(function(e){
+    if(e.tipo==='cambio'){
+      return '<div class="tl-entry"><div class="tl-icon tl-ic-est">🔄</div>'
+        +'<div class="tl-body"><div class="tl-header"><span class="tl-tipo"><b>'+esc((e.usuario||'').split(' ')[0]||'Alguien')+'</b> movió a '+esc(e.cliente)+'</span><span class="tl-ts">'+segRelTime(e.ts)+'</span></div>'
+        +'<div class="tl-nota">'+esc(e.de||'—')+' → '+esc(e.a||'—')+'</div></div></div>';
+    }
+    var ic=(e.canal||'').toLowerCase().indexOf('whats')>=0?{cls:'tl-ic-wa',ico:'💬'}:(e.canal||'').toLowerCase().indexOf('correo')>=0?{cls:'tl-ic-mail',ico:'✉'}:{cls:'tl-ic-est',ico:'📞'};
+    return '<div class="tl-entry"><div class="tl-icon '+ic.cls+'">'+ic.ico+'</div>'
+      +'<div class="tl-body"><div class="tl-header"><span class="tl-tipo"><b>'+esc((e.usuario||e.ejecutivo||'').split(' ')[0]||'Alguien')+'</b> registró contacto con '+esc(e.cliente)+'</span><span class="tl-ts">'+segRelTime(e.ts)+'</span></div>'
+      +(e.nota?'<div class="tl-nota">'+esc(e.canal||'')+' — '+esc(e.nota)+'</div>':'<div class="tl-nota">'+esc(e.canal||'')+'</div>')+'</div></div>';
+  }).join('');
 }
 
 function clearSegFilters(){
@@ -5068,9 +5193,9 @@ var FACT_STATE = {
 function factInitNav(){
   var btn = document.getElementById('nav-factibilidad');
   if(btn) btn.style.display = (S.rol === 'ABOGADO') ? 'none' : '';
-  // Centro de Control: solo Admin y Abogado
+  // Centro de Control: visible para todos los roles (el Líder ve solo su propia cartera, vía getBase())
   var btnSeg = document.getElementById('nav-seguimiento');
-  if(btnSeg) btnSeg.style.display = (S.rol === 'LIDER') ? 'none' : '';
+  if(btnSeg) btnSeg.style.display = '';
 }
 
 // ── Inicialización al entrar a la vista ──────────────────────
