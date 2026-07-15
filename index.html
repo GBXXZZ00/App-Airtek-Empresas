@@ -1388,7 +1388,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-7n94H_0GSHtgNeRXz-Ed6LCz5jclHnLigudVAswEWzDShgN699aWMTtvZjERKOPaAA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyKHBlZ8P8vSiIB4dl6H_Nd-73UrdR4aziOzIiyaK3imZkLkEsUhYIoOxcjE-kT0ua-Xg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1870,6 +1870,34 @@ function tieneAlgunDocumento(r){
             'ACTA_ASAMBLEA_JUNTA','ACTA_ASAMBLEA_JUNTA2','ACTA_ASAMBLEA_JUNTA3','ACTA_ASAMBLEA_JUNTA4',
             'DOCUMENTOS_REPRESENTANTES','DOCUMENTOS_REPRESENTANTES2','DOCUMENTOS_REPRESENTANTES3','DOCUMENTOS_REPRESENTANTES4'];
   return cols.some(function(c){ return cleanDocUrl(r[c]).startsWith('http'); });
+}
+// Calcula qué documentos YA están cargados en Drive, revisando directamente
+// si la columna tiene un link o no — sin necesitar un análisis de IA. Esto
+// es lo que se usa para armar el mensaje al cliente cuando todavía no se ha
+// analizado el expediente (ej. recién entra a GRANDES NEGOCIOS): si el
+// cliente ya subió 3 de 5 documentos, el mensaje debe pedir solo los 2 que
+// faltan, no los 5 de siempre. Es una revisión de presencia (¿hay URL?),
+// no de vigencia — eso lo decide la IA cuando corra el análisis completo.
+function estadoDocsPorDrive(r){
+  var esISPr=(r['TIPO_CLIENTE']||'').toUpperCase().indexOf('ISP')>=0;
+  function ok(col){ return cleanDocUrl(r[col]).startsWith('http')?'ok':'faltante'; }
+  var est={
+    'CEDULA_REP':    ok('DOCUMENTOS_REPRESENTANTES'),
+    'RIF_REP':       ok('DOCUMENTOS_REPRESENTANTES2'),
+    'RIF_EMPRESA':   ok('RIF_VIGENTE'),
+    'ACTA_CONST':    ok('ACTA CONSTITUTIVA'),
+    'ACTA_ASAMBLEA': ok('ACTA_ASAMBLEA_JUNTA')
+  };
+  // Rep 2 solo se pide si ya hay indicio de que existe (mismo criterio que countReps)
+  var has2=r['CORREO_REPRESENTANTES2']||r['NUMERO_REPRESENTANTES2']||
+           cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES3']).startsWith('http')||
+           cleanDocUrl(r['DOCUMENTOS_REPRESENTANTES4']).startsWith('http');
+  if(has2){
+    est['CEDULA_REP2']=ok('DOCUMENTOS_REPRESENTANTES3');
+    est['RIF_REP2']=ok('DOCUMENTOS_REPRESENTANTES4');
+  }
+  if(esISPr) est['CONATEL']=ok('HABILITACION_CONATEL');
+  return est;
 }
 function qfToggleConDocs(){
   S_qfConDocs=!S_qfConDocs;
@@ -4742,6 +4770,13 @@ function getMsgWA(tipo,r){
     faltLegMatch[1].split(',').forEach(function(k){
       if(k.trim())estadosDoc[k.trim()]='faltante';
     });
+  } else if(r){
+    // Sin análisis de IA todavía (Observación vacía o sin [DOCS:...]) — no
+    // por eso hay que pedir los 5 documentos completos de cero. Se revisa
+    // directamente qué columnas de Drive ya tienen un link cargado: si hay
+    // URL, está "ok"; si no, "faltante". Es una revisión de presencia, no
+    // de vigencia (eso lo hace la IA cuando se corra el análisis).
+    estadosDoc=estadoDocsPorDrive(r);
   }
   var detText=detMatch?detMatch[1].trim():'';
   // [NOMBRES:CODIGO:Nombre|CODIGO2:Nombre2] — quién es el representante afectado
@@ -4875,7 +4910,7 @@ function getMsgWA(tipo,r){
       '[Airtek] Recordatorio — Expediente sin avance'+N+N+
       'Hola '+ejec+','+N+N+
       'Te escribo para recordarte que el expediente del cliente '+
-      nom+' lleva '+dy+' días sin avance.'+N+N+
+      nom+' sigue pendiente de avance.'+N+N+
       '  Estatus actual:  '+est+N+
       (listaFalt?('  Documentos pendientes:'+N+N+listaFalt+N):'')+N+
       'Te solicito gestionar este caso a la brevedad y actualizar '+
@@ -4886,7 +4921,7 @@ function getMsgWA(tipo,r){
     lider_urgente:
       '[Airtek] ATENCIÓN — Cliente sin respuesta'+N+N+
       'Hola '+ejec+','+N+N+
-      'El cliente '+nom+' lleva '+dy+' días sin respuesta ni avance '+
+      'El cliente '+nom+' sigue sin respuesta ni avance '+
       'en su expediente.'+N+N+
       '  RIF:     '+rif+N+
       '  Estatus: '+est+N+N+
