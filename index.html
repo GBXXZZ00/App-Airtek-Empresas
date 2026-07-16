@@ -701,6 +701,7 @@ tbody tr:hover td{background:var(--surface2)}
 .al-ico.n{background:var(--red-dim);color:var(--red)}
 .al-ico.w{background:var(--amber-dim);color:var(--amber)}
 .al-salv{background:var(--amber-dim);border:1px solid var(--amber);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:#E3B341}
+.al-info{background:var(--blue-dim);border:1px solid var(--blue);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:#79C0FF}
 .al-obs{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--text2)}
 .al-upload{border:1px dashed var(--border2);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;transition:border-color .15s ease}
 .al-upload:hover{border-color:var(--accent)}
@@ -1534,7 +1535,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwW37qRBlntvw7ZrsV-_mO8v5IeESFwqhqfm32uy68NbPU1new2IX6jc9Khju7xGNYq8Q/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx54Ao0KPD9kqnVbWXl9bXmgsCy-LvAfZkoC0_woNGDjEOfAJKZ3u-9IU4B3VLOfc2HBg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -7282,6 +7283,7 @@ function alRenderResultado(idSolicitud, rs){
   var r = rs.resultado || {};
   var cartera = rs.cartera || {};
   var salvedades = rs.salvedades || [];
+  var observaciones = rs.observaciones || r._observaciones || [];
   var congelado = rs._estatus === 'EN_EXCEPCION' || rs._estatus === 'EN_REVISION_MANUAL';
   var faltantes = r.faltantes || [];
   AL.ultimoResultado = { idSolicitud: idSolicitud, faltantes: faltantes, salvedades: salvedades, resultado: r };
@@ -7341,6 +7343,10 @@ function alRenderResultado(idSolicitud, rs){
 
   if(r._directoresVigentes && r._directoresVigentes.length && faltantes.some(function(f){return f&&f.codigo==='representante_no_en_acta';})){
     h += '<div class="al-obs"><b>Representantes que sí figuran en el Acta:</b><br>'+r._directoresVigentes.map(esc).join('<br>')+'</div>';
+  }
+
+  if(observaciones.length){
+    h += '<div class="al-info"><b>Observaciones:</b><ul style="margin:6px 0 0 16px">'+observaciones.map(function(o){return '<li>'+esc(o)+'</li>';}).join('')+'</ul></div>';
   }
 
   if(salvedades.length){
