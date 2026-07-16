@@ -1531,7 +1531,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnPjRk7s147rr9E2fINdg7CHjJAmJeNdfGkUSpYCkUTra3kwwPkxrTvQK-8nRZPtvWJw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2xpKlDzG-ey6TrASbPlRd8SZSokdjm-XsVZa9yA63s8dx3irfpUrePkbblsmVYo2abw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -6846,81 +6846,103 @@ function alCerrarDrawer(){ document.getElementById('alDrawerBg').classList.remov
 
 function alAbrirDrawerNueva(){
   AL.idActual = null;
+  AL.docsCargados = {};
+  AL.mostrarRep2 = false;
+  AL.mostrarActas = false;
+  AL.formDraft = {telefono:'', correo:'', correoEmpresa:'', descripcion:''};
   document.getElementById('alDrawerTitle').textContent='Nueva Solicitud de Verificación';
-  alRenderFormularioInicial();
+  alRenderFormularioUnico();
   alAbrirDrawer_();
 }
 
-function alRenderFormularioInicial(){
+function alGuardarDraftInputs(){
+  var t=document.getElementById('alContTel'); if(t) AL.formDraft.telefono=t.value;
+  var c=document.getElementById('alContCorreo'); if(c) AL.formDraft.correo=c.value;
+  var ce=document.getElementById('alContCorreoEmp'); if(ce) AL.formDraft.correoEmpresa=ce.value;
+  var d=document.getElementById('alDescExtraordinaria'); if(d) AL.formDraft.descripcion=d.value;
+}
+
+function alSetTipo(tipo){
+  if(AL.idActual){ toast('Ya iniciaste la carga de documentos — no puedes cambiar el tipo de cliente en esta solicitud','err'); return; }
+  AL.tipoSeleccionado = tipo;
+  alRenderFormularioUnico();
+}
+
+// ── Formulario único: tipo + contacto + documentos, todo visible desde el inicio ──
+function alRenderFormularioUnico(){
   AL.tipoSeleccionado = AL.tipoSeleccionado || 'NATURAL';
+  var esNatural = AL.tipoSeleccionado==='NATURAL';
   var esJur = AL.tipoSeleccionado==='JURIDICO';
   var esExtra = AL.tipoSeleccionado==='EXTRAORDINARIA';
-  var h = '<div class="fp-group" style="margin-bottom:18px"><label>Tipo de cliente</label>'+
+  var bloqueado = !!AL.idActual;
+  var d = AL.formDraft || {};
+
+  var h = '<div class="fp-group" style="margin-bottom:18px"><label>Tipo de cliente'+(bloqueado?' <span style="font-size:10px;color:var(--text3);font-weight:400">(bloqueado, ya hay documentos cargados)</span>':'')+'</label>'+
     '<div class="chips" id="alTipoChips">'+
-      '<button class="chip'+(AL.tipoSeleccionado==='NATURAL'?' on':'')+'" onclick="alSetTipo(\'NATURAL\',this)">Persona Natural</button>'+
-      '<button class="chip'+(esJur?' on':'')+'" onclick="alSetTipo(\'JURIDICO\',this)">Persona Jurídica</button>'+
-      '<button class="chip'+(esExtra?' on':'')+'" onclick="alSetTipo(\'EXTRAORDINARIA\',this)">Solicitud Extraordinaria</button>'+
+      '<button class="chip'+(esNatural?' on':'')+'" '+(bloqueado?'disabled':'')+' onclick="alSetTipo(\'NATURAL\')">Persona Natural</button>'+
+      '<button class="chip'+(esJur?' on':'')+'" '+(bloqueado?'disabled':'')+' onclick="alSetTipo(\'JURIDICO\')">Persona Jurídica</button>'+
+      '<button class="chip'+(esExtra?' on':'')+'" '+(bloqueado?'disabled':'')+' onclick="alSetTipo(\'EXTRAORDINARIA\')">Solicitud Extraordinaria</button>'+
     '</div></div>';
 
   if(!esExtra){
     h += '<div class="rep-contact-blk">';
     h += '<div class="rep-contact-lbl">Datos de contacto'+(esJur?' del Representante 1':'')+'</div>';
     h += '<div class="rep-contact-row">';
-    h += '<div class="field" style="margin:0"><label>Correo</label><input type="email" id="alContCorreo" placeholder="correo@empresa.com"></div>';
-    h += '<div class="field" style="margin:0"><label>Teléfono</label><input type="tel" id="alContTel" placeholder="+584121234567"></div>';
+    h += '<div class="field" style="margin:0"><label>Correo</label><input type="email" id="alContCorreo" value="'+esc(d.correo||'')+'" placeholder="correo@empresa.com" onchange="alGuardarDraftInputs()"></div>';
+    h += '<div class="field" style="margin:0"><label>Teléfono</label><input type="tel" id="alContTel" value="'+esc(d.telefono||'')+'" placeholder="+584121234567" onchange="alGuardarDraftInputs()"></div>';
     h += '</div></div>';
+
+    h += '<div class="doc-section"><div class="doc-section-title">'+(esNatural?'Documentos':'Representante 1')+'</div>';
+    h += '<div class="doc-grid">'+alDocItem('REP1_CEDULA', esNatural?'Cédula de Identidad':'Cédula Representante 1')+alDocItem('REP1_RIF', esNatural?'RIF Vigente':'RIF Representante 1')+'</div></div>';
+
     if(esJur){
-      h += '<div class="rep-contact-blk">';
-      h += '<div class="rep-contact-lbl">Contacto empresarial</div>';
-      h += '<div class="field" style="margin:0"><label>Correo empresarial</label><input type="email" id="alContCorreoEmp" placeholder="info@empresa.com"></div>';
-      h += '</div>';
+      if(!AL.mostrarRep2){
+        h += '<button class="btn btn-g btn-sm" style="margin-bottom:14px;width:100%" onclick="AL.mostrarRep2=true;alRenderFormularioUnico()">+ Agregar Representante 2</button>';
+      } else {
+        h += '<div class="doc-section"><div class="doc-section-title">Representante 2 <span style="font-size:10px;color:var(--text3);font-weight:400">(opcional)</span></div>';
+        h += '<div class="doc-grid">'+alDocItem('REP2_CEDULA','Cédula Representante 2')+alDocItem('REP2_RIF','RIF Representante 2')+'</div></div>';
+      }
+      h += '<div class="doc-section"><div class="doc-section-title">Datos de la Empresa</div>';
+      h += '<div class="rep-contact-blk"><div class="rep-contact-lbl">Contacto empresarial</div>';
+      h += '<div class="field" style="margin:0"><label>Correo empresarial</label><input type="email" id="alContCorreoEmp" value="'+esc(d.correoEmpresa||'')+'" placeholder="info@empresa.com" onchange="alGuardarDraftInputs()"></div></div>';
+      h += '<div class="doc-grid" style="margin-top:10px">'+alDocItem('ACTA_CONSTITUTIVA','Acta Constitutiva')+'</div>';
+      h += '<div style="margin-top:10px">';
+      if(!AL.mostrarActas){
+        h += '<button onclick="AL.mostrarActas=true;alRenderFormularioUnico()" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:7px 14px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;width:100%;text-align:left">▸ Agregar más actas de asamblea (opcional)</button>';
+      } else {
+        h += '<div class="doc-grid">'+alDocItem('ACTA_ASAMBLEA_1','Acta de Asamblea 1')+alDocItem('ACTA_ASAMBLEA_2','Acta de Asamblea 2')+alDocItem('ACTA_ASAMBLEA_3','Acta de Asamblea 3')+alDocItem('ACTA_ASAMBLEA_4','Acta de Asamblea 4')+'</div>';
+      }
+      h += '</div></div>';
     }
+    h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px" onclick="alAnalizar()">Analizar documentos →</button>';
   } else {
     h += '<div class="field" style="margin-bottom:16px"><label>Describe el caso</label>'+
-      '<textarea id="alDescExtraordinaria" rows="3" placeholder="Explica la situación puntual de este cliente..."></textarea></div>';
+      '<textarea id="alDescExtraordinaria" rows="3" placeholder="Explica la situación puntual de este cliente..." onchange="alGuardarDraftInputs()">'+esc(d.descripcion||'')+'</textarea></div>';
+    h += '<div class="doc-section"><div class="doc-section-title">Documentos</div>';
+    h += '<div class="doc-item"><div class="doc-lbl">Documento</div><div class="doc-upload">'
+      +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\'DOCS_EXTRAORDINARIA\',true)">'
+      +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
+      +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div></div></div></div>';
+    h += '<div id="alExtraLista" style="margin:8px 0 16px;font-size:11.5px;color:var(--text2)"></div>';
+    h += '<button class="btn btn-p" style="width:100%;justify-content:center" onclick="alFinalizarExtraordinaria()">Enviar a Administración →</button>';
   }
-  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px" onclick="alCrearSolicitud()">Continuar →</button>';
+
   document.getElementById('alDrawerBody').innerHTML = h;
-}
-
-function alSetTipo(tipo, btn){
-  AL.tipoSeleccionado = tipo;
-  alRenderFormularioInicial();
-}
-
-function alCrearSolicitud(){
-  var payload = {
-    action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
-    telefono: document.getElementById('alContTel') ? document.getElementById('alContTel').value.trim() : '',
-    correo: document.getElementById('alContCorreo') ? document.getElementById('alContCorreo').value.trim() : '',
-    correoEmpresa: document.getElementById('alContCorreoEmp') ? document.getElementById('alContCorreoEmp').value.trim() : '',
-    descripcionExtraordinaria: AL.tipoSeleccionado==='EXTRAORDINARIA' ? document.getElementById('alDescExtraordinaria').value.trim() : ''
-  };
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
-    .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
-      AL.idActual = rs.idSolicitud;
-      AL.docsCargados = {};
-      if(AL.tipoSeleccionado==='EXTRAORDINARIA') alRenderUploadExtraordinaria();
-      else alRenderUploadDocs();
-    }).catch(function(){toast('Sin conexión','err');});
 }
 
 // ── Tarjeta de documento, mismo lenguaje visual que docField() del drawer de Cliente ──
 function alDocItem(col, label){
   var cargado = AL.docsCargados && AL.docsCargados[col];
   if(cargado){
-    return '<div class="doc-item doc-item-ok" id="alDocItem_'+col+'">'
+    return '<div class="doc-item doc-item-ok">'
       +'<div class="doc-lbl">'+label+'</div>'
       +'<div class="doc-ok"><span style="color:var(--green);font-size:11px">✓ Cargado</span>'
       +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
       +'<a href="'+cargado+'" target="_blank" class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px">Ver ↗</a>'
-      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="document.getElementById(\'alInput_'+col+'\').click()">Reemplazar</button>'
-      +'</div></div>'
-      +'<input type="file" id="alInput_'+col+'" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="alHandleFile(this,\''+col+'\')">'
-      +'</div>';
+      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="alReemplazarDoc(\''+col+'\')">Reemplazar</button>'
+      +'</div></div></div>';
   }
-  return '<div class="doc-item" id="alDocItem_'+col+'">'
+  return '<div class="doc-item">'
     +'<div class="doc-lbl">'+label+'</div>'
     +'<div class="doc-upload">'
     +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\''+col+'\')">'
@@ -6929,74 +6951,65 @@ function alDocItem(col, label){
     +'</div></div>';
 }
 
-function alRenderUploadDocs(){
-  var esNatural = AL.tipoSeleccionado==='NATURAL';
-  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:14px">Sube los documentos — el análisis corre automáticamente al terminar.</div>';
-
-  h += '<div class="doc-section"><div class="doc-section-title">'+(esNatural?'Documentos':'Representante 1')+'</div>';
-  h += '<div class="doc-grid">'+alDocItem('REP1_CEDULA', esNatural?'Cédula de Identidad':'Cédula Representante 1')+alDocItem('REP1_RIF', esNatural?'RIF Vigente':'RIF Representante 1')+'</div></div>';
-
-  if(!esNatural){
-    if(!AL.mostrarRep2){
-      h += '<button class="btn btn-g btn-sm" style="margin-bottom:14px;width:100%" onclick="AL.mostrarRep2=true;alRenderUploadDocs()">+ Agregar Representante 2</button>';
-    } else {
-      h += '<div class="doc-section"><div class="doc-section-title">Representante 2 <span style="font-size:10px;color:var(--text3);font-weight:400">(opcional)</span></div>';
-      h += '<div class="doc-grid">'+alDocItem('REP2_CEDULA','Cédula Representante 2')+alDocItem('REP2_RIF','RIF Representante 2')+'</div></div>';
-    }
-    h += '<div class="doc-section"><div class="doc-section-title">Datos de la Empresa</div>';
-    h += '<div class="doc-grid">'+alDocItem('ACTA_CONSTITUTIVA','Acta Constitutiva')+'</div>';
-    h += '<div style="margin-top:10px">';
-    if(!AL.mostrarActas){
-      h += '<button onclick="AL.mostrarActas=true;alRenderUploadDocs()" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:7px 14px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;width:100%;text-align:left">▸ Agregar más actas de asamblea (opcional)</button>';
-    } else {
-      h += '<div class="doc-grid">'+alDocItem('ACTA_ASAMBLEA_1','Acta de Asamblea 1')+alDocItem('ACTA_ASAMBLEA_2','Acta de Asamblea 2')+alDocItem('ACTA_ASAMBLEA_3','Acta de Asamblea 3')+alDocItem('ACTA_ASAMBLEA_4','Acta de Asamblea 4')+'</div>';
-    }
-    h += '</div></div>';
-  }
-
-  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px" onclick="alAnalizar()">Analizar documentos →</button>';
-  document.getElementById('alDrawerBody').innerHTML = h;
+function alReemplazarDoc(col){
+  var inp = document.createElement('input');
+  inp.type='file'; inp.accept='.pdf,.jpg,.jpeg,.png';
+  inp.onchange = function(){ alHandleFile(inp, col); };
+  inp.click();
 }
 
-function alRenderUploadExtraordinaria(){
-  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:12px">Adjunta los documentos que tengas — este caso no corre análisis automático, lo revisa Administración directamente.</div>';
-  h += '<div class="doc-item"><div class="doc-lbl">Documento</div><div class="doc-upload">'
-    +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\'DOCS_EXTRAORDINARIA\',true)">'
-    +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
-    +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div></div></div>';
-  h += '<div id="alExtraLista" style="margin-top:8px;font-size:11.5px;color:var(--text2)"></div>';
-  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="toast(\'Solicitud enviada ✓\',\'ok\');alCerrarDrawer();alCargarSolicitudes();">Enviar a Administración →</button>';
-  document.getElementById('alDrawerBody').innerHTML = h;
-}
-
-// ── Subida de documento, mismo patrón visual/validación que handleFile() ──
+// ── Subida de documento — crea la solicitud en segundo plano si es la primera vez ──
 function alHandleFile(input, columna, acumulativo){
   var file = input.files[0];
-  if(!file || !AL.idActual) return;
+  if(!file) return;
   if(file.size > 10*1024*1024){ toast('Archivo muy grande (máx 10MB)','err'); return; }
   var ext = (file.name.split('.').pop()||'').toLowerCase();
   if(['pdf','jpg','jpeg','png'].indexOf(ext) < 0){ toast('Solo se aceptan PDF o imágenes','err'); input.value=''; return; }
 
-  var itemDiv = input.closest('.doc-item');
+  alGuardarDraftInputs();
   var uploadDiv = input.closest('.doc-upload');
   if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
 
-  alFileToBase64(file).then(function(b64){
-    return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-      action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
-      fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
-    })}).then(function(r){return r.json();});
-  }).then(function(rs){
-    if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); if(uploadDiv)alRenderUploadDocs(); return; }
-    if(acumulativo){
-      var lista=document.getElementById('alExtraLista');
-      if(lista) lista.innerHTML += '<div>✓ '+esc(file.name)+'</div>';
-    } else {
-      AL.docsCargados = AL.docsCargados || {};
-      AL.docsCargados[columna] = rs.url;
-      alRenderUploadDocs();
-    }
-  }).catch(function(){ toast('Sin conexión','err'); });
+  var subirAhora = function(){
+    alFileToBase64(file).then(function(b64){
+      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
+        fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
+      })}).then(function(r){return r.json();});
+    }).then(function(rs){
+      if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alRenderFormularioUnico(); return; }
+      if(acumulativo){
+        var lista=document.getElementById('alExtraLista');
+        if(lista) lista.innerHTML += '<div>✓ '+esc(file.name)+'</div>';
+      } else {
+        AL.docsCargados = AL.docsCargados || {};
+        AL.docsCargados[columna] = rs.url;
+        alRenderFormularioUnico();
+      }
+    }).catch(function(){ toast('Sin conexión','err'); });
+  };
+
+  if(!AL.idActual){
+    var d = AL.formDraft || {};
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
+      telefono:d.telefono||'', correo:d.correo||'', correoEmpresa:d.correoEmpresa||'',
+      descripcionExtraordinaria:d.descripcion||''
+    })}).then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){ toast('Error: '+(rs.error||''),'err'); return; }
+      AL.idActual = rs.idSolicitud;
+      subirAhora();
+    }).catch(function(){ toast('Sin conexión','err'); });
+  } else {
+    subirAhora();
+  }
+}
+
+function alFinalizarExtraordinaria(){
+  if(!AL.idActual){ toast('Adjunta al menos un documento antes de enviar','err'); return; }
+  toast('Solicitud enviada ✓','ok');
+  alCerrarDrawer();
+  alCargarSolicitudes();
 }
 
 // ── Carga genérica e indeterminada (sin adelantar el resultado) ──
@@ -7027,8 +7040,14 @@ function alMostrarCargaGenerica(){
 function alDetenerCargaGenerica(){ clearInterval(AL.scanTimer); }
 
 function alAnalizar(){
+  if(!AL.idActual){ toast('Sube al menos un documento antes de analizar','err'); return; }
+  alGuardarDraftInputs();
+  var d = AL.formDraft || {};
   alMostrarCargaGenerica();
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'verificarSolicitudAliado',idSolicitud:AL.idActual,usuario:S.user})})
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'actualizarContactoSolicitud',idSolicitud:AL.idActual,telefono:d.telefono||'',correo:d.correo||'',correoEmpresa:d.correoEmpresa||''})})
+    .then(function(){
+      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'verificarSolicitudAliado',idSolicitud:AL.idActual,usuario:S.user})});
+    })
     .then(function(r){return r.json();})
     .then(function(rs){
       alDetenerCargaGenerica();
@@ -7207,6 +7226,7 @@ function alCargarColaAdmin(){
       var todas = rs.solicitudes;
       var excepciones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_EXCEPCION';});
       var revisiones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_REVISION_MANUAL';});
+      var extraordinarias = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EXTRAORDINARIA_PENDIENTE';});
       var referidosPend = todas.filter(function(s){return s.TIPO_REGISTRO==='REFERIDO' && s.ESTATUS_PIPELINE==='REFERIDO_ENVIADO';});
       var porPromover = todas.filter(function(s){return s.ESTATUS_PIPELINE==='INSTALACION_CONFIRMADA';});
 
@@ -7214,10 +7234,11 @@ function alCargarColaAdmin(){
       if(kpiBox) kpiBox.innerHTML =
         '<div class="kpi" style="border-top-color:var(--amber)"><div class="kpi-val">'+excepciones.length+'</div><div class="kpi-lbl">Excepciones</div></div>'+
         '<div class="kpi" style="border-top-color:var(--blue)"><div class="kpi-val">'+revisiones.length+'</div><div class="kpi-lbl">Revisiones manuales</div></div>'+
+        '<div class="kpi" style="border-top-color:var(--orange)"><div class="kpi-val">'+extraordinarias.length+'</div><div class="kpi-lbl">Extraordinarias</div></div>'+
         '<div class="kpi" style="border-top-color:var(--purple)"><div class="kpi-val">'+referidosPend.length+'</div><div class="kpi-lbl">Referidos por canalizar</div></div>'+
         '<div class="kpi" style="border-top-color:var(--green)"><div class="kpi-val">'+porPromover.length+'</div><div class="kpi-lbl">Por promover</div></div>';
 
-      var cola = excepciones.concat(revisiones).concat(porPromover);
+      var cola = excepciones.concat(revisiones).concat(extraordinarias).concat(porPromover);
       var colaBody = document.getElementById('alAdminColaBody');
       if(colaBody){
         if(!cola.length){ colaBody.innerHTML = '<div class="section-note">Sin casos pendientes</div>'; }
@@ -7225,17 +7246,19 @@ function alCargarColaAdmin(){
           colaBody.innerHTML = cola.map(function(s){
             var esExc = s.ESTATUS_PIPELINE==='EN_EXCEPCION';
             var esRev = s.ESTATUS_PIPELINE==='EN_REVISION_MANUAL';
+            var esExtra = s.ESTATUS_PIPELINE==='EXTRAORDINARIA_PENDIENTE';
             var esProm = s.ESTATUS_PIPELINE==='INSTALACION_CONFIRMADA';
             var botones = '';
-            if(esExc || esRev){
+            if(esExc || esRev || esExtra){
               botones = '<div class="field" style="margin:8px 0"><textarea id="alResp_'+s.ID_SOLICITUD+'" rows="2" placeholder="Tu respuesta..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12px"></textarea></div>'+
                 '<div style="display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',true)">✓ Aprobar</button>'+
                 '<button class="btn btn-r btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',false)">✕ Rechazar</button></div>';
             } else if(esProm){
               botones = '<button class="btn btn-p btn-sm" onclick="alPromoverCliente(\''+s.ID_SOLICITUD+'\')">Promover a cartera</button>';
             }
-            return '<div class="al-case wait"><div style="font-weight:700;font-size:13px">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'—')+'</div>'+
+            return '<div class="al-case wait"><div style="font-weight:700;font-size:13px">'+esc(s.RAZON_SOCIAL_O_NOMBRE||(esExtra?'Solicitud Extraordinaria':'—'))+'</div>'+
               '<div class="section-note" style="margin:2px 0 8px">RIF '+esc(s.RIF||'—')+' · Aliado: '+esc(s.ALIADO||'—')+' · '+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</div>'+
+              (esExtra&&s.DESCRIPCION_EXTRAORDINARIA?('<div class="al-obs">Caso: '+esc(s.DESCRIPCION_EXTRAORDINARIA)+'</div>'):'')+
               (s.OBSERVACION_ALIADO?('<div class="al-obs">Observación: '+esc(s.OBSERVACION_ALIADO)+'</div>'):'')+
               botones+'</div>';
           }).join('');
