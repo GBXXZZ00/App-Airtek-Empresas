@@ -715,6 +715,7 @@ tbody tr:hover td{background:var(--surface2)}
 .al-data-item label{display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
 .al-data-item div{font-size:12.5px;color:var(--text);font-weight:600}
 .al-who-fail{display:inline-flex;align-items:center;gap:6px;background:var(--red-dim);border:1px solid var(--red);color:#FF7B72;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:600;margin-top:6px}
+.al-drawer-panel{display:block;padding:20px;overflow-y:auto;flex:1;animation:fadeIn .18s var(--ease-out)}
 </style>
 </head>
 <body>
@@ -1377,7 +1378,7 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="drawer-title" id="alDrawerTitle">Nueva Solicitud de Verificación</div>
       <button class="drawer-close" onclick="alCerrarDrawer()">✕</button>
     </div>
-    <div class="tab-panel active" style="padding:20px" id="alDrawerBody"></div>
+    <div class="al-drawer-panel" id="alDrawerBody"></div>
   </div>
 </div>
 
@@ -1530,7 +1531,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4AHTtgmEVktoFR834mvbdlkGAgapsQR8YMPL53PyrttrzyX9gpfWEDdD3xckCik_DFQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnPjRk7s147rr9E2fINdg7CHjJAmJeNdfGkUSpYCkUTra3kwwPkxrTvQK-8nRZPtvWJw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1710,7 +1711,12 @@ async function loadConfigForLogin(){
   }
   inp.disabled=false;
   inp.placeholder='Escribe o selecciona tu nombre...';
-  USER_DD_LIST=S.cfg.filter(r=>(r.ACTIVO||'').toUpperCase()==='SI').map(r=>r.EJECUTIVO);
+  USER_DD_LIST=S.cfg.filter(r=>(r.ACTIVO||'').toUpperCase()==='SI').filter(r=>{
+    var rol=(r.ROL||'').toUpperCase();
+    if(rol==='ADMIN')return true; // Admin siempre visible, entre por la puerta que entre
+    var esAliado=rol==='ALIADO';
+    return S.team==='aliados' ? esAliado : !esAliado;
+  }).map(r=>r.EJECUTIVO);
   // Precargar el último usuario que entró desde este equipo
   try{
     const store=_store();
@@ -2201,6 +2207,7 @@ function openExpRecord(r){
   showTab('datos');
   const bg=document.getElementById('drawerBg');
   bg.classList.add('open');
+  var alBg=document.getElementById('alDrawerBg'); if(alBg)alBg.classList.remove('open');
   if(_lastCard){_lastCard.classList.remove('selected');_lastCard=null;clearTimeout(_lastCardTimer);}
   setTimeout(()=>{
     const panel=document.querySelector('.tab-panel.active');
@@ -6755,135 +6762,241 @@ function alCargarReferidos(){
 
 function alAbrirDrawerReferido(){
   AL.idActual = null;
+  AL.refDocs = {};
   document.getElementById('alDrawerTitle').textContent='Referir Cliente';
-  document.getElementById('alDrawerBody').innerHTML =
-    '<div class="field" style="margin-bottom:12px"><label style="font-size:11px;color:var(--text2);font-weight:600">RIF del cliente</label>'+
-    '<input type="text" id="alRefRif" placeholder="J-40000000-0" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
-    '<div class="field" style="margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Teléfonos de contacto (representantes)</label>'+
-    '<textarea id="alRefTel" rows="2" placeholder="0414-0000000, 0424-1111111" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></textarea></div>'+
-    '<button class="btn btn-p" style="width:100%;justify-content:center" onclick="alEnviarReferidoStandalone()">Enviar referido →</button>';
-  document.getElementById('alDrawerBg').classList.add('open');
+  alRenderFormReferido();
+  alAbrirDrawer_();
+}
+
+function alRenderFormReferido(){
+  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:14px">Sube el RIF y la Cédula del representante — solo se usan para identificar al cliente en el correo, no corren ningún análisis de aprobación.</div>';
+  h += '<div class="doc-section"><div class="doc-section-title">Documentos</div>';
+  h += '<div class="doc-grid">'+alDocItemRef('REP1_RIF','RIF de la Empresa')+alDocItemRef('REP1_CEDULA','Cédula del Representante')+'</div></div>';
+  h += '<div class="field" style="margin:14px 0 16px"><label>Teléfono de contacto</label><input type="tel" id="alRefTel" placeholder="+584121234567"></div>';
+  h += '<button class="btn btn-p" id="alBtnEnviarReferido" style="width:100%;justify-content:center" onclick="alEnviarReferidoStandalone()">Enviar referido →</button>';
+  document.getElementById('alDrawerBody').innerHTML = h;
+}
+
+function alDocItemRef(col, label){
+  var cargado = AL.refDocs && AL.refDocs[col];
+  if(cargado){
+    return '<div class="doc-item doc-item-ok"><div class="doc-lbl">'+label+'</div><div class="doc-ok">'
+      +'<span style="color:var(--green);font-size:11px">✓ Cargado</span></div></div>';
+  }
+  return '<div class="doc-item"><div class="doc-lbl">'+label+'</div><div class="doc-upload">'
+    +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFileReferido(this,\''+col+'\')">'
+    +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
+    +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div></div></div>';
+}
+
+function alHandleFileReferido(input, columna){
+  var file = input.files[0];
+  if(!file) return;
+  if(file.size > 10*1024*1024){ toast('Archivo muy grande (máx 10MB)','err'); return; }
+
+  var runSubida = function(){
+    var uploadDiv = input.closest('.doc-upload');
+    if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+    alFileToBase64(file).then(function(b64){
+      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
+        fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
+      })}).then(function(r){return r.json();});
+    }).then(function(rs){
+      if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alRenderFormReferido(); return; }
+      AL.refDocs[columna] = rs.url;
+      alRenderFormReferido();
+    }).catch(function(){ toast('Sin conexión','err'); });
+  };
+
+  // Primer archivo de este referido: crea el registro base para tener idSolicitud
+  if(!AL.idActual){
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'crearReferidoBase',aliado:S.user})})
+      .then(function(r){return r.json();}).then(function(rs){
+        if(!rs.ok){ toast('Error: '+(rs.error||''),'err'); return; }
+        AL.idActual = rs.idSolicitud;
+        runSubida();
+      }).catch(function(){ toast('Sin conexión','err'); });
+  } else {
+    runSubida();
+  }
 }
 
 function alEnviarReferidoStandalone(){
-  var rif = document.getElementById('alRefRif').value.trim();
+  if(!AL.idActual){ toast('Sube al menos el RIF antes de enviar','err'); return; }
   var tel = document.getElementById('alRefTel').value.trim();
-  if(!rif){toast('El RIF es requerido','err');return;}
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,telefonosContacto:tel})})
+  var btn = document.getElementById('alBtnEnviarReferido');
+
+  // Tarjeta de carga: se queda "procesando" hasta que la IA extraiga los datos y el correo salga
+  document.getElementById('alDrawerBody').innerHTML =
+    '<div class="al-loading-wrap"><div class="al-spinner"></div>'+
+    '<div class="al-loading-msg">Procesando información del cliente…</div>'+
+    '<div class="al-loading-sub">Extrayendo datos y armando el correo para Administración</div></div>';
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'procesarReferido',idSolicitud:AL.idActual,telefono:tel})})
     .then(function(r){return r.json();}).then(function(rs){
-      if(rs.ok){toast('Referido enviado ✓','ok');alCerrarDrawer();alCargarReferidos();}
-      else{toast('Error: '+(rs.error||''),'err');}
-    }).catch(function(){toast('Sin conexión','err');});
+      if(!rs.ok){ toast('Error: '+(rs.error||''),'err'); alRenderFormReferido(); return; }
+      toast('Referido enviado ✓','ok'); alCerrarDrawer(); alCargarReferidos();
+    }).catch(function(){ toast('Sin conexión','err'); alRenderFormReferido(); });
 }
 
 // ── Drawer: Nueva Solicitud ──────────────────────────────────────
+function alAbrirDrawer_(){ var cb=document.getElementById('drawerBg'); if(cb)cb.classList.remove('open'); document.getElementById('alDrawerBg').classList.add('open'); }
 function alCerrarDrawer(){ document.getElementById('alDrawerBg').classList.remove('open'); AL.idActual=null; }
 
 function alAbrirDrawerNueva(){
   AL.idActual = null;
   document.getElementById('alDrawerTitle').textContent='Nueva Solicitud de Verificación';
-  document.getElementById('alDrawerBody').innerHTML =
-    '<div class="fp-group" style="margin-bottom:18px"><label>Tipo de cliente</label>'+
+  alRenderFormularioInicial();
+  alAbrirDrawer_();
+}
+
+function alRenderFormularioInicial(){
+  AL.tipoSeleccionado = AL.tipoSeleccionado || 'NATURAL';
+  var esJur = AL.tipoSeleccionado==='JURIDICO';
+  var esExtra = AL.tipoSeleccionado==='EXTRAORDINARIA';
+  var h = '<div class="fp-group" style="margin-bottom:18px"><label>Tipo de cliente</label>'+
     '<div class="chips" id="alTipoChips">'+
-      '<button class="chip on" onclick="alSetTipo(\'NATURAL\',this)">Persona Natural</button>'+
-      '<button class="chip" onclick="alSetTipo(\'JURIDICO\',this)">Persona Jurídica</button>'+
-      '<button class="chip" onclick="alSetTipo(\'EXTRAORDINARIA\',this)">Solicitud Extraordinaria</button>'+
-    '</div></div>'+
-    '<div class="field" style="margin-bottom:10px"><label style="font-size:11px;color:var(--text2);font-weight:600">Teléfono de contacto</label>'+
-    '<input type="text" id="alContTel" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
-    '<div class="field" style="margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Correo de contacto</label>'+
-    '<input type="text" id="alContCorreo" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
-    '<div id="alDescExtraordinariaWrap" style="display:none;margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Describe el caso</label>'+
-    '<textarea id="alDescExtraordinaria" rows="3" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></textarea></div>'+
-    '<button class="btn btn-p" style="width:100%;justify-content:center" onclick="alCrearSolicitud()">Continuar →</button>';
-  AL.tipoSeleccionado = 'NATURAL';
-  document.getElementById('alDrawerBg').classList.add('open');
+      '<button class="chip'+(AL.tipoSeleccionado==='NATURAL'?' on':'')+'" onclick="alSetTipo(\'NATURAL\',this)">Persona Natural</button>'+
+      '<button class="chip'+(esJur?' on':'')+'" onclick="alSetTipo(\'JURIDICO\',this)">Persona Jurídica</button>'+
+      '<button class="chip'+(esExtra?' on':'')+'" onclick="alSetTipo(\'EXTRAORDINARIA\',this)">Solicitud Extraordinaria</button>'+
+    '</div></div>';
+
+  if(!esExtra){
+    h += '<div class="rep-contact-blk">';
+    h += '<div class="rep-contact-lbl">Datos de contacto'+(esJur?' del Representante 1':'')+'</div>';
+    h += '<div class="rep-contact-row">';
+    h += '<div class="field" style="margin:0"><label>Correo</label><input type="email" id="alContCorreo" placeholder="correo@empresa.com"></div>';
+    h += '<div class="field" style="margin:0"><label>Teléfono</label><input type="tel" id="alContTel" placeholder="+584121234567"></div>';
+    h += '</div></div>';
+    if(esJur){
+      h += '<div class="rep-contact-blk">';
+      h += '<div class="rep-contact-lbl">Contacto empresarial</div>';
+      h += '<div class="field" style="margin:0"><label>Correo empresarial</label><input type="email" id="alContCorreoEmp" placeholder="info@empresa.com"></div>';
+      h += '</div>';
+    }
+  } else {
+    h += '<div class="field" style="margin-bottom:16px"><label>Describe el caso</label>'+
+      '<textarea id="alDescExtraordinaria" rows="3" placeholder="Explica la situación puntual de este cliente..."></textarea></div>';
+  }
+  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px" onclick="alCrearSolicitud()">Continuar →</button>';
+  document.getElementById('alDrawerBody').innerHTML = h;
 }
 
 function alSetTipo(tipo, btn){
   AL.tipoSeleccionado = tipo;
-  document.querySelectorAll('#alTipoChips .chip').forEach(function(c){c.classList.remove('on');});
-  btn.classList.add('on');
-  document.getElementById('alDescExtraordinariaWrap').style.display = tipo==='EXTRAORDINARIA' ? '' : 'none';
+  alRenderFormularioInicial();
 }
 
 function alCrearSolicitud(){
   var payload = {
     action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
-    telefono:document.getElementById('alContTel').value.trim(),
-    correo:document.getElementById('alContCorreo').value.trim(),
+    telefono: document.getElementById('alContTel') ? document.getElementById('alContTel').value.trim() : '',
+    correo: document.getElementById('alContCorreo') ? document.getElementById('alContCorreo').value.trim() : '',
+    correoEmpresa: document.getElementById('alContCorreoEmp') ? document.getElementById('alContCorreoEmp').value.trim() : '',
     descripcionExtraordinaria: AL.tipoSeleccionado==='EXTRAORDINARIA' ? document.getElementById('alDescExtraordinaria').value.trim() : ''
   };
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       AL.idActual = rs.idSolicitud;
+      AL.docsCargados = {};
       if(AL.tipoSeleccionado==='EXTRAORDINARIA') alRenderUploadExtraordinaria();
       else alRenderUploadDocs();
     }).catch(function(){toast('Sin conexión','err');});
 }
 
-function alSlotHtml(col, label, opcional){
-  return '<div class="al-upload" id="alSlot_'+col+'" onclick="document.getElementById(\'alInput_'+col+'\').click()">'+
-    '<span>📄 '+label+(opcional?' <span style="font-size:9px;color:var(--text3)">(opcional)</span>':'')+'</span><span id="alSlotStatus_'+col+'"></span></div>'+
-    '<input type="file" id="alInput_'+col+'" style="display:none" onchange="alSubirArchivo(\''+col+'\', this)">';
+// ── Tarjeta de documento, mismo lenguaje visual que docField() del drawer de Cliente ──
+function alDocItem(col, label){
+  var cargado = AL.docsCargados && AL.docsCargados[col];
+  if(cargado){
+    return '<div class="doc-item doc-item-ok" id="alDocItem_'+col+'">'
+      +'<div class="doc-lbl">'+label+'</div>'
+      +'<div class="doc-ok"><span style="color:var(--green);font-size:11px">✓ Cargado</span>'
+      +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
+      +'<a href="'+cargado+'" target="_blank" class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px">Ver ↗</a>'
+      +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="document.getElementById(\'alInput_'+col+'\').click()">Reemplazar</button>'
+      +'</div></div>'
+      +'<input type="file" id="alInput_'+col+'" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="alHandleFile(this,\''+col+'\')">'
+      +'</div>';
+  }
+  return '<div class="doc-item" id="alDocItem_'+col+'">'
+    +'<div class="doc-lbl">'+label+'</div>'
+    +'<div class="doc-upload">'
+    +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\''+col+'\')">'
+    +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
+    +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div>'
+    +'</div></div>';
 }
 
 function alRenderUploadDocs(){
   var esNatural = AL.tipoSeleccionado==='NATURAL';
-  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:12px">Sube los documentos — el análisis corre automáticamente al terminar.</div>';
-  if(esNatural){
-    h += alSlotHtml('REP1_CEDULA','Cédula de Identidad',false);
-    h += alSlotHtml('REP1_RIF','RIF Vigente',false);
-  } else {
-    h += '<div style="font-size:12px;font-weight:600;margin:10px 0 6px">Representante 1</div>';
-    h += alSlotHtml('REP1_CEDULA','Cédula Representante 1',false);
-    h += alSlotHtml('REP1_RIF','RIF Representante 1',false);
-    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Representante 2 (opcional)</div>';
-    h += alSlotHtml('REP2_CEDULA','Cédula Representante 2',true);
-    h += alSlotHtml('REP2_RIF','RIF Representante 2',true);
-    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Acta Constitutiva</div>';
-    h += alSlotHtml('ACTA_CONSTITUTIVA','Acta Constitutiva',false);
-    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Actas de Asamblea (opcional, comodín)</div>';
-    h += alSlotHtml('ACTA_ASAMBLEA_1','Acta de Asamblea 1',true);
-    h += alSlotHtml('ACTA_ASAMBLEA_2','Acta de Asamblea 2',true);
-    h += alSlotHtml('ACTA_ASAMBLEA_3','Acta de Asamblea 3',true);
-    h += alSlotHtml('ACTA_ASAMBLEA_4','Acta de Asamblea 4',true);
+  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:14px">Sube los documentos — el análisis corre automáticamente al terminar.</div>';
+
+  h += '<div class="doc-section"><div class="doc-section-title">'+(esNatural?'Documentos':'Representante 1')+'</div>';
+  h += '<div class="doc-grid">'+alDocItem('REP1_CEDULA', esNatural?'Cédula de Identidad':'Cédula Representante 1')+alDocItem('REP1_RIF', esNatural?'RIF Vigente':'RIF Representante 1')+'</div></div>';
+
+  if(!esNatural){
+    if(!AL.mostrarRep2){
+      h += '<button class="btn btn-g btn-sm" style="margin-bottom:14px;width:100%" onclick="AL.mostrarRep2=true;alRenderUploadDocs()">+ Agregar Representante 2</button>';
+    } else {
+      h += '<div class="doc-section"><div class="doc-section-title">Representante 2 <span style="font-size:10px;color:var(--text3);font-weight:400">(opcional)</span></div>';
+      h += '<div class="doc-grid">'+alDocItem('REP2_CEDULA','Cédula Representante 2')+alDocItem('REP2_RIF','RIF Representante 2')+'</div></div>';
+    }
+    h += '<div class="doc-section"><div class="doc-section-title">Datos de la Empresa</div>';
+    h += '<div class="doc-grid">'+alDocItem('ACTA_CONSTITUTIVA','Acta Constitutiva')+'</div>';
+    h += '<div style="margin-top:10px">';
+    if(!AL.mostrarActas){
+      h += '<button onclick="AL.mostrarActas=true;alRenderUploadDocs()" style="background:none;border:1px dashed var(--border);color:var(--text2);padding:7px 14px;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;width:100%;text-align:left">▸ Agregar más actas de asamblea (opcional)</button>';
+    } else {
+      h += '<div class="doc-grid">'+alDocItem('ACTA_ASAMBLEA_1','Acta de Asamblea 1')+alDocItem('ACTA_ASAMBLEA_2','Acta de Asamblea 2')+alDocItem('ACTA_ASAMBLEA_3','Acta de Asamblea 3')+alDocItem('ACTA_ASAMBLEA_4','Acta de Asamblea 4')+'</div>';
+    }
+    h += '</div></div>';
   }
-  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="alAnalizar()">Analizar documentos →</button>';
+
+  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px" onclick="alAnalizar()">Analizar documentos →</button>';
   document.getElementById('alDrawerBody').innerHTML = h;
 }
 
 function alRenderUploadExtraordinaria(){
   var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:12px">Adjunta los documentos que tengas — este caso no corre análisis automático, lo revisa Administración directamente.</div>';
-  h += '<div class="al-upload" onclick="document.getElementById(\'alInputExtra\').click()"><span>📎 Agregar documento</span></div>';
-  h += '<input type="file" id="alInputExtra" style="display:none" onchange="alSubirArchivo(\'DOCS_EXTRAORDINARIA\', this, true)">';
+  h += '<div class="doc-item"><div class="doc-lbl">Documento</div><div class="doc-upload">'
+    +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\'DOCS_EXTRAORDINARIA\',true)">'
+    +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
+    +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div></div></div>';
   h += '<div id="alExtraLista" style="margin-top:8px;font-size:11.5px;color:var(--text2)"></div>';
   h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="toast(\'Solicitud enviada ✓\',\'ok\');alCerrarDrawer();alCargarSolicitudes();">Enviar a Administración →</button>';
   document.getElementById('alDrawerBody').innerHTML = h;
 }
 
-function alSubirArchivo(columna, inputEl, acumulativo){
-  var file = inputEl.files[0];
+// ── Subida de documento, mismo patrón visual/validación que handleFile() ──
+function alHandleFile(input, columna, acumulativo){
+  var file = input.files[0];
   if(!file || !AL.idActual) return;
-  var slotStatus = document.getElementById('alSlotStatus_'+columna);
-  if(slotStatus) slotStatus.textContent = 'Subiendo...';
+  if(file.size > 10*1024*1024){ toast('Archivo muy grande (máx 10MB)','err'); return; }
+  var ext = (file.name.split('.').pop()||'').toLowerCase();
+  if(['pdf','jpg','jpeg','png'].indexOf(ext) < 0){ toast('Solo se aceptan PDF o imágenes','err'); input.value=''; return; }
+
+  var itemDiv = input.closest('.doc-item');
+  var uploadDiv = input.closest('.doc-upload');
+  if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+
   alFileToBase64(file).then(function(b64){
     return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
       action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
       fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
     })}).then(function(r){return r.json();});
   }).then(function(rs){
-    if(!rs.ok){toast('Error subiendo: '+(rs.error||''),'err');return;}
+    if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); if(uploadDiv)alRenderUploadDocs(); return; }
     if(acumulativo){
       var lista=document.getElementById('alExtraLista');
       if(lista) lista.innerHTML += '<div>✓ '+esc(file.name)+'</div>';
     } else {
-      var slot=document.getElementById('alSlot_'+columna);
-      if(slot) slot.classList.add('filled');
-      if(slotStatus) slotStatus.textContent='✓ cargado';
+      AL.docsCargados = AL.docsCargados || {};
+      AL.docsCargados[columna] = rs.url;
+      alRenderUploadDocs();
     }
-  }).catch(function(){toast('Sin conexión','err');});
+  }).catch(function(){ toast('Sin conexión','err'); });
 }
 
 // ── Carga genérica e indeterminada (sin adelantar el resultado) ──
@@ -6928,7 +7041,7 @@ function alAbrirCaso(idSolicitud){
   AL.idActual = idSolicitud;
   document.getElementById('alDrawerTitle').textContent='Detalle de Solicitud';
   document.getElementById('alDrawerBody').innerHTML = '<div class="al-loading-wrap"><div class="al-spinner"></div><div class="al-loading-msg">Cargando expediente…</div></div>';
-  document.getElementById('alDrawerBg').classList.add('open');
+  alAbrirDrawer_();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudAliado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
@@ -7017,7 +7130,7 @@ function alRenderResultado(idSolicitud, rs){
   h += '</div>';
   document.getElementById('alDrawerBody').innerHTML = h;
   document.getElementById('alDrawerTitle').textContent = 'Resultado de la Verificación';
-  document.getElementById('alDrawerBg').classList.add('open');
+  alAbrirDrawer_();
 }
 
 function alReintentarPrompt(idSolicitud){
