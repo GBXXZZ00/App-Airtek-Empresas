@@ -684,6 +684,37 @@ tbody tr:hover td{background:var(--surface2)}
 .leaflet-popup-content{margin:10px 12px;font-size:12px;line-height:1.5}
 .leaflet-bar a{background:var(--surface2);color:var(--text);border-color:var(--border)}
 .leaflet-bar a:hover{background:var(--surface3)}
+
+/* ══ MÓDULO ALIADOS COMERCIALES v1.0 — bloque aditivo, prefijo al- ══ */
+.al-kpi.filt{cursor:pointer}
+.al-kpi.filt:active{transform:scale(.97)}
+.al-kpi.filt.sel{border-color:var(--accent);background:var(--accent-dim)}
+.al-case{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px}
+.al-case.ok{border-left:3px solid var(--green)}
+.al-case.warn{border-left:3px solid var(--amber)}
+.al-case.block{border-left:3px solid var(--red)}
+.al-case.wait{border-left:3px solid var(--blue)}
+.al-check{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--surface2)}
+.al-check:last-child{border-bottom:none}
+.al-ico{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;font-weight:700}
+.al-ico.y{background:var(--green-dim);color:var(--green)}
+.al-ico.n{background:var(--red-dim);color:var(--red)}
+.al-ico.w{background:var(--amber-dim);color:var(--amber)}
+.al-salv{background:var(--amber-dim);border:1px solid var(--amber);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:#E3B341}
+.al-obs{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--text2)}
+.al-upload{border:1px dashed var(--border2);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;transition:border-color .15s ease}
+.al-upload:hover{border-color:var(--accent)}
+.al-upload.filled{border-style:solid;border-color:var(--green);color:var(--text)}
+.al-loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;text-align:center;padding:20px}
+.al-spinner{width:38px;height:38px;border-radius:50%;border:3px solid var(--surface2);border-top-color:var(--accent);animation:alSpin .8s linear infinite;margin-bottom:18px}
+@keyframes alSpin{to{transform:rotate(360deg)}}
+.al-loading-msg{font-size:13px;font-weight:600;color:var(--text);transition:opacity .3s var(--ease-out)}
+.al-loading-sub{font-size:11.5px;color:var(--text3);margin-top:6px}
+.al-elapsed{font-size:11px;color:var(--text3);margin-top:14px;font-variant-numeric:tabular-nums}
+.al-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.al-data-item label{display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.al-data-item div{font-size:12.5px;color:var(--text);font-weight:600}
+.al-who-fail{display:inline-flex;align-items:center;gap:6px;background:var(--red-dim);border:1px solid var(--red);color:#FF7B72;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:600;margin-top:6px}
 </style>
 </head>
 <body>
@@ -717,11 +748,10 @@ tbody tr:hover td{background:var(--surface2)}
         <div class="ts-card-title">Ventas Corporativas</div>
         <div class="ts-card-sub">Gestión Clientes B2B</div>
       </div>
-      <div class="ts-card disabled" onclick="showComingSoon()">
+      <div class="ts-card" onclick="selectTeam('aliados')">
         <div class="ts-card-icon">🤝</div>
         <div class="ts-card-title">Aliados Comerciales</div>
         <div class="ts-card-sub">Verificación e instalaciones</div>
-        <div class="ts-badge">Próximamente</div>
       </div>
     </div>
   </div>
@@ -795,12 +825,20 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
     </div>
     <div class="sb-divider"></div>
+    <div class="sb-section" id="sbAliadosSection" style="display:none">
+      <div class="sb-label">Aliados Comerciales</div>
+      <button class="nav-item" id="nav-verificacion" onclick="showView('verificacion')">
+        <span class="nav-icon">🔍</span> Verificación
+        <span class="nav-badge" id="alVerifBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" id="nav-referidos" onclick="showView('referidos')">
+        <span class="nav-icon">🔗</span> Referidos
+        <span class="nav-badge" id="alRefBadge" style="display:none">0</span>
+      </button>
+    </div>
+    <div class="sb-divider"></div>
     <div class="sb-section">
       <div class="sb-label">Próximamente</div>
-      <button class="nav-item disabled">
-        <span class="nav-icon">🤝</span> Aliados Comerciales
-        <span class="nav-coming">Fase 2</span>
-      </button>
       <button class="nav-item disabled">
         <span class="nav-icon">👥</span> Líderes de Ventas
         <span class="nav-coming">Fase 3</span>
@@ -1227,6 +1265,26 @@ tbody tr:hover td{background:var(--surface2)}
               <span id="driveMasivoStatus" style="font-size:12px;color:var(--text2)"></span>
             </div>
           </div>
+
+          <!-- ══ ALIADOS COMERCIALES — cola de revisión (solo ADMIN) v1.0 ══ -->
+          <div id="alAdminQueueCard" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:14px;font-weight:700">🤝 Aliados Comerciales — Por Revisar</div>
+              <button class="btn btn-g btn-sm" onclick="alCargarColaAdmin()">↻ Actualizar</button>
+            </div>
+            <div class="kpi-grid" id="alAdminKpiRow"></div>
+            <div id="alAdminColaBody"></div>
+            <div style="font-size:13px;font-weight:700;margin:18px 0 8px">Resumen de Referidos</div>
+            <table class="mini-tbl" style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr>
+                <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Aliado</th>
+                <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Cliente</th>
+                <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">RIF</th>
+                <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Estatus</th>
+              </tr></thead>
+              <tbody id="alAdminReferidosBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1276,6 +1334,53 @@ tbody tr:hover td{background:var(--surface2)}
 </div>
 
 <!-- ══ VISTA FACTIBILIDAD v1.19 ═══════════════════════════════ -->
+<!-- ══ VISTA VERIFICACIÓN (ALIADOS COMERCIALES) v1.0 ══════════ -->
+<div class="view" id="view-verificacion">
+  <div class="view-hd">
+    <div><div class="view-title">Verificación</div><div class="view-sub" id="alVerifSub">—</div></div>
+    <button class="btn btn-p" onclick="alAbrirDrawerNueva()">+ Agregar solicitud</button>
+  </div>
+  <div class="kpi-grid" id="alKpiRow"></div>
+  <table class="mini-tbl" id="alTablaSolicitudes" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+    <thead><tr>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--border)">Cliente</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">RIF</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Tipo</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Estatus</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Fecha</th>
+    </tr></thead>
+    <tbody id="alTablaSolicitudesBody"></tbody>
+  </table>
+</div>
+
+<!-- ══ VISTA REFERIDOS (ALIADOS COMERCIALES) v1.0 ══════════════ -->
+<div class="view" id="view-referidos">
+  <div class="view-hd">
+    <div><div class="view-title">Referidos</div><div class="view-sub">Clientes que has canalizado a Administración</div></div>
+    <button class="btn btn-p" onclick="alAbrirDrawerReferido()">+ Referir cliente</button>
+  </div>
+  <table class="mini-tbl" id="alTablaReferidos" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+    <thead><tr>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Cliente</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">RIF</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Estatus</th>
+      <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Fecha</th>
+    </tr></thead>
+    <tbody id="alTablaReferidosBody"></tbody>
+  </table>
+</div>
+
+<!-- ══ DRAWER NUEVA SOLICITUD / REFERIR CLIENTE (ALIADOS) v1.0 ══ -->
+<div class="drawer-bg" id="alDrawerBg" onclick="if(event.target===this)alCerrarDrawer()">
+  <div class="drawer">
+    <div class="drawer-hd">
+      <div class="drawer-title" id="alDrawerTitle">Nueva Solicitud de Verificación</div>
+      <button class="drawer-close" onclick="alCerrarDrawer()">✕</button>
+    </div>
+    <div class="tab-panel active" style="padding:20px" id="alDrawerBody"></div>
+  </div>
+</div>
+
 <div class="view" id="view-factibilidad">
 
   <!-- Cabecera -->
@@ -1425,7 +1530,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyKHBlZ8P8vSiIB4dl6H_Nd-73UrdR4aziOzIiyaK3imZkLkEsUhYIoOxcjE-kT0ua-Xg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4AHTtgmEVktoFR834mvbdlkGAgapsQR8YMPL53PyrttrzyX9gpfWEDdD3xckCik_DFQ/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -1525,6 +1630,7 @@ async function restoreSession(sess){
     var dc=document.getElementById('driveCard');if(dc)dc.style.display='none';
     document.getElementById('df-lider-grp').style.display='none';
   }
+  aplicarVisibilidadAliados();
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
   if(PENDING_RIF){
@@ -1687,6 +1793,7 @@ async function doLogin(){
   if(S.rol==='ABOGADO'){
     // Abogado tiene acceso completo al Centro de Control
   }
+  aplicarVisibilidadAliados();
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
   btn.classList.remove('loading');btn.disabled=false;
@@ -2163,6 +2270,14 @@ function renderTabDatos(r){
 
   // ── Panel de contacto directo (igual que antes) ─────────────────
   h+=renderDrawerComm(r);
+
+  // ── Cliente TOP (Aliados Comerciales v1.0) — additivo, no afecta lo demás ──
+  var puedeMarcarTop=(S.rol==='ADMIN'||(S.rol==='LIDER'&&S.user===r['EJECUTIVO']));
+  var esTop=(r['TOP']||'').toString().trim().toUpperCase()==='SI';
+  h+='<div class="sec-lbl">Cartera</div>';
+  h+='<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:'+(puedeMarcarTop?'pointer':'default')+';opacity:'+(puedeMarcarTop?'1':'.6')+'">';
+  h+='<input type="checkbox" id="alTopCheck" '+(esTop?'checked':'')+' '+(puedeMarcarTop?'':'disabled')+' onchange="alToggleClienteTop(this.checked)" style="width:16px;height:16px;accent-color:var(--amber)">';
+  h+='⭐ Cliente TOP <span style="color:var(--text3);font-size:11px">(protegido de instalación por Aliados Comerciales)</span></label>';
 
   // ── Expediente en Drive ─────────────────────────────────────────
   h+='<div class="sec-lbl">Expediente en Drive</div>';
@@ -3685,10 +3800,13 @@ function showView(v){
   if(mainEl){mainEl.scrollTop=0;}
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+v)?.classList.add('active');
-  const lbs={clientes:'Gestión Clientes B2B · Clientes',dashboard:'Gestión Clientes B2B · Dashboard',reportes:'Gestión Clientes B2B · Reportes',seguimiento:'Gestión Clientes B2B · Seguimiento',factibilidad:'Gestión Clientes B2B · Factibilidad'};
+  const lbs={clientes:'Gestión Clientes B2B · Clientes',dashboard:'Gestión Clientes B2B · Dashboard',reportes:'Gestión Clientes B2B · Reportes',seguimiento:'Gestión Clientes B2B · Seguimiento',factibilidad:'Gestión Clientes B2B · Factibilidad',verificacion:'Aliados Comerciales · Verificación',referidos:'Aliados Comerciales · Referidos'};
   document.getElementById('crumb').textContent=lbs[v]||v;
   if(v==='dashboard')renderDash();
   if(v==='factibilidad')factInit();
+  if(v==='verificacion')alCargarSolicitudes();
+  if(v==='referidos')alCargarReferidos();
+  if(v==='seguimiento')alCargarColaAdmin();
   closeSidebar();
 }
 
@@ -6509,6 +6627,547 @@ function iaAplicarFaltantes(){
 }
 
 // ── Fin módulo Verificación IA ────────────────────────────────────
+
+// ════════════════════════════════════════════════════════════
+//  MÓDULO ALIADOS COMERCIALES v1.0 — bloque 100% aditivo
+//  No modifica ninguna función/variable existente arriba.
+//  Todo vive en el namespace AL y funciones prefijadas al*.
+// ════════════════════════════════════════════════════════════
+const AL = { solicitudes: [], filtro: 'TODAS', draft: {}, idActual: null, scanTimer: null };
+
+// ── Visibilidad por rol (llamado desde doLogin/restoreSession) ──
+function aplicarVisibilidadAliados(){
+  var sec = document.getElementById('sbAliadosSection');
+  if(!sec) return;
+  var esAliado = S.rol === 'ALIADO';
+  var esAdmin  = S.rol === 'ADMIN';
+  sec.style.display = (esAliado || esAdmin) ? '' : 'none';
+  var queueCard = document.getElementById('alAdminQueueCard');
+  if(queueCard) queueCard.style.display = esAdmin ? '' : 'none';
+  if(esAliado){
+    // Un Aliado no gestiona Contratos B2B — se oculta esa sección y se le lleva directo a Verificación
+    document.querySelectorAll('.sb-section').forEach(function(sec2){
+      if(sec2.querySelector('#nav-clientes')) sec2.style.display='none';
+    });
+    var navFact=document.getElementById('nav-factibilidad'); if(navFact) navFact.parentElement.style.display='none';
+    showView('verificacion');
+  }
+}
+
+// ── Utilidad: archivo → base64 ──────────────────────────────────
+function alFileToBase64(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(){ resolve(reader.result.split(',')[1]); };
+    reader.onerror = function(){ reject(new Error('No se pudo leer el archivo')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Cargar lista de Verificación (Aliado ve solo lo suyo) ────────
+function alCargarSolicitudes(){
+  if(!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',aliado:S.user,admin:false})})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(!rs.ok){toast('Error cargando solicitudes: '+(rs.error||''),'err');return;}
+      AL.solicitudes = rs.solicitudes.filter(function(s){return s.TIPO_REGISTRO!=='REFERIDO';});
+      document.getElementById('alVerifSub').textContent = AL.solicitudes.length+' solicitudes · ordenadas de la más reciente a la más antigua';
+      alRenderKpis();
+      alRenderTablaSolicitudes();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+function alRenderKpis(){
+  var box = document.getElementById('alKpiRow');
+  if(!box) return;
+  var grupos = {
+    TODAS: AL.solicitudes,
+    AUTORIZADAS: AL.solicitudes.filter(function(s){return ['AUTORIZADO','INSTALACION_CONFIRMADA','PROMOVIDO_A_CARTERA'].indexOf(s.ESTATUS_PIPELINE)>=0;}),
+    EN_ESPERA: AL.solicitudes.filter(function(s){return ['EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;}),
+    NO_AUTORIZADAS: AL.solicitudes.filter(function(s){return ['NO_AUTORIZADO','NO_AUTORIZADO_TOP'].indexOf(s.ESTATUS_PIPELINE)>=0;})
+  };
+  var labels = {TODAS:'Todas',AUTORIZADAS:'Autorizadas',EN_ESPERA:'En espera',NO_AUTORIZADAS:'No autorizadas'};
+  var colores = {TODAS:'var(--accent)',AUTORIZADAS:'var(--green)',EN_ESPERA:'var(--blue)',NO_AUTORIZADAS:'var(--red)'};
+  box.innerHTML = Object.keys(grupos).map(function(k){
+    var sel = AL.filtro===k ? ' sel' : '';
+    return '<div class="kpi al-kpi'+sel+'" style="border-top-color:'+colores[k]+'" onclick="alFiltrar(\''+k+'\')">'+
+      '<div class="kpi-val">'+grupos[k].length+'</div><div class="kpi-lbl">'+labels[k]+'</div></div>';
+  }).join('');
+}
+
+function alFiltrar(k){ AL.filtro = k; alRenderKpis(); alRenderTablaSolicitudes(); }
+
+function alRenderTablaSolicitudes(){
+  var body = document.getElementById('alTablaSolicitudesBody');
+  if(!body) return;
+  var lista = AL.solicitudes;
+  if(AL.filtro==='AUTORIZADAS') lista = lista.filter(function(s){return ['AUTORIZADO','INSTALACION_CONFIRMADA','PROMOVIDO_A_CARTERA'].indexOf(s.ESTATUS_PIPELINE)>=0;});
+  else if(AL.filtro==='EN_ESPERA') lista = lista.filter(function(s){return ['EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;});
+  else if(AL.filtro==='NO_AUTORIZADAS') lista = lista.filter(function(s){return ['NO_AUTORIZADO','NO_AUTORIZADO_TOP'].indexOf(s.ESTATUS_PIPELINE)>=0;});
+
+  if(!lista.length){ body.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3)">Sin solicitudes en este filtro</td></tr>'; return; }
+
+  body.innerHTML = lista.map(function(s){
+    var fecha = s.FECHA_CREACION ? new Date(s.FECHA_CREACION).toLocaleDateString('es-VE') : '—';
+    return '<tr style="cursor:pointer" onclick="alAbrirCaso(\''+s.ID_SOLICITUD+'\')">'+
+      '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'(sin nombre aún)')+'</td>'+
+      '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RIF||'—')+'</td>'+
+      '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.TIPO_CLIENTE||'—')+'</td>'+
+      '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</td>'+
+      '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+fecha+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function alBadgeEstatus(estatus){
+  var map = {
+    EN_VERIFICACION: ['b-dr','EN VERIFICACIÓN'], AUTORIZADO: ['b-ok','AUTORIZADO'],
+    EN_EXCEPCION: ['b-dr','EN EXCEPCIÓN'], EN_REVISION_MANUAL: ['b-dr','EN REVISIÓN'],
+    NO_AUTORIZADO_TOP: ['b-pd','NO AUTORIZADO'], NO_AUTORIZADO: ['b-pd','NO AUTORIZADO'],
+    INSTALACION_CONFIRMADA: ['b-ok','CONFIRMADA'], PROMOVIDO_A_CARTERA: ['b-ok','PROMOVIDA'],
+    REFERIDO_ENVIADO: ['b-ds','ENVIADO'], REFERIDO_INSTALADO: ['b-ok','INSTALADO'],
+    EXTRAORDINARIA_PENDIENTE: ['b-ds','PENDIENTE']
+  };
+  var m = map[estatus] || ['b-gn', estatus||'—'];
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>';
+}
+
+// ── Referidos ─────────────────────────────────────────────────
+function alCargarReferidos(){
+  if(!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',aliado:S.user,admin:false})})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(!rs.ok) return;
+      var referidos = rs.solicitudes.filter(function(s){return s.TIPO_REGISTRO==='REFERIDO';});
+      var body = document.getElementById('alTablaReferidosBody');
+      if(!referidos.length){ body.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3)">Aún no has referido clientes</td></tr>'; return; }
+      body.innerHTML = referidos.map(function(s){
+        var fecha = s.FECHA_CREACION ? new Date(s.FECHA_CREACION).toLocaleDateString('es-VE') : '—';
+        return '<tr><td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'—')+'</td>'+
+          '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RIF||'—')+'</td>'+
+          '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</td>'+
+          '<td style="padding:9px 10px;border-bottom:1px solid var(--surface2)">'+fecha+'</td></tr>';
+      }).join('');
+    }).catch(function(){});
+}
+
+function alAbrirDrawerReferido(){
+  AL.idActual = null;
+  document.getElementById('alDrawerTitle').textContent='Referir Cliente';
+  document.getElementById('alDrawerBody').innerHTML =
+    '<div class="field" style="margin-bottom:12px"><label style="font-size:11px;color:var(--text2);font-weight:600">RIF del cliente</label>'+
+    '<input type="text" id="alRefRif" placeholder="J-40000000-0" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
+    '<div class="field" style="margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Teléfonos de contacto (representantes)</label>'+
+    '<textarea id="alRefTel" rows="2" placeholder="0414-0000000, 0424-1111111" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></textarea></div>'+
+    '<button class="btn btn-p" style="width:100%;justify-content:center" onclick="alEnviarReferidoStandalone()">Enviar referido →</button>';
+  document.getElementById('alDrawerBg').classList.add('open');
+}
+
+function alEnviarReferidoStandalone(){
+  var rif = document.getElementById('alRefRif').value.trim();
+  var tel = document.getElementById('alRefTel').value.trim();
+  if(!rif){toast('El RIF es requerido','err');return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,telefonosContacto:tel})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(rs.ok){toast('Referido enviado ✓','ok');alCerrarDrawer();alCargarReferidos();}
+      else{toast('Error: '+(rs.error||''),'err');}
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+// ── Drawer: Nueva Solicitud ──────────────────────────────────────
+function alCerrarDrawer(){ document.getElementById('alDrawerBg').classList.remove('open'); AL.idActual=null; }
+
+function alAbrirDrawerNueva(){
+  AL.idActual = null;
+  document.getElementById('alDrawerTitle').textContent='Nueva Solicitud de Verificación';
+  document.getElementById('alDrawerBody').innerHTML =
+    '<div class="fp-group" style="margin-bottom:18px"><label>Tipo de cliente</label>'+
+    '<div class="chips" id="alTipoChips">'+
+      '<button class="chip on" onclick="alSetTipo(\'NATURAL\',this)">Persona Natural</button>'+
+      '<button class="chip" onclick="alSetTipo(\'JURIDICO\',this)">Persona Jurídica</button>'+
+      '<button class="chip" onclick="alSetTipo(\'EXTRAORDINARIA\',this)">Solicitud Extraordinaria</button>'+
+    '</div></div>'+
+    '<div class="field" style="margin-bottom:10px"><label style="font-size:11px;color:var(--text2);font-weight:600">Teléfono de contacto</label>'+
+    '<input type="text" id="alContTel" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
+    '<div class="field" style="margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Correo de contacto</label>'+
+    '<input type="text" id="alContCorreo" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></div>'+
+    '<div id="alDescExtraordinariaWrap" style="display:none;margin-bottom:16px"><label style="font-size:11px;color:var(--text2);font-weight:600">Describe el caso</label>'+
+    '<textarea id="alDescExtraordinaria" rows="3" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12.5px;margin-top:4px"></textarea></div>'+
+    '<button class="btn btn-p" style="width:100%;justify-content:center" onclick="alCrearSolicitud()">Continuar →</button>';
+  AL.tipoSeleccionado = 'NATURAL';
+  document.getElementById('alDrawerBg').classList.add('open');
+}
+
+function alSetTipo(tipo, btn){
+  AL.tipoSeleccionado = tipo;
+  document.querySelectorAll('#alTipoChips .chip').forEach(function(c){c.classList.remove('on');});
+  btn.classList.add('on');
+  document.getElementById('alDescExtraordinariaWrap').style.display = tipo==='EXTRAORDINARIA' ? '' : 'none';
+}
+
+function alCrearSolicitud(){
+  var payload = {
+    action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
+    telefono:document.getElementById('alContTel').value.trim(),
+    correo:document.getElementById('alContCorreo').value.trim(),
+    descripcionExtraordinaria: AL.tipoSeleccionado==='EXTRAORDINARIA' ? document.getElementById('alDescExtraordinaria').value.trim() : ''
+  };
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      AL.idActual = rs.idSolicitud;
+      if(AL.tipoSeleccionado==='EXTRAORDINARIA') alRenderUploadExtraordinaria();
+      else alRenderUploadDocs();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+function alSlotHtml(col, label, opcional){
+  return '<div class="al-upload" id="alSlot_'+col+'" onclick="document.getElementById(\'alInput_'+col+'\').click()">'+
+    '<span>📄 '+label+(opcional?' <span style="font-size:9px;color:var(--text3)">(opcional)</span>':'')+'</span><span id="alSlotStatus_'+col+'"></span></div>'+
+    '<input type="file" id="alInput_'+col+'" style="display:none" onchange="alSubirArchivo(\''+col+'\', this)">';
+}
+
+function alRenderUploadDocs(){
+  var esNatural = AL.tipoSeleccionado==='NATURAL';
+  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:12px">Sube los documentos — el análisis corre automáticamente al terminar.</div>';
+  if(esNatural){
+    h += alSlotHtml('REP1_CEDULA','Cédula de Identidad',false);
+    h += alSlotHtml('REP1_RIF','RIF Vigente',false);
+  } else {
+    h += '<div style="font-size:12px;font-weight:600;margin:10px 0 6px">Representante 1</div>';
+    h += alSlotHtml('REP1_CEDULA','Cédula Representante 1',false);
+    h += alSlotHtml('REP1_RIF','RIF Representante 1',false);
+    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Representante 2 (opcional)</div>';
+    h += alSlotHtml('REP2_CEDULA','Cédula Representante 2',true);
+    h += alSlotHtml('REP2_RIF','RIF Representante 2',true);
+    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Acta Constitutiva</div>';
+    h += alSlotHtml('ACTA_CONSTITUTIVA','Acta Constitutiva',false);
+    h += '<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Actas de Asamblea (opcional, comodín)</div>';
+    h += alSlotHtml('ACTA_ASAMBLEA_1','Acta de Asamblea 1',true);
+    h += alSlotHtml('ACTA_ASAMBLEA_2','Acta de Asamblea 2',true);
+    h += alSlotHtml('ACTA_ASAMBLEA_3','Acta de Asamblea 3',true);
+    h += alSlotHtml('ACTA_ASAMBLEA_4','Acta de Asamblea 4',true);
+  }
+  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="alAnalizar()">Analizar documentos →</button>';
+  document.getElementById('alDrawerBody').innerHTML = h;
+}
+
+function alRenderUploadExtraordinaria(){
+  var h = '<div class="section-note" style="font-size:11px;color:var(--text3);margin-bottom:12px">Adjunta los documentos que tengas — este caso no corre análisis automático, lo revisa Administración directamente.</div>';
+  h += '<div class="al-upload" onclick="document.getElementById(\'alInputExtra\').click()"><span>📎 Agregar documento</span></div>';
+  h += '<input type="file" id="alInputExtra" style="display:none" onchange="alSubirArchivo(\'DOCS_EXTRAORDINARIA\', this, true)">';
+  h += '<div id="alExtraLista" style="margin-top:8px;font-size:11.5px;color:var(--text2)"></div>';
+  h += '<button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="toast(\'Solicitud enviada ✓\',\'ok\');alCerrarDrawer();alCargarSolicitudes();">Enviar a Administración →</button>';
+  document.getElementById('alDrawerBody').innerHTML = h;
+}
+
+function alSubirArchivo(columna, inputEl, acumulativo){
+  var file = inputEl.files[0];
+  if(!file || !AL.idActual) return;
+  var slotStatus = document.getElementById('alSlotStatus_'+columna);
+  if(slotStatus) slotStatus.textContent = 'Subiendo...';
+  alFileToBase64(file).then(function(b64){
+    return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
+      fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
+    })}).then(function(r){return r.json();});
+  }).then(function(rs){
+    if(!rs.ok){toast('Error subiendo: '+(rs.error||''),'err');return;}
+    if(acumulativo){
+      var lista=document.getElementById('alExtraLista');
+      if(lista) lista.innerHTML += '<div>✓ '+esc(file.name)+'</div>';
+    } else {
+      var slot=document.getElementById('alSlot_'+columna);
+      if(slot) slot.classList.add('filled');
+      if(slotStatus) slotStatus.textContent='✓ cargado';
+    }
+  }).catch(function(){toast('Sin conexión','err');});
+}
+
+// ── Carga genérica e indeterminada (sin adelantar el resultado) ──
+var AL_MENSAJES_CARGA = [
+  'Procesando documentos…', 'Extrayendo información con IA…', 'Validando datos…',
+  'Cruzando información con la base de cartera…', 'Consolidando resultados…'
+];
+function alMostrarCargaGenerica(){
+  var idx = 0;
+  document.getElementById('alDrawerBody').innerHTML =
+    '<div class="al-loading-wrap">'+
+      '<div class="al-spinner"></div>'+
+      '<div class="al-loading-msg" id="alLoadingMsg">'+AL_MENSAJES_CARGA[0]+'</div>'+
+      '<div class="al-loading-sub">Puede tardar hasta 1 minuto, no cierres esta ventana</div>'+
+      '<div class="al-elapsed" id="alElapsed">0:00 transcurrido</div>'+
+    '</div>';
+  var t0 = Date.now();
+  clearInterval(AL.scanTimer);
+  AL.scanTimer = setInterval(function(){
+    idx = (idx+1) % AL_MENSAJES_CARGA.length;
+    var msgEl = document.getElementById('alLoadingMsg');
+    if(msgEl){ msgEl.style.opacity=0; setTimeout(function(){ msgEl.textContent=AL_MENSAJES_CARGA[idx]; msgEl.style.opacity=1; },250); }
+    var s = Math.floor((Date.now()-t0)/1000);
+    var elEl = document.getElementById('alElapsed');
+    if(elEl) elEl.textContent = Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)+' transcurrido';
+  }, 2600);
+}
+function alDetenerCargaGenerica(){ clearInterval(AL.scanTimer); }
+
+function alAnalizar(){
+  alMostrarCargaGenerica();
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'verificarSolicitudAliado',idSolicitud:AL.idActual,usuario:S.user})})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      alDetenerCargaGenerica();
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');alCerrarDrawer();return;}
+      alRenderResultado(AL.idActual, rs);
+    }).catch(function(){alDetenerCargaGenerica();toast('Sin conexión','err');});
+}
+
+function alAbrirCaso(idSolicitud){
+  AL.idActual = idSolicitud;
+  document.getElementById('alDrawerTitle').textContent='Detalle de Solicitud';
+  document.getElementById('alDrawerBody').innerHTML = '<div class="al-loading-wrap"><div class="al-spinner"></div><div class="al-loading-msg">Cargando expediente…</div></div>';
+  document.getElementById('alDrawerBg').classList.add('open');
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudAliado',idSolicitud:idSolicitud})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      var sol = rs.solicitud;
+      var resultado = null;
+      try{ resultado = JSON.parse(sol.JSON_ANALISIS_IA||'{}'); }catch(e){ resultado = {}; }
+      alRenderResultado(idSolicitud, {veredicto: sol.VEREDICTO_OPERATIVO, resultado: resultado, salvedades: (sol.SALVEDADES||'').split(' | ').filter(Boolean), cartera:{estado:sol.VALIDACION_CARTERA, liderDueno:sol.LIDER_DUENO_PREVIO}, _estatus: sol.ESTATUS_PIPELINE, _obs: sol.OBSERVACION_ALIADO});
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+function alRenderResultado(idSolicitud, rs){
+  var v = rs.veredicto;
+  var r = rs.resultado || {};
+  var cartera = rs.cartera || {};
+  var salvedades = rs.salvedades || [];
+  var congelado = rs._estatus === 'EN_EXCEPCION' || rs._estatus === 'EN_REVISION_MANUAL';
+  var faltantes = r.faltantes || [];
+
+  var cls = 'ok', titulo = '✅ Autorizado para instalación';
+  if(v==='NO_AUTORIZADO_TOP'){ cls='block'; titulo='⛔ Cliente protegido (cartera TOP)'; }
+  else if(v==='NO_AUTORIZADO'){ cls='block'; titulo='❌ No autorizado'; }
+  else if(v==='REQUIERE_ACCION'){ cls='wait'; titulo='⏳ Acción requerida'; }
+  else if(v==='AUTORIZADO_CON_SALVEDADES'){ cls='warn'; titulo='✅ Autorizado — con detalles pendientes'; }
+  if(congelado){ cls='wait'; titulo = rs._estatus==='EN_EXCEPCION' ? '🔒 Excepción en espera de aprobación' : '🔒 Revisión manual en espera'; }
+
+  var h = '<div class="al-case '+cls+'">';
+  h += '<div style="font-size:15px;font-weight:700;margin-bottom:10px">'+titulo+'</div>';
+
+  // ── Datos extraídos por la IA (igual que en el bosquejo) ──────
+  var esNaturalRes = !!r.persona;
+  var repPrincipal = (r.representantes && r.representantes.length) ? r.representantes[0] : null;
+  if(esNaturalRes || r.razon_social_extraida || repPrincipal){
+    h += '<div class="al-data-grid">';
+    if(esNaturalRes){
+      h += '<div class="al-data-item"><label>Nombre (extraído)</label><div>'+esc(r.persona.nombre_cedula||'—')+'</div></div>';
+      h += '<div class="al-data-item"><label>Cédula / RIF</label><div>'+esc(r.persona.documento_cedula||'—')+' / '+esc(r.persona.documento_rif||'—')+'</div></div>';
+    } else {
+      h += '<div class="al-data-item"><label>Razón social (extraída)</label><div>'+esc(r.razon_social_extraida||'—')+'</div></div>';
+      h += '<div class="al-data-item"><label>RIF (extraído)</label><div>'+esc(r.rif_empresa_extraido||'—')+'</div></div>';
+      if(repPrincipal){
+        h += '<div class="al-data-item"><label>Representante</label><div>'+esc(repPrincipal.nombre_cedula||'—')+'</div></div>';
+        h += '<div class="al-data-item"><label>Cédula / RIF representante</label><div>'+esc(repPrincipal.documento_cedula||'—')+' / '+esc(repPrincipal.documento_rif||'—')+'</div></div>';
+      }
+    }
+    h += '</div>';
+  }
+
+  faltantes.forEach(function(f){
+    if(!f) return;
+    var icoClass = f.critico ? 'n' : 'w';
+    h += '<div class="al-check"><span class="al-ico '+icoClass+'">'+(f.critico?'✕':'!')+'</span>'+esc(f.descripcion||'')+'</div>';
+    // Representante puntual involucrado en este faltante (igual que en el bosquejo)
+    if(f.codigo==='representante_no_en_acta' && repPrincipal){
+      h += '<span class="al-who-fail">👤 Representante cargado: '+esc(repPrincipal.nombre_cedula||'—')+' — '+esc(repPrincipal.documento_cedula||'—')+'</span>';
+    }
+  });
+
+  if(r._directoresVigentes && r._directoresVigentes.length && faltantes.some(function(f){return f&&f.codigo==='representante_no_en_acta';})){
+    h += '<div class="al-obs"><b>Representantes que sí figuran en el Acta:</b><br>'+r._directoresVigentes.map(esc).join('<br>')+'</div>';
+  }
+
+  if(salvedades.length){
+    h += '<div class="al-salv"><b>Pendientes (no bloquean la instalación):</b><ul style="margin:6px 0 0 16px">'+salvedades.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ul></div>';
+  }
+
+  if(congelado){
+    h += '<div class="al-obs" style="margin-top:12px"><b>Tu observación:</b> '+esc(rs._obs||'Sin observaciones')+'</div>';
+    h += '<div class="section-note" style="margin-top:10px">Este caso está congelado hasta que el Administrador de Contratos responda.</div>';
+  } else if(v==='AUTORIZADO' || v==='AUTORIZADO_CON_SALVEDADES'){
+    h += '<button class="btn btn-p btn-sm" style="margin-top:14px" onclick="alProcederInstalacion(\''+idSolicitud+'\')">Proceder con la instalación</button>';
+  } else if(v==='NO_AUTORIZADO_TOP'){
+    h += '<div class="section-note" style="margin-top:10px">No es posible continuar. Se notificó al líder dueño de este cliente.</div>';
+  } else if(cartera.estado==='CARTERIZADO_NO_TOP' && v!=='NO_AUTORIZADO'){
+    h += '<div class="section-note" style="margin:10px 0">Este RIF ya existe en la cartera de <b>'+esc(cartera.liderDueno||'otro líder')+'</b> (no protegido).</div>';
+    h += '<div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="alInstalarSobreCarterizado(\''+idSolicitud+'\')">Instalar de todas formas</button>'+
+      '<button class="btn btn-p btn-sm" onclick="alReferirDesdeSolicitud(\''+idSolicitud+'\')">Referir cliente</button></div>';
+  } else {
+    var puedeExcepcion = faltantes.some(function(f){return f && f.puedeExcepcion;});
+    h += '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">';
+    h += '<button class="btn btn-g btn-sm" onclick="alReintentarPrompt(\''+idSolicitud+'\')">↻ Reintentar documento</button>';
+    if(puedeExcepcion) h += '<button class="btn btn-am btn-sm" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarExcepcion\')">Solicitar excepción</button>';
+    h += '<button class="btn btn-am btn-sm" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarRevisionManual\')">Solicitar revisión manual</button>';
+    h += '</div>';
+  }
+
+  h += '</div>';
+  document.getElementById('alDrawerBody').innerHTML = h;
+  document.getElementById('alDrawerTitle').textContent = 'Resultado de la Verificación';
+  document.getElementById('alDrawerBg').classList.add('open');
+}
+
+function alReintentarPrompt(idSolicitud){
+  var input = document.createElement('input');
+  input.type='file';
+  input.onchange = function(){
+    var file = input.files[0];
+    if(!file) return;
+    alMostrarCargaGenerica();
+    alFileToBase64(file).then(function(b64){
+      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'reintentarDocumentoSolicitud', idSolicitud:idSolicitud, columna:'REP1_CEDULA',
+        fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf', usuario:S.user
+      })}).then(function(r){return r.json();});
+    }).then(function(rs){
+      alDetenerCargaGenerica();
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      alRenderResultado(idSolicitud, rs);
+    }).catch(function(){alDetenerCargaGenerica();toast('Sin conexión','err');});
+  };
+  input.click();
+}
+
+function alPedirObservacionYEnviar(idSolicitud, accion){
+  var obs = prompt('Observación (opcional):','');
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:accion,idSolicitud:idSolicitud,observacion:obs||''})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Enviado, en espera de respuesta ✓','ok');
+      alCerrarDrawer(); alCargarSolicitudes();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+function alProcederInstalacion(idSolicitud){
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'confirmarInstalacionAliado',idSolicitud:idSolicitud})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Instalación confirmada ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+function alInstalarSobreCarterizado(idSolicitud){
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'instalarSobreCarterizado',idSolicitud:idSolicitud})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Instalación confirmada ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+function alReferirDesdeSolicitud(idSolicitud){
+  var sol = AL.solicitudes.find(function(s){return s.ID_SOLICITUD===idSolicitud;});
+  var rif = sol ? sol.RIF : '';
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,idSolicitudOrigen:idSolicitud})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Cliente referido ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+// ── Cliente TOP (desde el drawer de Cliente de Contratos B2B) ────
+function alToggleClienteTop(checked){
+  if(!S.cur) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'actualizarClienteTop',rif:S.cur['RIF'],valor:checked,usuario:S.user})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(rs.ok){toast(checked?'Cliente marcado como TOP ✓':'Marca TOP removida','ok');}
+      else{toast('Error: '+(rs.error||''),'err');}
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+// ── Admin: cola de revisión + resumen de referidos (Centro de Control) ──
+function alCargarColaAdmin(){
+  if(S.rol!=='ADMIN' || !APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',admin:true})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok) return;
+      var todas = rs.solicitudes;
+      var excepciones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_EXCEPCION';});
+      var revisiones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_REVISION_MANUAL';});
+      var referidosPend = todas.filter(function(s){return s.TIPO_REGISTRO==='REFERIDO' && s.ESTATUS_PIPELINE==='REFERIDO_ENVIADO';});
+      var porPromover = todas.filter(function(s){return s.ESTATUS_PIPELINE==='INSTALACION_CONFIRMADA';});
+
+      var kpiBox = document.getElementById('alAdminKpiRow');
+      if(kpiBox) kpiBox.innerHTML =
+        '<div class="kpi" style="border-top-color:var(--amber)"><div class="kpi-val">'+excepciones.length+'</div><div class="kpi-lbl">Excepciones</div></div>'+
+        '<div class="kpi" style="border-top-color:var(--blue)"><div class="kpi-val">'+revisiones.length+'</div><div class="kpi-lbl">Revisiones manuales</div></div>'+
+        '<div class="kpi" style="border-top-color:var(--purple)"><div class="kpi-val">'+referidosPend.length+'</div><div class="kpi-lbl">Referidos por canalizar</div></div>'+
+        '<div class="kpi" style="border-top-color:var(--green)"><div class="kpi-val">'+porPromover.length+'</div><div class="kpi-lbl">Por promover</div></div>';
+
+      var cola = excepciones.concat(revisiones).concat(porPromover);
+      var colaBody = document.getElementById('alAdminColaBody');
+      if(colaBody){
+        if(!cola.length){ colaBody.innerHTML = '<div class="section-note">Sin casos pendientes</div>'; }
+        else {
+          colaBody.innerHTML = cola.map(function(s){
+            var esExc = s.ESTATUS_PIPELINE==='EN_EXCEPCION';
+            var esRev = s.ESTATUS_PIPELINE==='EN_REVISION_MANUAL';
+            var esProm = s.ESTATUS_PIPELINE==='INSTALACION_CONFIRMADA';
+            var botones = '';
+            if(esExc || esRev){
+              botones = '<div class="field" style="margin:8px 0"><textarea id="alResp_'+s.ID_SOLICITUD+'" rows="2" placeholder="Tu respuesta..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12px"></textarea></div>'+
+                '<div style="display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',true)">✓ Aprobar</button>'+
+                '<button class="btn btn-r btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',false)">✕ Rechazar</button></div>';
+            } else if(esProm){
+              botones = '<button class="btn btn-p btn-sm" onclick="alPromoverCliente(\''+s.ID_SOLICITUD+'\')">Promover a cartera</button>';
+            }
+            return '<div class="al-case wait"><div style="font-weight:700;font-size:13px">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'—')+'</div>'+
+              '<div class="section-note" style="margin:2px 0 8px">RIF '+esc(s.RIF||'—')+' · Aliado: '+esc(s.ALIADO||'—')+' · '+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</div>'+
+              (s.OBSERVACION_ALIADO?('<div class="al-obs">Observación: '+esc(s.OBSERVACION_ALIADO)+'</div>'):'')+
+              botones+'</div>';
+          }).join('');
+        }
+      }
+
+      var refBody = document.getElementById('alAdminReferidosBody');
+      if(refBody){
+        var referidosTodos = todas.filter(function(s){return s.TIPO_REGISTRO==='REFERIDO';});
+        if(!referidosTodos.length){ refBody.innerHTML='<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text3)">Sin referidos aún</td></tr>'; }
+        else {
+          refBody.innerHTML = referidosTodos.map(function(s){
+            return '<tr><td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.ALIADO||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RIF||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</td></tr>';
+          }).join('');
+        }
+      }
+    }).catch(function(){});
+}
+
+function alResolverCaso(idSolicitud, aprobar){
+  var ta = document.getElementById('alResp_'+idSolicitud);
+  var respuesta = ta ? ta.value.trim() : '';
+  if(!respuesta){toast('Escribe una respuesta antes de continuar','err');return;}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'resolverCasoAliado',idSolicitud:idSolicitud,aprobar:aprobar,respuesta:respuesta,usuario:S.user})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast(aprobar?'Caso aprobado ✓':'Caso rechazado','ok');
+      alCargarColaAdmin();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+function alPromoverCliente(idSolicitud){
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'promoverSolicitudACartera',idSolicitud:idSolicitud,usuario:S.user})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Cliente promovido a cartera ✓','ok');
+      alCargarColaAdmin();
+      reloadData();
+    }).catch(function(){toast('Sin conexión','err');});
+}
+
+// ── Fin módulo Aliados Comerciales ────────────────────────────────
 
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
