@@ -1531,7 +1531,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxnn5RYTl2i_wG9q0aHKZlgMrb77w5R3EWC-N2LDshuW43pwKg_2-Z4pFiCJv80eiAuQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXtXgugKRoGZTg9c3sUi6en73Nkf37gnF763T4kbbihiksP4jfM9Z6Wy1hJdZpjZpnmA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -6697,7 +6697,7 @@ function alRenderKpis(){
   var grupos = {
     TODAS: AL.solicitudes,
     AUTORIZADAS: AL.solicitudes.filter(function(s){return ['AUTORIZADO','INSTALACION_CONFIRMADA','PROMOVIDO_A_CARTERA'].indexOf(s.ESTATUS_PIPELINE)>=0;}),
-    EN_ESPERA: AL.solicitudes.filter(function(s){return ['EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;}),
+    EN_ESPERA: AL.solicitudes.filter(function(s){return ['INCOMPLETA','EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;}),
     NO_AUTORIZADAS: AL.solicitudes.filter(function(s){return ['NO_AUTORIZADO','NO_AUTORIZADO_TOP'].indexOf(s.ESTATUS_PIPELINE)>=0;})
   };
   var labels = {TODAS:'Todas',AUTORIZADAS:'Autorizadas',EN_ESPERA:'En espera',NO_AUTORIZADAS:'No autorizadas'};
@@ -6716,7 +6716,7 @@ function alRenderTablaSolicitudes(){
   if(!body) return;
   var lista = AL.solicitudes;
   if(AL.filtro==='AUTORIZADAS') lista = lista.filter(function(s){return ['AUTORIZADO','INSTALACION_CONFIRMADA','PROMOVIDO_A_CARTERA'].indexOf(s.ESTATUS_PIPELINE)>=0;});
-  else if(AL.filtro==='EN_ESPERA') lista = lista.filter(function(s){return ['EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;});
+  else if(AL.filtro==='EN_ESPERA') lista = lista.filter(function(s){return ['INCOMPLETA','EN_VERIFICACION','EN_EXCEPCION','EN_REVISION_MANUAL'].indexOf(s.ESTATUS_PIPELINE)>=0;});
   else if(AL.filtro==='NO_AUTORIZADAS') lista = lista.filter(function(s){return ['NO_AUTORIZADO','NO_AUTORIZADO_TOP'].indexOf(s.ESTATUS_PIPELINE)>=0;});
 
   if(!lista.length){ body.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text3)">Sin solicitudes en este filtro</td></tr>'; return; }
@@ -6752,7 +6752,7 @@ function alListaDocsExtra(s){
 
 function alBadgeEstatus(estatus){
   var map = {
-    EN_VERIFICACION: ['b-dr','EN VERIFICACIÓN'], AUTORIZADO: ['b-ok','AUTORIZADO'],
+    INCOMPLETA: ['b-ds','INCOMPLETA'], EN_VERIFICACION: ['b-dr','EN VERIFICACIÓN'], AUTORIZADO: ['b-ok','AUTORIZADO'],
     EN_EXCEPCION: ['b-dr','EN EXCEPCIÓN'], EN_REVISION_MANUAL: ['b-dr','EN REVISIÓN'],
     NO_AUTORIZADO_TOP: ['b-pd','NO AUTORIZADO'], NO_AUTORIZADO: ['b-pd','NO AUTORIZADO'],
     INSTALACION_CONFIRMADA: ['b-ok','CONFIRMADA'], PROMOVIDO_A_CARTERA: ['b-ok','PROMOVIDA'],
@@ -7111,6 +7111,28 @@ function alAbrirCaso(idSolicitud){
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       var sol = rs.solicitud;
+
+      // ── Solicitud incompleta (nunca se le dio "Analizar documentos") ──
+      // Reconstruye el estado y reabre el mismo formulario de carga, con lo
+      // ya subido marcado como cargado, en vez de mostrar un veredicto falso.
+      if(sol.ESTATUS_PIPELINE==='INCOMPLETA'){
+        document.getElementById('alDrawerTitle').textContent='Nueva Solicitud de Verificación';
+        AL.tipoSeleccionado = sol.TIPO_CLIENTE || 'NATURAL';
+        AL.docsCargados = {};
+        ['REP1_CEDULA','REP1_RIF','REP2_CEDULA','REP2_RIF','RIF_EMPRESA','ACTA_CONSTITUTIVA','ACTA_ASAMBLEA_1','ACTA_ASAMBLEA_2','ACTA_ASAMBLEA_3','ACTA_ASAMBLEA_4'].forEach(function(col){
+          if(sol[col] && sol[col].toString().indexOf('http')===0) AL.docsCargados[col]=sol[col];
+        });
+        AL.mostrarRep2 = !!(sol.REP2_CEDULA || sol.REP2_RIF);
+        AL.mostrarActas = !!(sol.ACTA_ASAMBLEA_1 || sol.ACTA_ASAMBLEA_2 || sol.ACTA_ASAMBLEA_3 || sol.ACTA_ASAMBLEA_4);
+        AL.formDraft = {
+          telefono: sol.TELEFONO_CONTACTO||'', correo: sol.CORREO_CONTACTO||'', correoEmpresa: sol.CORREO_EMPRESA||'',
+          telefonoRep2: sol.TELEFONO_CONTACTO_REP2||'', correoRep2: sol.CORREO_CONTACTO_REP2||'',
+          descripcion: sol.DESCRIPCION_EXTRAORDINARIA||'', nota1:sol.NOTA_EXTRA_1||'', nota2:sol.NOTA_EXTRA_2||'', nota3:sol.NOTA_EXTRA_3||'', nota4:sol.NOTA_EXTRA_4||''
+        };
+        alRenderFormularioUnico();
+        return;
+      }
+
       var resultado = null;
       try{ resultado = JSON.parse(sol.JSON_ANALISIS_IA||'{}'); }catch(e){ resultado = {}; }
       alRenderResultado(idSolicitud, {veredicto: sol.VEREDICTO_OPERATIVO, resultado: resultado, salvedades: (sol.SALVEDADES||'').split(' | ').filter(Boolean), cartera:{estado:sol.VALIDACION_CARTERA, liderDueno:sol.LIDER_DUENO_PREVIO}, _estatus: sol.ESTATUS_PIPELINE, _obs: sol.OBSERVACION_ALIADO});
@@ -7124,6 +7146,16 @@ function alRenderResultado(idSolicitud, rs){
   var salvedades = rs.salvedades || [];
   var congelado = rs._estatus === 'EN_EXCEPCION' || rs._estatus === 'EN_REVISION_MANUAL';
   var faltantes = r.faltantes || [];
+
+  // Nunca asumir "Autorizado" — si no hay veredicto real (caso incompleto, extraordinaria
+  // sin resolver, o cualquier estatus inesperado), mostrar un estado neutro explícito.
+  if(!v && !congelado){
+    document.getElementById('alDrawerBody').innerHTML =
+      '<div class="al-case wait"><div style="font-size:15px;font-weight:700;margin-bottom:8px">⏳ Sin analizar todavía</div>'+
+      '<div class="section-note">Este expediente aún no tiene un veredicto — '+
+      (rs._estatus==='EXTRAORDINARIA_PENDIENTE'?'está en espera de revisión manual por Administración.':'no se ha ejecutado el análisis.')+'</div></div>';
+    return;
+  }
 
   var cls = 'ok', titulo = '✅ Autorizado para instalación';
   if(v==='NO_AUTORIZADO_TOP'){ cls='block'; titulo='⛔ Cliente protegido (cartera TOP)'; }
