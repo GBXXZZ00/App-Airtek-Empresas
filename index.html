@@ -1564,7 +1564,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYPXyEU-1_QYcCJ7sdpe12APxyrOOnudRYz2im3DZZKKnISmn22YM5-nZy8M41olBNCw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyy1COj-O0ximlQTzSb-Mc9xbGdFb-9nUiyNNCv8RlGzjdL_0YMydVW86qEkuqSi1LVBA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -7106,31 +7106,47 @@ function alSetDrawerContent(html){
 
 // ── Tarjeta de documento, mismo lenguaje visual que docField() del drawer de Cliente ──
 function alDocItem(col, label, soloLectura){
+  AL.docLabels = AL.docLabels || {};
+  AL.docLabels[col] = label;
+  var cargado = AL.docsCargados && AL.docsCargados[col];
+  return '<div class="doc-item'+(cargado?' doc-item-ok':'')+'" id="alDocWrap_'+col+'">'
+    +'<div class="doc-lbl">'+label+'</div>'
+    +'<div id="alDocInner_'+col+'">'+alDocInnerHtml(col, soloLectura)+'</div>'
+    +'</div>';
+}
+
+function alDocInnerHtml(col, soloLectura){
   var cargado = AL.docsCargados && AL.docsCargados[col];
   if(cargado){
     var acciones = soloLectura
       ? ''
       : '<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--amber);border-color:var(--amber)" onclick="alReemplazarDoc(\''+col+'\')">Reemplazar</button>'
         +'<button class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px;color:var(--red);border-color:var(--red)" onclick="alEliminarDoc(\''+col+'\')">Eliminar</button>';
-    return '<div class="doc-item doc-item-ok">'
-      +'<div class="doc-lbl">'+label+'</div>'
-      +'<div class="doc-ok"><span style="color:var(--green);font-size:11px">✓ Cargado</span>'
+    return '<div class="doc-ok"><span style="color:var(--green);font-size:11px">✓ Cargado</span>'
       +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
       +'<a href="'+cargado+'" target="_blank" class="btn btn-g btn-sm" style="font-size:10px;padding:3px 8px">Ver ↗</a>'
       +acciones
-      +'</div></div></div>';
+      +'</div></div>';
   }
   if(soloLectura){
-    return '<div class="doc-item"><div class="doc-lbl">'+label+'</div>'
-      +'<div class="doc-upload" style="cursor:default"><div class="doc-upload-txt" style="font-size:11px">— no cargado —</div></div></div>';
+    return '<div class="doc-upload" style="cursor:default"><div class="doc-upload-txt" style="font-size:11px">— no cargado —</div></div>';
   }
-  return '<div class="doc-item">'
-    +'<div class="doc-lbl">'+label+'</div>'
-    +'<div class="doc-upload">'
+  return '<div class="doc-upload">'
     +'<input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="alHandleFile(this,\''+col+'\')">'
     +'<div class="doc-upload-txt" style="font-size:20px;color:var(--text3);margin-bottom:4px">+</div>'
     +'<div class="doc-upload-txt" style="font-size:10px">PDF / Imagen · Máx 10MB</div>'
-    +'</div></div>';
+    +'</div>';
+}
+
+// Actualiza SOLO la tarjeta de un documento puntual (sin redibujar todo el formulario) —
+// evita que subir 2 documentos casi al mismo tiempo "pise" visualmente al otro.
+function alActualizarDocItem(col){
+  var inner = document.getElementById('alDocInner_'+col);
+  var wrap = document.getElementById('alDocWrap_'+col);
+  if(!inner || !wrap) { alRenderFormularioUnico(); return; } // por si acaso ya no existe (cambió de vista), redibuja completo
+  var soloLectura = !!AL.modoSoloLectura;
+  inner.innerHTML = alDocInnerHtml(col, soloLectura);
+  wrap.classList.toggle('doc-item-ok', !!(AL.docsCargados && AL.docsCargados[col]));
 }
 
 function alEliminarDoc(col){
@@ -7141,7 +7157,7 @@ function alEliminarDoc(col){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       if(AL.docsCargados) delete AL.docsCargados[col];
       toast('Documento eliminado','ok');
-      alRenderFormularioUnico();
+      alActualizarDocItem(col);
     }).catch(function(){toast('Sin conexión','err');});
 }
 
@@ -7161,8 +7177,8 @@ function alHandleFile(input, columna){
   if(['pdf','jpg','jpeg','png'].indexOf(ext) < 0){ toast('Solo se aceptan PDF o imágenes','err'); input.value=''; return; }
 
   alGuardarDraftInputs();
-  var uploadDiv = input.closest('.doc-upload');
-  if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+  var inner = document.getElementById('alDocInner_'+columna);
+  if(inner) inner.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
 
   var subirAhora = function(){
     alFileToBase64(file).then(function(b64){
@@ -7171,29 +7187,39 @@ function alHandleFile(input, columna){
         fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
       })}).then(function(r){return r.json();});
     }).then(function(rs){
-      if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alRenderFormularioUnico(); return; }
+      if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alActualizarDocItem(columna); return; }
       AL.docsCargados = AL.docsCargados || {};
       AL.docsCargados[columna] = rs.url;
-      alRenderFormularioUnico();
+      alActualizarDocItem(columna); // solo esta tarjeta — no toca las demás que puedan estar subiendo en paralelo
     }).catch(function(){ toast('Sin conexión','err'); });
   };
 
   if(!AL.idActual){
     if(AL.avisosPorSeccion){
       toast('Error interno: se perdió la referencia al expediente que estabas corrigiendo. Cierra el drawer y vuelve a intentar.','err');
-      if(uploadDiv) alRenderFormularioUnico();
+      alActualizarDocItem(columna);
       return;
     }
+    // Si otro documento ya disparó la creación de la solicitud (casi al mismo tiempo),
+    // esperamos a que termine en vez de crear una segunda solicitud duplicada.
+    if(AL.creandoSolicitud){
+      var esperar = setInterval(function(){
+        if(AL.idActual){ clearInterval(esperar); subirAhora(); }
+      }, 250);
+      return;
+    }
+    AL.creandoSolicitud = true;
     var d = AL.formDraft || {};
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
       action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
       telefono:d.telefono||'', correo:d.correo||'', correoEmpresa:d.correoEmpresa||'',
       descripcionExtraordinaria:d.descripcion||''
     })}).then(function(r){return r.json();}).then(function(rs){
+      AL.creandoSolicitud = false;
       if(!rs.ok){ toast('Error: '+(rs.error||''),'err'); return; }
       AL.idActual = rs.idSolicitud;
       subirAhora();
-    }).catch(function(){ toast('Sin conexión','err'); });
+    }).catch(function(){ AL.creandoSolicitud = false; toast('Sin conexión','err'); });
   } else {
     subirAhora();
   }
@@ -7465,35 +7491,40 @@ function _alReintentarCompletoRender(idSolicitud){
 
 function alPedirObservacionYEnviar(idSolicitud, accion){
   var obs = prompt('Observación (opcional):','');
+  if(obs===null) return; // canceló el prompt
+  alCerrarDrawer();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:accion,idSolicitud:idSolicitud,observacion:obs||''})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       toast('Enviado, en espera de respuesta ✓','ok');
-      alCerrarDrawer(); alCargarSolicitudes();
+      alCargarSolicitudes();
     }).catch(function(){toast('Sin conexión','err');});
 }
 
 function alProcederInstalacion(idSolicitud){
+  alCerrarDrawer();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'confirmarInstalacionAliado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
-      toast('Instalación confirmada ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+      toast('Instalación confirmada ✓','ok'); alCargarSolicitudes();
     }).catch(function(){toast('Sin conexión','err');});
 }
 function alInstalarSobreCarterizado(idSolicitud){
+  alCerrarDrawer();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'instalarSobreCarterizado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
-      toast('Instalación confirmada ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+      toast('Instalación confirmada ✓','ok'); alCargarSolicitudes();
     }).catch(function(){toast('Sin conexión','err');});
 }
 function alReferirDesdeSolicitud(idSolicitud){
   var sol = AL.solicitudes.find(function(s){return s.ID_SOLICITUD===idSolicitud;});
   var rif = sol ? sol.RIF : '';
+  alCerrarDrawer();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,idSolicitudOrigen:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
-      toast('Cliente referido ✓','ok'); alCerrarDrawer(); alCargarSolicitudes();
+      toast('Cliente referido ✓','ok'); alCargarSolicitudes();
     }).catch(function(){toast('Sin conexión','err');});
 }
 
