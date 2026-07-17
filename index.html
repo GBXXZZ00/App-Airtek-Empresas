@@ -1564,9 +1564,10 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq-uYcT03-Rhn86xhzhYsO46-edTXT1gGINjchU_tCHYcRXc3SADtQbRNrdLoYf4S7YQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYPXyEU-1_QYcCJ7sdpe12APxyrOOnudRYz2im3DZZKKnISmn22YM5-nZy8M41olBNCw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
+const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
 const WA_PRUEBA=false;
 const WA_NUM_PRUEBA='584126656931';
 const CC_CORP='ventascorporativas@airtek.com.ve';
@@ -1667,6 +1668,10 @@ async function restoreSession(sess){
   aplicarVisibilidadAliados();
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
+  if(PENDING_CASO){
+    showView('verificacion');
+    setTimeout(function(){ alAbrirCaso(PENDING_CASO); }, 500);
+  }
   if(PENDING_RIF){
     var rifTarget=PENDING_RIF.toString().trim();
     var idx=S.filtered.findIndex(function(r){return (r['RIF']||'').toString().trim()===rifTarget;});
@@ -1842,6 +1847,10 @@ async function doLogin(){
   populateFilters();initChips();initQfEjeChips();applyFilters();renderDash();initSeg();factInitNav();
   document.getElementById('loader').classList.add('off');
   btn.classList.remove('loading');btn.disabled=false;
+  if(PENDING_CASO){
+    showView('verificacion');
+    setTimeout(function(){ alAbrirCaso(PENDING_CASO); }, 500);
+  }
   // Deep link: si hay RIF pendiente, abrir ese expediente
   if(PENDING_RIF){
     var rifTarget=PENDING_RIF.toString().trim();
@@ -6714,6 +6723,9 @@ function alFileToBase64(file){
 function alCargarSolicitudes(){
   if(!APPS_SCRIPT_URL) return;
   var esAdmin = S.rol==='ADMIN';
+  document.getElementById('alVerifSub').textContent = 'Cargando…';
+  var tbody = document.getElementById('alTablaSolicitudesBody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text3)"><div class="al-spinner" style="width:22px;height:22px;margin:0 auto 8px"></div>Cargando solicitudes…</td></tr>';
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',aliado:S.user,admin:esAdmin})})
     .then(function(r){return r.json();})
     .then(function(rs){
@@ -7167,6 +7179,11 @@ function alHandleFile(input, columna){
   };
 
   if(!AL.idActual){
+    if(AL.avisosPorSeccion){
+      toast('Error interno: se perdió la referencia al expediente que estabas corrigiendo. Cierra el drawer y vuelve a intentar.','err');
+      if(uploadDiv) alRenderFormularioUnico();
+      return;
+    }
     var d = AL.formDraft || {};
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
       action:'crearSolicitudAliado', aliado:S.user, tipoCliente:AL.tipoSeleccionado,
@@ -7228,10 +7245,7 @@ function alAnalizar(){
     return;
   }
   alMostrarCargaGenerica();
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'actualizarContactoSolicitud',idSolicitud:AL.idActual,telefono:d.telefono||'',correo:d.correo||'',correoEmpresa:d.correoEmpresa||'',telefonoRep2:d.telefonoRep2||'',correoRep2:d.correoRep2||''})})
-    .then(function(){
-      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'verificarSolicitudAliado',idSolicitud:AL.idActual,usuario:S.user})});
-    })
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'verificarSolicitudAliado',idSolicitud:AL.idActual,usuario:S.user,telefono:d.telefono||'',correo:d.correo||'',correoEmpresa:d.correoEmpresa||'',telefonoRep2:d.telefonoRep2||'',correoRep2:d.correoRep2||''})})
     .then(function(r){return r.json();})
     .then(function(rs){
       alDetenerCargaGenerica();
@@ -7373,7 +7387,7 @@ function alRenderResultado(idSolicitud, rs){
   });
 
   if(r._directoresVigentes && r._directoresVigentes.length && faltantes.some(function(f){return f&&f.codigo==='representante_no_en_acta';})){
-    h += '<div class="al-obs"><b>Representantes que sí figuran en el Acta:</b><br>'+r._directoresVigentes.map(esc).join('<br>')+'</div>';
+    h += '<div class="al-obs"><b>Representantes que sí figuran en el Acta Constitutiva:</b><br>'+r._directoresVigentes.map(esc).join('<br>')+'</div>';
   }
 
   if(observaciones.length){
@@ -7440,6 +7454,7 @@ function alReintentarCompleto(idSolicitud){
 }
 
 function _alReintentarCompletoRender(idSolicitud){
+  AL.idActual = idSolicitud; // explícito — nunca depender de que ya estuviera puesto de antes
   AL.enModoTabs = false;
   AL.modoSoloLectura = false;
   AL.avisosPorSeccion = alCategorizarAvisos();
@@ -7496,6 +7511,8 @@ function alToggleClienteTop(checked){
 function alCargarColaAdmin(){
   if(S.rol!=='ADMIN' || !APPS_SCRIPT_URL) return;
   AL.tabCentro = AL.tabCentro || 'pendientes';
+  var colaBoxInicial = document.getElementById('alAdminColaBody');
+  if(colaBoxInicial) colaBoxInicial.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3)"><div class="al-spinner" style="width:22px;height:22px;margin:0 auto 8px"></div>Cargando…</div>';
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',admin:true})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok) return;
@@ -7594,16 +7611,21 @@ function alCambiarTabCentro(tab){
 }
 
 function alResolverCaso(idSolicitud, aprobar){
+  AL.resolviendo = AL.resolviendo || {};
+  if(AL.resolviendo[idSolicitud]){ return; } // ya se está procesando — evita doble/triple click
   var ta = document.getElementById('alResp_'+idSolicitud);
   var respuesta = ta ? ta.value.trim() : '';
   if(!respuesta){toast('Escribe una observación antes de continuar','err');return;}
+  AL.resolviendo[idSolicitud] = true;
+  document.querySelectorAll('[onclick*="alResolverCaso(\''+idSolicitud+'\'"]').forEach(function(b){ b.disabled = true; });
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'resolverCasoAliado',idSolicitud:idSolicitud,aprobar:aprobar,respuesta:respuesta,usuario:S.user})})
     .then(function(r){return r.json();}).then(function(rs){
+      AL.resolviendo[idSolicitud] = false;
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       toast(aprobar?'Caso aprobado ✓':'Caso denegado — el aliado puede reintentar','ok');
       if(AL.idActual===idSolicitud){ alCerrarDrawer(); } // veníamos de dentro del drawer del expediente
       alCargarColaAdmin();
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){ AL.resolviendo[idSolicitud] = false; toast('Sin conexión','err'); });
 }
 
 function alPromoverCliente(idSolicitud){
