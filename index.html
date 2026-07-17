@@ -1363,13 +1363,21 @@ tbody tr:hover td{background:var(--surface2)}
 <!-- ══ VISTA CENTRO DE CONTROL (ALIADOS COMERCIALES) — solo ADMIN v1.0 ══ -->
 <div class="view" id="view-centroAliados">
   <div class="view-hd">
-    <div><div class="view-title">Centro de Control — Aliados Comerciales</div><div class="view-sub">Casos que requieren tu revisión, de todos los aliados</div></div>
+    <div><div class="view-title">Centro de Control — Aliados Comerciales</div><div class="view-sub">Casos de todos los aliados</div></div>
     <button class="btn btn-g btn-sm" onclick="alCargarColaAdmin()">↻ Actualizar</button>
   </div>
-  <div class="kpi-grid" id="alAdminKpiRow" style="padding:0 20px"></div>
-  <div id="alAdminColaBody" style="padding:0 20px"></div>
-  <div style="padding:20px">
-    <div style="font-size:13px;font-weight:700;margin-bottom:8px">Resumen de Referidos</div>
+  <div class="chips" style="padding:0 20px;margin-bottom:14px">
+    <button class="chip" id="alCentroTab_pendientes" onclick="alCambiarTabCentro('pendientes')">Por Aprobar</button>
+    <button class="chip" id="alCentroTab_referidos" onclick="alCambiarTabCentro('referidos')">Referidos</button>
+    <button class="chip" id="alCentroTab_historico" onclick="alCambiarTabCentro('historico')">Histórico</button>
+  </div>
+
+  <div id="alCentroPanel_pendientes">
+    <div class="kpi-grid" id="alAdminKpiRow" style="padding:0 20px"></div>
+    <div id="alAdminColaBody" style="padding:0 20px"></div>
+  </div>
+
+  <div id="alCentroPanel_referidos" style="display:none;padding:0 20px">
     <table class="mini-tbl" style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr>
         <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Aliado</th>
@@ -1378,6 +1386,20 @@ tbody tr:hover td{background:var(--surface2)}
         <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Estatus</th>
       </tr></thead>
       <tbody id="alAdminReferidosBody"></tbody>
+    </table>
+  </div>
+
+  <div id="alCentroPanel_historico" style="display:none;padding:0 20px">
+    <table class="mini-tbl" style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Cliente</th>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">RIF</th>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Aliado</th>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Estatus</th>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Gestionado por</th>
+        <th style="text-align:left;color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border)">Fecha</th>
+      </tr></thead>
+      <tbody id="alHistoricoBody"></tbody>
     </table>
   </div>
 </div>
@@ -1542,7 +1564,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8zHHyhWztDoIFPz-GQeSHT2HdnWWM9Rbe2kLtGLkF2EIidU3vVSqtrV-vbu_YQC7OKw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzq-uYcT03-Rhn86xhzhYsO46-edTXT1gGINjchU_tCHYcRXc3SADtQbRNrdLoYf4S7YQ/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const WA_PRUEBA=false;
@@ -3830,7 +3852,7 @@ function showView(v){
   if(v==='factibilidad')factInit();
   if(v==='verificacion')alCargarSolicitudes();
   if(v==='referidos')alCargarReferidos();
-  if(v==='centroAliados')alCargarColaAdmin();
+  if(v==='centroAliados'){ alCambiarTabCentro(AL.tabCentro||'pendientes'); alCargarColaAdmin(); }
   closeSidebar();
 }
 
@@ -7370,7 +7392,13 @@ function alRenderResultado(idSolicitud, rs){
   }
 
   if(congelado){
-    h += '<div class="section-note" style="margin-top:10px">Este caso está congelado hasta que el Administrador de Contratos responda.</div>';
+    if(S.rol==='ADMIN'){
+      h += '<div class="field" style="margin:12px 0"><label>Tu respuesta / observación</label><textarea id="alResp_'+idSolicitud+'" rows="3" placeholder="Escribe tu respuesta antes de aprobar o denegar..."></textarea></div>';
+      h += '<div style="display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="alResolverCaso(\''+idSolicitud+'\',true)">✓ Aprobar</button>'+
+        '<button class="btn btn-r btn-sm" onclick="alResolverCaso(\''+idSolicitud+'\',false)">✕ Denegar</button></div>';
+    } else {
+      h += '<div class="section-note" style="margin-top:10px">Este caso está congelado hasta que el Administrador de Contratos responda.</div>';
+    }
   } else if(v==='AUTORIZADO' || v==='AUTORIZADO_CON_SALVEDADES'){
     h += '<button class="btn btn-p btn-sm" style="margin-top:14px" onclick="alProcederInstalacion(\''+idSolicitud+'\')">Proceder con la instalación</button>';
   } else if(v==='NO_AUTORIZADO_TOP'){
@@ -7467,10 +7495,12 @@ function alToggleClienteTop(checked){
 // ── Admin: cola de revisión + resumen de referidos (Centro de Control) ──
 function alCargarColaAdmin(){
   if(S.rol!=='ADMIN' || !APPS_SCRIPT_URL) return;
+  AL.tabCentro = AL.tabCentro || 'pendientes';
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudesAliados',admin:true})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok) return;
       var todas = rs.solicitudes;
+      AL.todasLasSolicitudes = todas; // cache para el histórico y para abrir expedientes desde acá
       var excepciones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_EXCEPCION';});
       var revisiones = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EN_REVISION_MANUAL';});
       var extraordinarias = todas.filter(function(s){return s.ESTATUS_PIPELINE==='EXTRAORDINARIA_PENDIENTE';});
@@ -7502,10 +7532,14 @@ function alCargarColaAdmin(){
             var botones = '';
             if(esExc || esRev || esExtra){
               botones = '<div class="field" style="margin:8px 0"><textarea id="alResp_'+s.ID_SOLICITUD+'" rows="2" placeholder="Tu respuesta / observación..." style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:inherit;font-size:12px"></textarea></div>'+
-                '<div style="display:flex;gap:8px"><button class="btn btn-p btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',true)">✓ Aprobar</button>'+
+                '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+                '<button class="btn btn-g btn-sm" onclick="alAbrirCaso(\''+s.ID_SOLICITUD+'\')">🔍 Ver expediente completo</button>'+
+                '<button class="btn btn-p btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',true)">✓ Aprobar</button>'+
                 '<button class="btn btn-r btn-sm" onclick="alResolverCaso(\''+s.ID_SOLICITUD+'\',false)">✕ Denegar</button></div>';
             } else if(esProm){
-              botones = '<button class="btn btn-p btn-sm" onclick="alPromoverCliente(\''+s.ID_SOLICITUD+'\')">Promover a cartera</button>';
+              botones = '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+                '<button class="btn btn-g btn-sm" onclick="alAbrirCaso(\''+s.ID_SOLICITUD+'\')">🔍 Ver expediente completo</button>'+
+                '<button class="btn btn-p btn-sm" onclick="alPromoverCliente(\''+s.ID_SOLICITUD+'\')">Promover a cartera</button></div>';
             }
             return '<div class="al-case wait"><div style="font-weight:700;font-size:13px">'+esc(s.RAZON_SOCIAL_O_NOMBRE||(esExtra?'Solicitud Extraordinaria':'—'))+'</div>'+
               '<div class="section-note" style="margin:2px 0 8px">RIF '+esc(s.RIF||'—')+' · Aliado: '+esc(s.ALIADO||'—')+' · '+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</div>'+
@@ -7523,14 +7557,40 @@ function alCargarColaAdmin(){
         if(!referidosTodos.length){ refBody.innerHTML='<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text3)">Sin referidos aún</td></tr>'; }
         else {
           refBody.innerHTML = referidosTodos.map(function(s){
-            return '<tr><td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.ALIADO||'—')+'</td>'+
+            return '<tr style="cursor:pointer" onclick="alAbrirCaso(\''+s.ID_SOLICITUD+'\')"><td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.ALIADO||'—')+'</td>'+
               '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'—')+'</td>'+
               '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RIF||'—')+'</td>'+
               '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</td></tr>';
           }).join('');
         }
       }
+
+      var histBody = document.getElementById('alHistoricoBody');
+      if(histBody){
+        var historico = todas.slice().sort(function(a,b){ return new Date(b.FECHA_CREACION) - new Date(a.FECHA_CREACION); });
+        if(!historico.length){ histBody.innerHTML='<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text3)">Sin registros aún</td></tr>'; }
+        else {
+          histBody.innerHTML = historico.map(function(s){
+            var fecha = s.FECHA_RESOLUCION ? new Date(s.FECHA_RESOLUCION).toLocaleDateString('es-VE') : (s.FECHA_CREACION ? new Date(s.FECHA_CREACION).toLocaleDateString('es-VE') : '—');
+            return '<tr style="cursor:pointer" onclick="alAbrirCaso(\''+s.ID_SOLICITUD+'\')">'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RAZON_SOCIAL_O_NOMBRE||'(sin nombre aún)')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RIF||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.ALIADO||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+alBadgeEstatus(s.ESTATUS_PIPELINE)+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+esc(s.RESUELTO_POR||'—')+'</td>'+
+              '<td style="padding:8px 10px;border-bottom:1px solid var(--surface2)">'+fecha+'</td></tr>';
+          }).join('');
+        }
+      }
     }).catch(function(){});
+}
+
+function alCambiarTabCentro(tab){
+  AL.tabCentro = tab;
+  ['pendientes','referidos','historico'].forEach(function(t){
+    document.getElementById('alCentroTab_'+t).classList.toggle('on', t===tab);
+    document.getElementById('alCentroPanel_'+t).style.display = (t===tab) ? '' : 'none';
+  });
 }
 
 function alResolverCaso(idSolicitud, aprobar){
@@ -7541,6 +7601,7 @@ function alResolverCaso(idSolicitud, aprobar){
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       toast(aprobar?'Caso aprobado ✓':'Caso denegado — el aliado puede reintentar','ok');
+      if(AL.idActual===idSolicitud){ alCerrarDrawer(); } // veníamos de dentro del drawer del expediente
       alCargarColaAdmin();
     }).catch(function(){toast('Sin conexión','err');});
 }
