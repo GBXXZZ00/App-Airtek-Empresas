@@ -369,7 +369,7 @@ tbody tr:hover td{background:var(--surface2)}
 .doc-upload:hover{border-color:var(--border2);background:var(--surface3)}
 .doc-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .doc-upload-txt{font-size:11px;color:var(--text3)}
-.doc-ok{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--green-dim);border:1px solid var(--green-dim);border-radius:4px}
+.doc-ok{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;background:var(--green-dim);border:1px solid var(--green-dim);border-radius:4px}
 .doc-ok span{font-size:11px;color:var(--green)}
 .doc-ok a{font-size:11px;color:var(--green);text-decoration:none}
 .doc-ok a:hover{text-decoration:underline}
@@ -440,7 +440,7 @@ tbody tr:hover td{background:var(--surface2)}
 .falt-detail:focus{border-color:var(--accent)}
 .falt-detail::placeholder{color:var(--text3)}
 .falt-detail[readonly]{opacity:.6;cursor:default}
-.rep-contact-blk{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.rep-contact-blk{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:14px;margin-bottom:8px}
 .rep-contact-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px}
 .rep-contact-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:500px){.rep-contact-row{grid-template-columns:1fr}}
@@ -1564,7 +1564,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyy1COj-O0ximlQTzSb-Mc9xbGdFb-9nUiyNNCv8RlGzjdL_0YMydVW86qEkuqSi1LVBA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZAGBcAmtDNkUHv6KGBlTNFDlE-tvQuqlZ0Ztv_gIX0R_YcTV2gwS6eO41WahvLrixcg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -6927,6 +6927,15 @@ function alEnviarReferidoStandalone(){
 function alAbrirDrawer_(){ var cb=document.getElementById('drawerBg'); if(cb)cb.classList.remove('open'); document.getElementById('alDrawerBg').classList.add('open'); }
 function alCerrarDrawer(){ document.getElementById('alDrawerBg').classList.remove('open'); AL.idActual=null; }
 
+// Deja la tabla en estado "Cargando…" de inmediato — se usa apenas se cierra el
+// drawer por una acción que va a cambiar el registro (proceder instalación, instalar
+// sobre carterizado, referir), para que nunca quede una ventana en blanco/desactualizada
+// mientras el servidor procesa la acción y luego se recarga la lista.
+function alMostrarCargandoTabla(){
+  var tbody = document.getElementById('alTablaSolicitudesBody');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text3)"><div class="al-spinner" style="width:22px;height:22px;margin:0 auto 8px"></div>Actualizando…</td></tr>';
+}
+
 function alAbrirDrawerNueva(){
   AL.idActual = null;
   AL.docsCargados = {};
@@ -7439,6 +7448,8 @@ function alRenderResultado(idSolicitud, rs){
     } else {
       h += '<div class="section-note" style="margin-top:10px">Este caso está congelado hasta que el Administrador de Contratos responda.</div>';
     }
+  } else if((v==='AUTORIZADO' || v==='AUTORIZADO_CON_SALVEDADES') && (rs._estatus==='INSTALACION_CONFIRMADA' || rs._estatus==='PROMOVIDO_A_CARTERA')){
+    h += '<div class="section-note" style="margin-top:10px">✓ Instalación ya confirmada'+(rs._estatus==='PROMOVIDO_A_CARTERA'?' — cliente promovido a cartera.':'.')+'</div>';
   } else if(v==='AUTORIZADO' || v==='AUTORIZADO_CON_SALVEDADES'){
     h += '<button class="btn btn-p btn-sm" style="margin-top:14px" onclick="alProcederInstalacion(\''+idSolicitud+'\')">Proceder con la instalación</button>';
   } else if(v==='NO_AUTORIZADO_TOP'){
@@ -7448,7 +7459,12 @@ function alRenderResultado(idSolicitud, rs){
     h += '<div style="display:flex;gap:8px"><button class="btn btn-g btn-sm" onclick="alInstalarSobreCarterizado(\''+idSolicitud+'\')">Instalar de todas formas</button>'+
       '<button class="btn btn-p btn-sm" onclick="alReferirDesdeSolicitud(\''+idSolicitud+'\')">Referir cliente</button></div>';
   } else {
-    var puedeExcepcion = faltantes.some(function(f){return f && f.puedeExcepcion;});
+    // Solo se ofrece "Solicitar excepción" si TODAS las razones críticas la admiten.
+    // Si hay una mezcla (ej. cédula vencida + RIF vencido), basta con que UNA no
+    // admita excepción para que ese botón no aparezca — de lo contrario el aliado
+    // podría pensar que la excepción resuelve todo el caso, cuando no es así.
+    var criticosBloqueo = faltantes.filter(function(f){return f && f.critico;});
+    var puedeExcepcion = criticosBloqueo.length>0 && criticosBloqueo.every(function(f){return f.puedeExcepcion;});
     h += '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">';
     h += '<button class="btn btn-g btn-sm" onclick="alReintentarCompleto(\''+idSolicitud+'\')">↻ Reintentar Verificación</button>';
     if(puedeExcepcion) h += '<button class="btn btn-am btn-sm" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarExcepcion\')">Solicitar excepción</button>';
@@ -7503,29 +7519,32 @@ function alPedirObservacionYEnviar(idSolicitud, accion){
 
 function alProcederInstalacion(idSolicitud){
   alCerrarDrawer();
+  alMostrarCargandoTabla();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'confirmarInstalacionAliado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
       toast('Instalación confirmada ✓','ok'); alCargarSolicitudes();
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){toast('Sin conexión','err'); alCargarSolicitudes();});
 }
 function alInstalarSobreCarterizado(idSolicitud){
   alCerrarDrawer();
+  alMostrarCargandoTabla();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'instalarSobreCarterizado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
       toast('Instalación confirmada ✓','ok'); alCargarSolicitudes();
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){toast('Sin conexión','err'); alCargarSolicitudes();});
 }
 function alReferirDesdeSolicitud(idSolicitud){
   var sol = AL.solicitudes.find(function(s){return s.ID_SOLICITUD===idSolicitud;});
   var rif = sol ? sol.RIF : '';
   alCerrarDrawer();
+  alMostrarCargandoTabla();
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,idSolicitudOrigen:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
       toast('Cliente referido ✓','ok'); alCargarSolicitudes();
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){toast('Sin conexión','err'); alCargarSolicitudes();});
 }
 
 // ── Cliente TOP (desde el drawer de Cliente de Contratos B2B) ────
