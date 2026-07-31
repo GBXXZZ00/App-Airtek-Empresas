@@ -1327,7 +1327,10 @@ tbody tr:hover td{background:var(--surface2)}
 <div class="view" id="view-verificacion">
   <div class="view-hd">
     <div><div class="view-title">Verificación</div><div class="view-sub" id="alVerifSub">—</div></div>
-    <button class="btn btn-p" onclick="alAbrirDrawerNueva()">+ Agregar solicitud</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-g" onclick="alMostrarCargandoTabla();alCargarSolicitudes()" title="Actualizar datos">⟳ Actualizar</button>
+      <button class="btn btn-p" onclick="alAbrirDrawerNueva()">+ Agregar solicitud</button>
+    </div>
   </div>
   <div class="kpi-grid" id="alKpiRow"></div>
   <table class="mini-tbl" id="alTablaSolicitudes" style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
@@ -1564,7 +1567,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZAGBcAmtDNkUHv6KGBlTNFDlE-tvQuqlZ0Ztv_gIX0R_YcTV2gwS6eO41WahvLrixcg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyC5dZCC5GgCbvaL8uMKkDik76thDWDc9h38nj9k8rxlCekcXMWZZMpPufXR98Dw-kHeA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -6925,7 +6928,18 @@ function alEnviarReferidoStandalone(){
 
 // ── Drawer: Nueva Solicitud ──────────────────────────────────────
 function alAbrirDrawer_(){ var cb=document.getElementById('drawerBg'); if(cb)cb.classList.remove('open'); document.getElementById('alDrawerBg').classList.add('open'); }
-function alCerrarDrawer(){ document.getElementById('alDrawerBg').classList.remove('open'); AL.idActual=null; }
+function alCerrarDrawer(){
+  document.getElementById('alDrawerBg').classList.remove('open');
+  AL.idActual=null;
+  // Se refresca SIEMPRE al cerrar, sin importar si fue por una acción (proceder,
+  // instalar, referir, excepción, revisión manual) o simplemente por la "✕"/clic
+  // afuera sin terminar nada — antes cada botón tenía que acordarse de recargar
+  // por su cuenta, y era fácil que alguno se quedara sin ese refresco (como pasó).
+  alMostrarCargandoTabla();
+  alCargarSolicitudes();
+  if(document.getElementById('alTablaReferidosBody')) alCargarReferidos();
+  if(typeof alCargarColaAdmin==='function' && document.getElementById('alAdminColaBody')) alCargarColaAdmin();
+}
 
 // Deja la tabla en estado "Cargando…" de inmediato — se usa apenas se cierra el
 // drawer por una acción que va a cambiar el registro (proceder instalación, instalar
@@ -7508,18 +7522,17 @@ function _alReintentarCompletoRender(idSolicitud){
 function alPedirObservacionYEnviar(idSolicitud, accion){
   var obs = prompt('Observación (opcional):','');
   if(obs===null) return; // canceló el prompt
-  alCerrarDrawer();
+  alCerrarDrawer(); // ya deja la tabla en "Actualizando…" y refresca
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:accion,idSolicitud:idSolicitud,observacion:obs||''})})
     .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
       toast('Enviado, en espera de respuesta ✓','ok');
       alCargarSolicitudes();
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){toast('Sin conexión','err'); alCargarSolicitudes();});
 }
 
 function alProcederInstalacion(idSolicitud){
-  alCerrarDrawer();
-  alMostrarCargandoTabla();
+  alCerrarDrawer(); // ya deja la tabla en "Actualizando…" y refresca
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'confirmarInstalacionAliado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
@@ -7527,8 +7540,7 @@ function alProcederInstalacion(idSolicitud){
     }).catch(function(){toast('Sin conexión','err'); alCargarSolicitudes();});
 }
 function alInstalarSobreCarterizado(idSolicitud){
-  alCerrarDrawer();
-  alMostrarCargandoTabla();
+  alCerrarDrawer(); // ya deja la tabla en "Actualizando…" y refresca
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'instalarSobreCarterizado',idSolicitud:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
@@ -7538,8 +7550,7 @@ function alInstalarSobreCarterizado(idSolicitud){
 function alReferirDesdeSolicitud(idSolicitud){
   var sol = AL.solicitudes.find(function(s){return s.ID_SOLICITUD===idSolicitud;});
   var rif = sol ? sol.RIF : '';
-  alCerrarDrawer();
-  alMostrarCargandoTabla();
+  alCerrarDrawer(); // ya deja la tabla en "Actualizando…" y refresca
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'referirCliente',aliado:S.user,rif:rif,idSolicitudOrigen:idSolicitud})})
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alCargarSolicitudes(); return;}
@@ -7665,7 +7676,8 @@ function alResolverCaso(idSolicitud, aprobar){
   if(AL.resolviendo[idSolicitud]){ return; } // ya se está procesando — evita doble/triple click
   var ta = document.getElementById('alResp_'+idSolicitud);
   var respuesta = ta ? ta.value.trim() : '';
-  if(!respuesta){toast('Escribe una observación antes de continuar','err');return;}
+  // La observación es opcional (tanto al aprobar como al denegar) — el correo ya
+  // incluye automáticamente el detalle generado por la IA de qué falta corregir.
   AL.resolviendo[idSolicitud] = true;
   document.querySelectorAll('[onclick*="alResolverCaso(\''+idSolicitud+'\'"]').forEach(function(b){ b.disabled = true; });
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'resolverCasoAliado',idSolicitud:idSolicitud,aprobar:aprobar,respuesta:respuesta,usuario:S.user})})
