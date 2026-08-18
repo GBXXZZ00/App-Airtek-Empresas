@@ -708,6 +708,7 @@ tbody tr:hover td{background:var(--surface2)}
 .al-upload.filled{border-style:solid;border-color:var(--green);color:var(--text)}
 .al-loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;text-align:center;padding:20px}
 .al-spinner{width:38px;height:38px;border-radius:50%;border:3px solid var(--surface2);border-top-color:var(--accent);animation:alSpin .8s linear infinite;margin-bottom:18px}
+.al-mini-spinner{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid var(--surface2);border-top-color:var(--accent);animation:alSpin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes alSpin{to{transform:rotate(360deg)}}
 .al-loading-msg{font-size:13px;font-weight:600;color:var(--text);transition:opacity .3s var(--ease-out)}
 .al-loading-sub{font-size:11.5px;color:var(--text3);margin-top:6px}
@@ -1408,11 +1409,11 @@ tbody tr:hover td{background:var(--surface2)}
 </div>
 
 <!-- ══ DRAWER NUEVA SOLICITUD / REFERIR CLIENTE (ALIADOS) v1.0 ══ -->
-<div class="drawer-bg" id="alDrawerBg" onclick="if(event.target===this)alCerrarDrawer()">
+<div class="drawer-bg" id="alDrawerBg">
   <div class="drawer">
     <div class="drawer-hd">
       <div class="drawer-title" id="alDrawerTitle">Nueva Solicitud de Verificación</div>
-      <button class="drawer-close" onclick="alCerrarDrawer()">✕</button>
+      <button class="drawer-close" onclick="alIntentarCerrarDrawer()">✕</button>
     </div>
     <div class="al-drawer-panel" id="alDrawerBody"></div>
   </div>
@@ -1567,7 +1568,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyC5dZCC5GgCbvaL8uMKkDik76thDWDc9h38nj9k8rxlCekcXMWZZMpPufXR98Dw-kHeA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcU8d6gEFClimBhOLcip6BoPmr-aJ_-RHBF6UR2nc0UBdaGEV4BGOLsPLPF1kwIIvv1A/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -3043,7 +3044,18 @@ function commWAClick(inputId,msgType){
     S.cur[col]=num;
     var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
     if(inAll)inAll[col]=num;
-    if(APPS_SCRIPT_URL)saveField(col,num);
+    // Antes esto llamaba saveField(col,num), que para columnas que no son
+    // ESTATUS_LEGAL solo escribe una fila de auditoría en HISTORIAL_LOG y
+    // nunca hace setValue() sobre la celda real del cliente — el número
+    // nunca quedaba guardado en DB_ANALISTAS pese al borde verde de "OK".
+    if(APPS_SCRIPT_URL){
+      fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'actualizarContactoCliente',rif:S.cur['RIF'],usuario:S.user||'app',
+        [col]:num
+      })}).then(function(r){return r.json();}).then(function(rs){
+        if(!rs.ok)console.warn('[commWAClick] GAS error:',rs.error);
+      }).catch(function(err){console.warn('[commWAClick] red error:',err);});
+    }
     el.style.borderColor='var(--green)';
     setTimeout(function(){if(el)el.style.borderColor='';},1500);
   }
@@ -3206,7 +3218,33 @@ function saveExp(){
   refreshTableRow(S.cur);
   toast('Cambios guardados ✓','ok');
   persistObs(S.cur['Observacion']||'');
+  persistContacto();
   setTimeout(closeDrawer,900);
+}
+
+// Persiste de verdad en DB_ANALISTAS los campos de contacto del cliente
+// (correo/teléfono de Rep1, Rep2, correo empresarial, tel. Proham).
+// Antes NINGUNA acción escribía esto en el Sheet — docContactChanged()/
+// commInputChanged() solo tocaban memoria local, y saveField() para estas
+// columnas caía en registrarCambio (solo bitácora, nunca setValue real).
+function persistContacto(){
+  if(!APPS_SCRIPT_URL||!S.cur)return;
+  var payload={
+    action:'actualizarContactoCliente',
+    rif:S.cur['RIF'],
+    usuario:S.user||'app'
+  };
+  var campos=['CORREO_REPRESENTANTES','NUMERO_REPRESENTANTES','CORREO_REPRESENTANTES2','NUMERO_REPRESENTANTES2','CORREO_EMPRESA','TELEFONO_PROHAM'];
+  campos.forEach(function(c){
+    if(S.cur[c]!==undefined)payload[c]=S.cur[c]||'';
+  });
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(!rs.ok)console.warn('[persistContacto] GAS error:',rs.error);
+    }).catch(function(err){
+      console.warn('[persistContacto] red error:',err);
+    });
 }
 
 function refreshTableRow(r){
@@ -6722,6 +6760,17 @@ function alFileToBase64(file){
   });
 }
 
+// Fetch con límite de tiempo — si el servidor no responde en "ms", se cancela
+// solo y cae al .catch(), en vez de quedarse esperando indefinidamente (eso
+// era lo que dejaba una subida de documento pegada en "Subiendo..." para
+// siempre, sin poder cancelarla ni saber que falló sin cerrar el drawer).
+function alFetchConTimeout(url, opciones, ms){
+  var controller = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var opts = Object.assign({}, opciones, controller ? {signal: controller.signal} : {});
+  var timer = controller ? setTimeout(function(){ controller.abort(); }, ms||45000) : null;
+  return fetch(url, opts).finally(function(){ if(timer) clearTimeout(timer); });
+}
+
 // ── Cargar lista de Verificación (Aliado ve solo lo suyo) ────────
 function alCargarSolicitudes(){
   if(!APPS_SCRIPT_URL) return;
@@ -6880,17 +6929,17 @@ function alHandleFileReferido(input, columna){
 
   var runSubida = function(){
     var uploadDiv = input.closest('.doc-upload');
-    if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+    if(uploadDiv) uploadDiv.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px"><span class="al-mini-spinner"></span>Subiendo...</div>';
     alFileToBase64(file).then(function(b64){
-      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      return alFetchConTimeout(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
         action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
         fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
-      })}).then(function(r){return r.json();});
+      })}, 45000).then(function(r){return r.json();});
     }).then(function(rs){
       if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alRenderFormReferido(); return; }
       AL.refDocs[columna] = rs.url;
       alRenderFormReferido();
-    }).catch(function(){ toast('Sin conexión','err'); });
+    }).catch(function(){ toast('No se pudo subir — intenta de nuevo','err'); alRenderFormReferido(); });
   };
 
   // Primer archivo de este referido: crea el registro base para tener idSolicitud
@@ -6928,6 +6977,15 @@ function alEnviarReferidoStandalone(){
 
 // ── Drawer: Nueva Solicitud ──────────────────────────────────────
 function alAbrirDrawer_(){ var cb=document.getElementById('drawerBg'); if(cb)cb.classList.remove('open'); document.getElementById('alDrawerBg').classList.add('open'); }
+// Único punto de entrada para cerrar el drawer desde la UI (la "✕"). El fondo
+// oscuro de atrás ya NO cierra — solo la "✕", tal como se pidió, para evitar
+// cierres accidentales por un clic afuera.
+function alIntentarCerrarDrawer(){
+  var hayDocs = (AL.docsCargados && Object.keys(AL.docsCargados).length>0) ||
+                (AL.refDocs && Object.keys(AL.refDocs).length>0);
+  if(hayDocs && !confirm('¿Seguro que quieres cerrar? Ya subiste documentos en esta solicitud.')) return;
+  alCerrarDrawer();
+}
 function alCerrarDrawer(){
   document.getElementById('alDrawerBg').classList.remove('open');
   AL.idActual=null;
@@ -7175,13 +7233,15 @@ function alActualizarDocItem(col){
 function alEliminarDoc(col){
   if(!AL.idActual) return;
   if(!confirm('¿Eliminar este documento? Tendrás que volver a subirlo si lo necesitas.')) return;
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'eliminarDocumentoSolicitud',idSolicitud:AL.idActual,columna:col})})
+  var inner = document.getElementById('alDocInner_'+col);
+  if(inner) inner.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px"><span class="al-mini-spinner"></span>Eliminando...</div>';
+  alFetchConTimeout(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'eliminarDocumentoSolicitud',idSolicitud:AL.idActual,columna:col})}, 45000)
     .then(function(r){return r.json();}).then(function(rs){
-      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err'); alActualizarDocItem(col); return;}
       if(AL.docsCargados) delete AL.docsCargados[col];
       toast('Documento eliminado','ok');
       alActualizarDocItem(col);
-    }).catch(function(){toast('Sin conexión','err');});
+    }).catch(function(){toast('No se pudo eliminar — intenta de nuevo','err'); alActualizarDocItem(col);});
 }
 
 function alReemplazarDoc(col){
@@ -7201,20 +7261,20 @@ function alHandleFile(input, columna){
 
   alGuardarDraftInputs();
   var inner = document.getElementById('alDocInner_'+columna);
-  if(inner) inner.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px">⏳ Subiendo...</div>';
+  if(inner) inner.innerHTML = '<div style="font-size:11px;color:var(--text2);text-align:center;padding:8px"><span class="al-mini-spinner"></span>Subiendo...</div>';
 
   var subirAhora = function(){
     alFileToBase64(file).then(function(b64){
-      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      return alFetchConTimeout(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
         action:'subirDocumentoSolicitud', idSolicitud:AL.idActual, columna:columna,
         fileBase64:b64, fileName:file.name, mimeType:file.type||'application/pdf'
-      })}).then(function(r){return r.json();});
+      })}, 45000).then(function(r){return r.json();});
     }).then(function(rs){
       if(!rs.ok){ toast('Error subiendo: '+(rs.error||''),'err'); alActualizarDocItem(columna); return; }
       AL.docsCargados = AL.docsCargados || {};
       AL.docsCargados[columna] = rs.url;
       alActualizarDocItem(columna); // solo esta tarjeta — no toca las demás que puedan estar subiendo en paralelo
-    }).catch(function(){ toast('Sin conexión','err'); });
+    }).catch(function(){ toast('No se pudo subir — intenta de nuevo','err'); alActualizarDocItem(columna); });
   };
 
   if(!AL.idActual){
@@ -7299,6 +7359,7 @@ function alAnalizar(){
     .then(function(rs){
       alDetenerCargaGenerica();
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');alCerrarDrawer();return;}
+      AL.ultimoAnalisisId = AL.idActual; // el estado en memoria (docs, tipo, draft) ya está al día para este caso
       if(AL.enModoTabs){ AL.tabCaso='analisis'; alRenderCasoConTabs(); }
       else alRenderResultado(AL.idActual, rs);
     }).catch(function(){alDetenerCargaGenerica();toast('Sin conexión','err');});
@@ -7482,7 +7543,7 @@ function alRenderResultado(idSolicitud, rs){
     h += '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">';
     h += '<button class="btn btn-g btn-sm" onclick="alReintentarCompleto(\''+idSolicitud+'\')">↻ Reintentar Verificación</button>';
     if(puedeExcepcion) h += '<button class="btn btn-am btn-sm" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarExcepcion\')">Solicitar excepción</button>';
-    h += '<button class="btn btn-am btn-sm" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarRevisionManual\')">Solicitar revisión manual</button>';
+    h += '<button class="btn btn-g btn-sm" style="border-color:var(--border2)" onclick="alPedirObservacionYEnviar(\''+idSolicitud+'\',\'solicitarRevisionManual\')">Solicitar revisión manual</button>';
     h += '</div>';
   }
 
@@ -7496,8 +7557,10 @@ function alRenderResultado(idSolicitud, rs){
 
 function alReintentarCompleto(idSolicitud){
   var sol = AL.casoActualSol;
-  if(!sol || sol.ID_SOLICITUD !== idSolicitud){
-    // Por si acaso no tenemos el registro en memoria, lo recargamos
+  var estadoYaEnMemoria = (sol && sol.ID_SOLICITUD === idSolicitud) || AL.ultimoAnalisisId === idSolicitud;
+  if(!estadoYaEnMemoria){
+    // Solo si de verdad no tenemos nada en memoria para este caso (ej. se abrió
+    // por deep link directo) hace falta ir al servidor primero.
     fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSolicitudAliado',idSolicitud:idSolicitud})})
       .then(function(r){return r.json();}).then(function(rs){
         if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
@@ -7515,7 +7578,13 @@ function _alReintentarCompletoRender(idSolicitud){
   AL.modoSoloLectura = false;
   AL.avisosPorSeccion = alCategorizarAvisos();
   document.getElementById('alDrawerTitle').textContent = 'Reintentar Verificación';
-  alPoblarEstadoDesdeSol(AL.casoActualSol);
+  // Si venimos de analizar este mismo caso hace un momento, el estado en memoria
+  // (documentos ya subidos, tipo de cliente, datos de contacto) sigue al día —
+  // repoblar desde "sol" aquí lo pisaría con un objeto viejo/vacío y haría
+  // "desaparecer" documentos que en realidad ya están subidos.
+  if(AL.casoActualSol && AL.casoActualSol.ID_SOLICITUD === idSolicitud){
+    alPoblarEstadoDesdeSol(AL.casoActualSol);
+  }
   alRenderFormularioUnico();
 }
 
