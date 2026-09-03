@@ -720,7 +720,78 @@ tbody tr:hover td{background:var(--surface2)}
 .al-banner-err{background:var(--red-dim);border:1px solid var(--red);color:#FF7B72;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;line-height:1.5}
 .al-banner-err div{margin-bottom:4px}
 .al-banner-err div:last-child{margin-bottom:0}
-.al-drawer-panel{display:block;padding:20px;overflow-y:auto;flex:1;animation:fadeIn .18s var(--ease-out)}
+.al-drawer-panel{display:block;padding:20px;overflow-y:auto;flex:1;animation:fadeIn .18s var(--ease-out)}/* ═══ MÓDULO: COMERCIAL — CLIENTES NUEVOS ═══════════════════ */
+.cm-role-toggle{display:inline-flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px}
+.cm-role-btn{padding:6px 14px;border:none;background:none;color:var(--text2);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .15s}
+.cm-role-btn.active{background:var(--accent);color:#fff}
+.cm-role-hint{font-size:10.5px;color:var(--text3);margin-top:6px;text-align:right}
+
+.cm-controls-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.cm-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-family:inherit;font-size:12px}
+.cm-sel:disabled{opacity:.5;cursor:not-allowed}
+
+.cm-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.cm-kpi-card{border-radius:10px;padding:16px 18px;border:1px solid var(--border);background:var(--surface);transition:transform .15s var(--ease-out)}
+.cm-kpi-card:hover{transform:translateY(-1px)}
+.cm-kpi-card.ready{background:var(--green-dim);border-color:rgba(63,185,80,.35)}
+.cm-kpi-top{display:flex;align-items:baseline;gap:8px}
+.cm-kpi-val{font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--text)}
+.cm-kpi-card.ready .cm-kpi-val{color:var(--green)}
+.cm-kpi-pct{font-size:13px;font-weight:600;color:var(--text2)}
+.cm-kpi-card.ready .cm-kpi-pct{color:var(--green)}
+.cm-kpi-lbl{font-size:11.5px;color:var(--text2);margin-top:4px}
+
+.cm-filter-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.cm-qf{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:inherit;transition:all .12s ease}
+.cm-qf:hover{border-color:var(--accent);color:var(--text)}
+.cm-qf.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.cm-filter-count{font-size:11.5px;color:var(--text3);margin-left:auto}
+
+.cm-client-list{display:flex;flex-direction:column;gap:10px}
+.cm-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;transition:border-color .15s ease}
+.cm-card:hover{border-color:var(--border2)}
+.cm-card.urg-rojo{border-left:3px solid var(--red)}
+.cm-card.urg-amarillo{border-left:3px solid var(--amber)}
+.cm-card.urg-verde{border-left:3px solid var(--green)}
+.cm-urg-badge{display:flex;flex-direction:column;align-items:center;justify-content:center;width:58px;height:58px;border-radius:10px;flex-shrink:0}
+.cm-urg-badge.urg-rojo{background:var(--red-dim);color:var(--red)}
+.cm-urg-badge.urg-amarillo{background:var(--amber-dim);color:var(--amber)}
+.cm-urg-badge.urg-verde{background:var(--green-dim);color:var(--green)}
+.cm-urg-num{font-size:19px;font-weight:700;line-height:1}
+.cm-urg-lbl{font-size:8.5px;font-weight:600;text-transform:uppercase;margin-top:2px;opacity:.85}
+.cm-main{min-width:0}
+.cm-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-meta{font-size:11.5px;color:var(--text2);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.cm-tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:10.5px;color:var(--text2)}
+.cm-ready-tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--green);background:var(--green-dim);border:1px solid rgba(63,185,80,.35);border-radius:5px;padding:2px 7px;margin-top:6px}
+
+.cm-indicators{display:flex;gap:10px;flex-shrink:0}
+.cm-ind2{display:flex;flex-direction:column;align-items:center;gap:3px;width:118px;padding:9px 8px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .12s ease}
+.cm-ind2:hover{border-color:var(--border2);transform:translateY(-1px)}
+.cm-ind2:active{transform:scale(.98)}
+.cm-ind2-top{display:flex;align-items:center;gap:6px}
+.cm-ind2-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cm-ind2-dot.ok{background:var(--green)}
+.cm-ind2-dot.pend{background:var(--amber)}
+.cm-ind2-lbl{font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em}
+.cm-ind2-detail{font-size:10.5px;color:var(--text);margin-top:2px;font-weight:600;text-align:center;line-height:1.25}
+.cm-ind2-frac{font-size:10.5px;color:var(--text2);font-weight:600;margin-left:auto}
+
+.cm-gd-info{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px}
+.cm-gd-info-name{font-size:14px;font-weight:700;color:var(--text)}
+.cm-gd-info-meta{font-size:11.5px;color:var(--text2);margin-top:2px}
+.cm-gd-info-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.cm-gd-badge{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:12px}
+.cm-gd-badge.ok{background:var(--green-dim);color:var(--green)}
+.cm-gd-badge.pend{background:var(--amber-dim);color:var(--amber)}
+.cm-gd-section{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+.cm-gd-section-title{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px}
+.cm-gd-done-msg{font-size:12px;color:var(--green);font-weight:600}
+.cm-gd-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:10px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px;transition:transform .12s var(--ease-out)}
+.cm-gd-btn:active{transform:scale(.98)}
+.cm-gd-btn.wa{background:#25D366}
+.cm-gd-btn.outline{background:none;border:1px solid var(--border2);color:var(--text)}
+.cm-gd-note{font-size:10.5px;color:var(--amber);background:var(--amber-dim);border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.4}
 </style>
 </head>
 <body>
@@ -828,6 +899,10 @@ tbody tr:hover td{background:var(--surface2)}
       </button>
       <button class="nav-item" id="nav-dashboard" onclick="showView('dashboard')">
         <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" id="nav-comercial" onclick="showView('comercial')">
+        <span class="nav-icon">🆕</span> Clientes Nuevos
+        <span class="nav-badge" id="cmBadge" style="display:none;background:var(--red)">0</span>
       </button>
     </div>
     <div class="sb-divider"></div>
@@ -1081,6 +1156,72 @@ tbody tr:hover td{background:var(--surface2)}
 
 
 
+    <div class="view" id="view-comercial">
+      <div class="view-hd">
+        <div><div class="view-title">Clientes Nuevos</div><div class="view-sub">Módulo Comercial · Fase 1</div></div>
+        <div class="cm-role-hint" id="cmRoleHint"></div>
+      </div>
+
+      <div class="cm-controls-row">
+        <select class="cm-sel" id="cmMesFilter" onchange="cmRender()"></select>
+        <select class="cm-sel" id="cmLiderFilter" onchange="cmRender()" disabled><option value="">Todos los líderes</option></select>
+      </div>
+
+      <div class="cm-kpi-row">
+        <div class="cm-kpi-card">
+          <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiTotal">0</span></div>
+          <div class="cm-kpi-lbl">📦 Instalados este mes</div>
+        </div>
+        <div class="cm-kpi-card ready">
+          <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiListos">0</span><span class="cm-kpi-pct" id="cmKpiListosPct">0%</span></div>
+          <div class="cm-kpi-lbl">✓ Listos para comisionar</div>
+        </div>
+        <div class="cm-kpi-card">
+          <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiNoListos">0</span><span class="cm-kpi-pct" id="cmKpiNoListosPct">0%</span></div>
+          <div class="cm-kpi-lbl">⏳ No listos aún</div>
+        </div>
+      </div>
+
+      <div class="cm-filter-row" id="cmFilterRow">
+        <button class="cm-qf active" data-f="todos" onclick="cmSetFiltro('todos',this)">Todos los clientes</button>
+        <button class="cm-qf" data-f="falta_legal" onclick="cmSetFiltro('falta_legal',this)">Falta Legal</button>
+        <button class="cm-qf" data-f="falta_gestion" onclick="cmSetFiltro('falta_gestion',this)">Falta Gestión</button>
+        <button class="cm-qf" data-f="falta_bienvenida" id="cmFiltroBienvenida" style="display:none" onclick="cmSetFiltro('falta_bienvenida',this)">Falta Bienvenida</button>
+        <button class="cm-qf" data-f="al_dia" onclick="cmSetFiltro('al_dia',this)">Al día</button>
+        <span class="cm-filter-count" id="cmFilterCount"></span>
+      </div>
+
+      <div class="cm-client-list" id="cmClientList"></div>
+    </div>
+
+    <div class="drawer-bg" id="cmGestionBg" onclick="cmCloseGestionIf(event)">
+      <div class="drawer">
+        <div class="drawer-hd">
+          <div class="drawer-title">Gestión de Cliente</div>
+          <button class="drawer-close" onclick="cmCloseGestion()">✕</button>
+        </div>
+        <div class="tab-panel active" style="padding:20px;overflow-y:auto">
+          <div class="cm-gd-info">
+            <div class="cm-gd-info-name" id="cmGdRazon">—</div>
+            <div class="cm-gd-info-meta" id="cmGdMeta">—</div>
+            <div class="cm-gd-info-badges" id="cmGdBadges"></div>
+          </div>
+          <div class="cm-gd-section" id="cmSecDocs">
+            <div class="cm-gd-section-title">📄 Documentos legales</div>
+            <div id="cmSecDocsContent"></div>
+          </div>
+          <div class="cm-gd-section" id="cmSecCobranza">
+            <div class="cm-gd-section-title">💰 Cobranza</div>
+            <div id="cmSecCobranzaContent"></div>
+          </div>
+          <div class="cm-gd-section" id="cmSecBienv">
+            <div class="cm-gd-section-title">✉️ Bienvenida y Proforma</div>
+            <div id="cmSecBienvContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="view" id="view-seguimiento">
 
       <!-- CABECERA -->
@@ -1301,8 +1442,8 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="tabs">
       <button class="tab active" onclick="showTab('datos')">Datos</button>
       <button class="tab" onclick="showTab('documentos')">Documentos</button>
-      <button class="tab" onclick="showTab('seguimiento_cli')">Seguimiento</button>
-      <button class="tab" onclick="showTab('historial')">Historial</button>
+      <button class="tab" id="tab-btn-seguimiento" onclick="showTab('seguimiento_cli')">Seguimiento</button>
+      <button class="tab" id="tab-btn-historial" onclick="showTab('historial')">Historial</button>
       <button class="tab" id="tab-btn-verificacion" style="display:none" onclick="showTab('verificacion')">🤖 IA</button>
     </div>
     <div class="tab-panel active" id="tab-datos"></div>
@@ -1568,7 +1709,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcU8d6gEFClimBhOLcip6BoPmr-aJ_-RHBF6UR2nc0UBdaGEV4BGOLsPLPF1kwIIvv1A/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzLAaCyZqZ3BU3fmIGJuyytcPGbsF6XmTXmu0SxEdy0TD3Vv8paXOS4I-Iv9I8deUXt9w/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -2238,13 +2379,21 @@ function openExp(idx){
   openExpRecord(r);
 }
 
-function openExpRecord(r){
+function openExpRecord(r, opts){
   if(!r)return;
+  opts=opts||{};
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
   var docsBadge=document.getElementById('drawerDocsBadge');
   if(docsBadge)docsBadge.style.display=tieneAlgunDocumento(r)?'inline-block':'none';
   renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
+  // Modo liviano (abierto desde Módulo Comercial) — solo Datos + Documentos.
+  // Aditivo: si opts.modoComercial no viene, el drawer se comporta exactamente
+  // igual que siempre (las 4 pestañas visibles).
+  var btnSeg=document.getElementById('tab-btn-seguimiento');
+  var btnHist=document.getElementById('tab-btn-historial');
+  if(btnSeg)btnSeg.style.display=opts.modoComercial?'none':'';
+  if(btnHist)btnHist.style.display=opts.modoComercial?'none':'';
   // Limpiar TODA selección visual al abrir un nuevo cliente
   document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
   if(_lastCard){clearTimeout(_lastCardTimer);_lastCard=null;}
@@ -3044,18 +3193,7 @@ function commWAClick(inputId,msgType){
     S.cur[col]=num;
     var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
     if(inAll)inAll[col]=num;
-    // Antes esto llamaba saveField(col,num), que para columnas que no son
-    // ESTATUS_LEGAL solo escribe una fila de auditoría en HISTORIAL_LOG y
-    // nunca hace setValue() sobre la celda real del cliente — el número
-    // nunca quedaba guardado en DB_ANALISTAS pese al borde verde de "OK".
-    if(APPS_SCRIPT_URL){
-      fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-        action:'actualizarContactoCliente',rif:S.cur['RIF'],usuario:S.user||'app',
-        [col]:num
-      })}).then(function(r){return r.json();}).then(function(rs){
-        if(!rs.ok)console.warn('[commWAClick] GAS error:',rs.error);
-      }).catch(function(err){console.warn('[commWAClick] red error:',err);});
-    }
+    if(APPS_SCRIPT_URL)saveField(col,num);
     el.style.borderColor='var(--green)';
     setTimeout(function(){if(el)el.style.borderColor='';},1500);
   }
@@ -3218,33 +3356,7 @@ function saveExp(){
   refreshTableRow(S.cur);
   toast('Cambios guardados ✓','ok');
   persistObs(S.cur['Observacion']||'');
-  persistContacto();
   setTimeout(closeDrawer,900);
-}
-
-// Persiste de verdad en DB_ANALISTAS los campos de contacto del cliente
-// (correo/teléfono de Rep1, Rep2, correo empresarial, tel. Proham).
-// Antes NINGUNA acción escribía esto en el Sheet — docContactChanged()/
-// commInputChanged() solo tocaban memoria local, y saveField() para estas
-// columnas caía en registrarCambio (solo bitácora, nunca setValue real).
-function persistContacto(){
-  if(!APPS_SCRIPT_URL||!S.cur)return;
-  var payload={
-    action:'actualizarContactoCliente',
-    rif:S.cur['RIF'],
-    usuario:S.user||'app'
-  };
-  var campos=['CORREO_REPRESENTANTES','NUMERO_REPRESENTANTES','CORREO_REPRESENTANTES2','NUMERO_REPRESENTANTES2','CORREO_EMPRESA','TELEFONO_PROHAM'];
-  campos.forEach(function(c){
-    if(S.cur[c]!==undefined)payload[c]=S.cur[c]||'';
-  });
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
-    .then(function(r){return r.json();})
-    .then(function(rs){
-      if(!rs.ok)console.warn('[persistContacto] GAS error:',rs.error);
-    }).catch(function(err){
-      console.warn('[persistContacto] red error:',err);
-    });
 }
 
 function refreshTableRow(r){
@@ -3903,6 +4015,7 @@ function showView(v){
   if(v==='verificacion')alCargarSolicitudes();
   if(v==='referidos')alCargarReferidos();
   if(v==='centroAliados'){ alCambiarTabCentro(AL.tabCentro||'pendientes'); alCargarColaAdmin(); }
+  if(v==='comercial')cmInit();
   closeSidebar();
 }
 
@@ -7770,6 +7883,207 @@ function alPromoverCliente(idSolicitud){
 }
 
 // ── Fin módulo Aliados Comerciales ────────────────────────────────
+
+// ═══ MÓDULO: COMERCIAL — CLIENTES NUEVOS ═══════════════════════
+// Reutiliza: S.all, S.cfg, S.user, S.rol, openExpRecord(), toast(),
+// openWA(), regAccion(), calcDays(), parseDate(), esc(), normalizeStr(),
+// formatWANumber(), SI (leyenda de estatus). No duplica ninguna de estas.
+var CM = {filtro:'todos', gestionCliente:null};
+
+function cmEstatusLegalOk(estatus){
+  var e=(estatus||'').toString().trim().toUpperCase();
+  return ['DOCUMENTOS RECIBIDOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'].indexOf(e)>=0;
+}
+function cmUrgBucket(d){ if(d===null)return 'verde'; return d<=2?'verde':d<=5?'amarillo':'rojo'; }
+function cmGestionFrac(r){
+  var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+  var cxcOk = cxc==='SI' || cxc==='NO_APLICA';
+  var bienv = (r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+  var prof  = (r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+  return [cxcOk, (bienv&&prof)].filter(Boolean).length;
+}
+
+function cmInit(){
+  var mesSel=document.getElementById('cmMesFilter');
+  if(!mesSel.options.length){
+    var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var hoyMes=new Date().getMonth();
+    meses.forEach(function(m,i){
+      var o=document.createElement('option');o.value=i;
+      o.textContent=m+' 2026'+(i===hoyMes?' (mes actual)':'');
+      if(i===hoyMes)o.selected=true;
+      mesSel.appendChild(o);
+    });
+  }
+  var esLider=(S.rol==='LIDER');
+  var liderSel=document.getElementById('cmLiderFilter');
+  document.getElementById('cmRoleHint').textContent = esLider
+    ? 'Viendo solo tu cartera ('+S.user+')'
+    : 'Viendo todos los clientes — filtrable por líder';
+  if(esLider){
+    liderSel.disabled=true;
+    liderSel.innerHTML='<option>'+esc(S.user)+' (tú)</option>';
+  } else {
+    liderSel.disabled=false;
+    if(liderSel.options.length<=1){
+      var lideres=(S.cfg||[]).filter(function(x){return (x.ROL||'').toUpperCase()==='LIDER'&&(x.ACTIVO||'').toUpperCase()==='SI';});
+      liderSel.innerHTML='<option value="">Todos los líderes</option>'+lideres.map(function(l){return '<option value="'+esc(l.EJECUTIVO)+'">'+esc(l.EJECUTIVO)+'</option>';}).join('');
+    }
+  }
+  document.getElementById('cmFiltroBienvenida').style.display = (S.rol==='ANALISTA') ? '' : 'none';
+  cmRender();
+}
+
+function cmSetFiltro(f, btn){
+  CM.filtro=f;
+  document.querySelectorAll('#cmFilterRow .cm-qf').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  cmRender();
+}
+
+function cmRender(){
+  var mes=Number(document.getElementById('cmMesFilter').value);
+  var lider=document.getElementById('cmLiderFilter').value;
+  var esLider=(S.rol==='LIDER');
+
+  var base=(S.all||[]).filter(function(r){
+    if((r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL')return false;
+    var d=parseDate(r['Fecha de Instalacion Cliente']);
+    if(!d || d.getMonth()!==mes || d.getFullYear()!==2026) return false;
+    return true;
+  });
+  if(esLider) base=base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);});
+  else if(lider) base=base.filter(function(r){return r['EJECUTIVO']===lider;});
+
+  var total=base.length;
+  var listos=base.filter(function(r){return cmEstatusLegalOk(r['ESTATUS_LEGAL']) && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI';}).length;
+  var noListos=total-listos;
+  document.getElementById('cmKpiTotal').textContent=total;
+  document.getElementById('cmKpiListos').textContent=listos;
+  document.getElementById('cmKpiNoListos').textContent=noListos;
+  document.getElementById('cmKpiListosPct').textContent=(total?Math.round(listos/total*100):0)+'%';
+  document.getElementById('cmKpiNoListosPct').textContent=(total?Math.round(noListos/total*100):0)+'%';
+
+  var data=base.filter(function(r){
+    var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
+    var gFrac=cmGestionFrac(r);
+    var bienvOk=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    if(CM.filtro==='falta_legal')return !lOk;
+    if(CM.filtro==='falta_gestion')return gFrac<2;
+    if(CM.filtro==='falta_bienvenida')return !bienvOk;
+    if(CM.filtro==='al_dia')return lOk && gFrac===2;
+    return true;
+  });
+  data.sort(function(a,b){
+    var da=calcDays(a['Fecha de Instalacion Cliente'])||0;
+    var db=calcDays(b['Fecha de Instalacion Cliente'])||0;
+    return db-da;
+  });
+  document.getElementById('cmFilterCount').textContent=data.length+' de '+total+' clientes';
+
+  var list=document.getElementById('cmClientList');
+  if(!data.length){list.innerHTML='<div style="text-align:center;color:var(--text2);padding:40px 0">Sin clientes en este filtro</div>';return;}
+
+  list.innerHTML=data.map(function(r){
+    var dias=calcDays(r['Fecha de Instalacion Cliente']);
+    var b=cmUrgBucket(dias);
+    var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
+    var gFrac=cmGestionFrac(r);
+    var gOk=gFrac===2;
+    var readyTag=(lOk && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI')?'<div class="cm-ready-tag">✓ Listo para comisionar</div>':'';
+    var cant=Number(r['CANT_SERVICIOS']||1);
+    var multiTag=cant>1?'<span class="cm-tag">· +'+(cant-1)+' servicio(s) más</span>':'';
+    var rifSafe=esc(r['RIF']);
+
+    var legalInd='<div class="cm-ind2" onclick="cmOpenLegal(\''+rifSafe+'\')">'
+      +'<div class="cm-ind2-top"><span class="cm-ind2-dot '+(lOk?'ok':'pend')+'"></span><span class="cm-ind2-lbl">Legal</span></div>'
+      +'<div class="cm-ind2-detail">'+esc(r['ESTATUS_LEGAL']||'—')+'</div></div>';
+
+    var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+    var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    var tip='Cobranza '+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'✗')+' · Bienvenida '+(bienv?'✓':'✗')+' · Proforma '+(prof?'✓':'✗');
+    var gestInd='<div class="cm-ind2" title="'+esc(tip)+'" onclick="cmOpenGestion(\''+rifSafe+'\')">'
+      +'<div class="cm-ind2-top"><span class="cm-ind2-dot '+(gOk?'ok':'pend')+'"></span><span class="cm-ind2-lbl">Gestión</span><span class="cm-ind2-frac">'+gFrac+'/2</span></div>'
+      +'<div class="cm-ind2-detail">'+(gOk?'Completo':'Pendiente')+'</div></div>';
+
+    return '<div class="cm-card urg-'+b+'">'
+      +'<div class="cm-urg-badge urg-'+b+'"><div class="cm-urg-num">'+(dias!==null?dias:'—')+'</div><div class="cm-urg-lbl">días</div></div>'
+      +'<div class="cm-main"><div class="cm-name">'+esc(r['RAZON SOCIAL'])+'</div>'
+      +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+multiTag+'</div>'+readyTag+'</div>'
+      +'<div class="cm-indicators">'+legalInd+gestInd+'</div></div>';
+  }).join('');
+}
+
+function cmFindByRif(rif){
+  return (S.all||[]).find(function(r){return (r['RIF']||'').toString().trim()===rif;});
+}
+
+function cmOpenLegal(rif){
+  var r=cmFindByRif(rif);
+  if(!r){toast('Cliente no encontrado','err');return;}
+  openExpRecord(r, {modoComercial:true});
+}
+
+function cmCloseGestionIf(e){ if(e.target.id==='cmGestionBg') cmCloseGestion(); }
+function cmCloseGestion(){ document.getElementById('cmGestionBg').classList.remove('open'); CM.gestionCliente=null; }
+
+function cmOpenGestion(rif){
+  var r=cmFindByRif(rif);
+  if(!r){toast('Cliente no encontrado','err');return;}
+  CM.gestionCliente=rif;
+  document.getElementById('cmGdRazon').textContent=r['RAZON SOCIAL']||'';
+  document.getElementById('cmGdMeta').textContent=(r['RIF']||'')+' · '+(r['EJECUTIVO']||'');
+  var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
+  var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+
+  document.getElementById('cmGdBadges').innerHTML=
+    '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
+    '<span class="cm-gd-badge '+(cxc==='SI'?'ok':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+' Cobranza</span>';
+
+  document.getElementById('cmSecDocsContent').innerHTML = lOk
+    ? '<div class="cm-gd-done-msg">✓ Documentos completos — nada pendiente aquí</div>'
+    : '<button class="cm-gd-btn wa" onclick="cmContactarDocs(\''+esc(rif)+'\')">💬 Contactar cliente — Documentos faltantes</button>';
+
+  document.getElementById('cmSecCobranzaContent').innerHTML = cxc==='SI'
+    ? '<div class="cm-gd-done-msg">✓ Pago de instalación confirmado</div>'
+    : cxc==='NO_APLICA'
+      ? '<div class="cm-gd-done-msg" style="color:var(--text3)">➖ Fuera de la ventana de evaluación</div>'
+      : '<button class="cm-gd-btn wa" onclick="cmContactarCobro(\''+esc(rif)+'\')">💬 Contactar — Recordar pago de instalación</button>';
+
+  // Descargar/enviar plantillas y marcar Bienvenida/Proforma enviadas requieren
+  // una acción nueva en Apps Script (actualizarGestionComercial) que todavía no
+  // existe — quedó pendiente igual que las plantillas mismas. Los botones de
+  // WhatsApp sí funcionan de una vez porque reusan openWA()/regAccion() que ya existen.
+  document.getElementById('cmSecBienvContent').innerHTML =
+    '<button class="cm-gd-btn outline" onclick="toast(\'Pendiente: conectar con la plantilla de Bienvenida\',\'ok\')">⬇️ Descargar Carta de Bienvenida</button>'
+    +'<button class="cm-gd-btn outline" onclick="toast(\'Pendiente: conectar con la plantilla de Proforma\',\'ok\')">⬇️ Descargar Proforma</button>'
+    +'<button class="cm-gd-btn" onclick="toast(\'Pendiente: conectar envío de correo con adjuntos\',\'ok\')">📧 Enviar por correo (con ambos adjuntos)</button>'
+    +'<button class="cm-gd-btn wa" onclick="cmContactarBienvenida(\''+esc(rif)+'\')">💬 Contactar — Bienvenida</button>'
+    +'<div class="cm-gd-note">⚠️ WhatsApp no permite adjuntar archivos automáticamente — recuerda adjuntar los documentos que acabas de descargar.</div>';
+
+  document.getElementById('cmGestionBg').classList.add('open');
+}
+
+function cmContactarDocs(rif){
+  var r=cmFindByRif(rif); if(!r)return;
+  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
+  var msg='Hola, te contactamos de Airtek respecto al expediente de '+(r['RAZON SOCIAL']||'')+' — nos falta completar algunos documentos para avanzar. ¿Podemos coordinar el envío?';
+  openWA(num, msg, r, 'WA-DocsComercial');
+}
+function cmContactarCobro(rif){
+  var r=cmFindByRif(rif); if(!r)return;
+  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
+  var msg='Hola, te contactamos de Airtek para recordarte el pago de la instalación de '+(r['RAZON SOCIAL']||'')+'. Quedamos atentos.';
+  openWA(num, msg, r, 'WA-CobroComercial');
+}
+function cmContactarBienvenida(rif){
+  var r=cmFindByRif(rif); if(!r)return;
+  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
+  var msg='¡Bienvenido a Airtek, '+(r['RAZON SOCIAL']||'')+'! Estamos para apoyarte en todo lo que necesites.';
+  openWA(num, msg, r, 'WA-BienvenidaComercial');
+}
+// ── Fin módulo Comercial — Clientes Nuevos ─────────────────────────
 
 // PWA
 const mf={name:'Airtek Contratos B2B',short_name:'Contratos',start_url:'.',display:'standalone',background_color:'#0D1117',theme_color:'#0D1117',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Ctext y='.9em' font-size='80' fill='white'%3EA%3C/text%3E%3C/svg%3E",sizes:'192x192',type:'image/svg+xml'}]};
