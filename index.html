@@ -7890,6 +7890,20 @@ function alPromoverCliente(idSolicitud){
 // formatWANumber(), SI (leyenda de estatus). No duplica ninguna de estas.
 var CM = {filtro:'todos', gestionCliente:null};
 
+function cmMesComisionEfectivo(r){
+  // Fuente de verdad: la columna que escribe el trigger diario. Si todavía
+  // está vacía (cliente recién creado, el trigger aún no corrió para él),
+  // se calcula en vivo con la MISMA regla, para que nunca quede invisible
+  // mientras espera su primera pasada del trigger.
+  var v=(r['MES_COMISION_ASIGNADO']||'').toString().trim();
+  if(v) return v;
+  var d=parseDate(r['Fecha de Instalacion Cliente']);
+  if(!d) return '';
+  var mes=d.getMonth(), anio=d.getFullYear(), dia=d.getDate();
+  if(dia>21){ mes++; if(mes>11){mes=0;anio++;} }
+  return anio+'-'+String(mes+1).padStart(2,'0');
+}
+
 function cmEstatusLegalOk(estatus){
   var e=(estatus||'').toString().trim().toUpperCase();
   return ['DOCUMENTOS RECIBIDOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'].indexOf(e)>=0;
@@ -7948,9 +7962,8 @@ function cmRender(){
 
   var base=(S.all||[]).filter(function(r){
     if((r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL')return false;
-    var d=parseDate(r['Fecha de Instalacion Cliente']);
-    if(!d || d.getMonth()!==mes || d.getFullYear()!==2026) return false;
-    return true;
+    var clave=2026+'-'+String(mes+1).padStart(2,'0');
+    return cmMesComisionEfectivo(r)===clave;
   });
   if(esLider) base=base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);});
   else if(lider) base=base.filter(function(r){return r['EJECUTIVO']===lider;});
@@ -7991,6 +8004,8 @@ function cmRender(){
     var gFrac=cmGestionFrac(r);
     var gOk=gFrac===2;
     var readyTag=(lOk && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI')?'<div class="cm-ready-tag">✓ Listo para comisionar</div>':'';
+    var nota=(r['NOTA_COMISION']||'').toString().trim();
+    var notaTag=nota?'<div class="cm-tag" style="color:var(--amber);border-color:var(--amber)" title="'+esc(nota)+'">↪ '+esc(nota)+'</div>':'';
     var cant=Number(r['CANT_SERVICIOS']||1);
     var multiTag=cant>1?'<span class="cm-tag">· +'+(cant-1)+' servicio(s) más</span>':'';
     var rifSafe=esc(r['RIF']);
@@ -8010,7 +8025,7 @@ function cmRender(){
     return '<div class="cm-card urg-'+b+'">'
       +'<div class="cm-urg-badge urg-'+b+'"><div class="cm-urg-num">'+(dias!==null?dias:'—')+'</div><div class="cm-urg-lbl">días</div></div>'
       +'<div class="cm-main"><div class="cm-name">'+esc(r['RAZON SOCIAL'])+'</div>'
-      +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+multiTag+'</div>'+readyTag+'</div>'
+      +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+multiTag+'</div>'+readyTag+notaTag+'</div>'
       +'<div class="cm-indicators">'+legalInd+gestInd+'</div></div>';
   }).join('');
 }
@@ -8029,40 +8044,78 @@ function cmCloseGestionIf(e){ if(e.target.id==='cmGestionBg') cmCloseGestion(); 
 function cmCloseGestion(){ document.getElementById('cmGestionBg').classList.remove('open'); CM.gestionCliente=null; }
 
 function cmOpenGestion(rif){
-  var r=cmFindByRif(rif);
-  if(!r){toast('Cliente no encontrado','err');return;}
-  CM.gestionCliente=rif;
-  document.getElementById('cmGdRazon').textContent=r['RAZON SOCIAL']||'';
-  document.getElementById('cmGdMeta').textContent=(r['RIF']||'')+' · '+(r['EJECUTIVO']||'');
-  var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
-  var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+  try{
+    var r=cmFindByRif(rif);
+    if(!r){toast('Cliente no encontrado (RIF: '+rif+')','err');return;}
+    CM.gestionCliente=rif;
 
-  document.getElementById('cmGdBadges').innerHTML=
-    '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
-    '<span class="cm-gd-badge '+(cxc==='SI'?'ok':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+' Cobranza</span>';
+    var elRazon=document.getElementById('cmGdRazon');
+    var elMeta=document.getElementById('cmGdMeta');
+    var elBadges=document.getElementById('cmGdBadges');
+    var elDocs=document.getElementById('cmSecDocsContent');
+    var elCxc=document.getElementById('cmSecCobranzaContent');
+    var elBienv=document.getElementById('cmSecBienvContent');
+    var elBg=document.getElementById('cmGestionBg');
+    if(!elRazon||!elMeta||!elBadges||!elDocs||!elCxc||!elBienv||!elBg){
+      toast('Error: falta un elemento del drawer en la página (recarga e intenta de nuevo)','err');
+      console.error('cmOpenGestion: elemento faltante', {elRazon,elMeta,elBadges,elDocs,elCxc,elBienv,elBg});
+      return;
+    }
 
-  document.getElementById('cmSecDocsContent').innerHTML = lOk
-    ? '<div class="cm-gd-done-msg">✓ Documentos completos — nada pendiente aquí</div>'
-    : '<button class="cm-gd-btn wa" onclick="cmContactarDocs(\''+esc(rif)+'\')">💬 Contactar cliente — Documentos faltantes</button>';
+    elRazon.textContent=r['RAZON SOCIAL']||'';
+    elMeta.textContent=(r['RIF']||'')+' · '+(r['EJECUTIVO']||'');
+    var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
+    var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
 
-  document.getElementById('cmSecCobranzaContent').innerHTML = cxc==='SI'
-    ? '<div class="cm-gd-done-msg">✓ Pago de instalación confirmado</div>'
-    : cxc==='NO_APLICA'
-      ? '<div class="cm-gd-done-msg" style="color:var(--text3)">➖ Fuera de la ventana de evaluación</div>'
-      : '<button class="cm-gd-btn wa" onclick="cmContactarCobro(\''+esc(rif)+'\')">💬 Contactar — Recordar pago de instalación</button>';
+    elBadges.innerHTML=
+      '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
+      '<span class="cm-gd-badge '+(cxc==='SI'?'ok':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+' Cobranza</span>';
+
+    elDocs.innerHTML = lOk
+      ? '<div class="cm-gd-done-msg">✓ Documentos completos — nada pendiente aquí</div>'
+      : '<button class="cm-gd-btn wa" onclick="cmContactarDocs(\''+esc(rif)+'\')">💬 Contactar cliente — Documentos faltantes</button>';
+
+    elCxc.innerHTML = cxc==='SI'
+      ? '<div class="cm-gd-done-msg">✓ Pago de instalación confirmado</div>'+cmAdminOverrideHTML(rif,'')
+      : cxc==='NO_APLICA'
+        ? '<div class="cm-gd-done-msg" style="color:var(--text3)">➖ Fuera de la ventana de evaluación</div>'+cmAdminOverrideHTML(rif,'')
+        : '<button class="cm-gd-btn wa" onclick="cmContactarCobro(\''+esc(rif)+'\')">💬 Contactar — Recordar pago de instalación</button>'+cmAdminOverrideHTML(rif,'SI');
 
   // Descargar/enviar plantillas y marcar Bienvenida/Proforma enviadas requieren
   // una acción nueva en Apps Script (actualizarGestionComercial) que todavía no
   // existe — quedó pendiente igual que las plantillas mismas. Los botones de
   // WhatsApp sí funcionan de una vez porque reusan openWA()/regAccion() que ya existen.
-  document.getElementById('cmSecBienvContent').innerHTML =
+  elBienv.innerHTML =
     '<button class="cm-gd-btn outline" onclick="toast(\'Pendiente: conectar con la plantilla de Bienvenida\',\'ok\')">⬇️ Descargar Carta de Bienvenida</button>'
     +'<button class="cm-gd-btn outline" onclick="toast(\'Pendiente: conectar con la plantilla de Proforma\',\'ok\')">⬇️ Descargar Proforma</button>'
     +'<button class="cm-gd-btn" onclick="toast(\'Pendiente: conectar envío de correo con adjuntos\',\'ok\')">📧 Enviar por correo (con ambos adjuntos)</button>'
     +'<button class="cm-gd-btn wa" onclick="cmContactarBienvenida(\''+esc(rif)+'\')">💬 Contactar — Bienvenida</button>'
     +'<div class="cm-gd-note">⚠️ WhatsApp no permite adjuntar archivos automáticamente — recuerda adjuntar los documentos que acabas de descargar.</div>';
 
-  document.getElementById('cmGestionBg').classList.add('open');
+    elBg.classList.add('open');
+  }catch(err){
+    console.error('cmOpenGestion error:', err);
+    toast('Error abriendo Gestión: '+err.message,'err');
+  }
+}
+
+function cmAdminOverrideHTML(rif, valorSugerido){
+  if(S.rol!=='ADMIN') return '';
+  var accionTexto = valorSugerido==='SI' ? 'Marcar como pagado manualmente' : 'Revertir a pendiente';
+  var valor = valorSugerido==='SI' ? 'SI' : '';
+  return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
+    +'<button class="cm-gd-btn outline" style="font-size:10.5px;padding:6px 10px" onclick="cmForzarCxC(\''+esc(rif)+'\',\''+valor+'\')">⚙️ Admin: '+accionTexto+'</button></div>';
+}
+
+function cmForzarCxC(rif, valor){
+  var motivo=prompt('Motivo del cambio manual (queda registrado en Historial):', 'Corrección manual — cruce de mes');
+  if(motivo===null) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'actualizarCxCManual',rif:rif,valor:valor,usuario:S.user,motivo:motivo})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Cobranza actualizada manualmente ✓','ok');
+      reloadData().then(function(){cmOpenGestion(rif);cmRender();});
+    }).catch(function(){toast('Sin conexión','err');});
 }
 
 function cmContactarDocs(rif){
