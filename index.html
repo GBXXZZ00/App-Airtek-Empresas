@@ -732,6 +732,9 @@ tbody tr:hover td{background:var(--surface2)}
 
 .cm-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
 .cm-kpi-card{border-radius:10px;padding:16px 18px;border:1px solid var(--border);background:var(--surface);transition:transform .15s var(--ease-out)}
+.cm-kpi-card.clickable{cursor:pointer}
+.cm-kpi-card.clickable:active{transform:scale(.98)}
+.cm-kpi-card.active{outline:2px solid var(--accent);outline-offset:-1px}
 .cm-kpi-card:hover{transform:translateY(-1px)}
 .cm-kpi-card.ready{background:var(--green-dim);border-color:rgba(63,185,80,.35)}
 .cm-kpi-top{display:flex;align-items:baseline;gap:8px}
@@ -1172,11 +1175,11 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiTotal">0</span></div>
           <div class="cm-kpi-lbl">📦 Instalados este mes</div>
         </div>
-        <div class="cm-kpi-card ready">
+        <div class="cm-kpi-card ready clickable" data-kpi-f="listos_comision" onclick="cmToggleKpiFiltro(this)">
           <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiListos">0</span><span class="cm-kpi-pct" id="cmKpiListosPct">0%</span></div>
           <div class="cm-kpi-lbl">✓ Listos para comisionar</div>
         </div>
-        <div class="cm-kpi-card">
+        <div class="cm-kpi-card clickable" data-kpi-f="no_listos_comision" onclick="cmToggleKpiFiltro(this)">
           <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiNoListos">0</span><span class="cm-kpi-pct" id="cmKpiNoListosPct">0%</span></div>
           <div class="cm-kpi-lbl">⏳ No listos aún</div>
         </div>
@@ -7908,6 +7911,11 @@ function cmEstatusLegalOk(estatus){
   var e=(estatus||'').toString().trim().toUpperCase();
   return ['DOCUMENTOS RECIBIDOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'].indexOf(e)>=0;
 }
+// Misma definición de "listo para comisionar" en un solo lugar — la usan
+// tanto las tarjetas KPI (Listos/No listos) como su filtro correspondiente.
+function cmListoComision(r){
+  return cmEstatusLegalOk(r['ESTATUS_LEGAL']) && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI';
+}
 function cmUrgBucket(d){ if(d===null)return 'verde'; return d<=2?'verde':d<=5?'amarillo':'rojo'; }
 function cmGestionFrac(r){
   var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
@@ -7951,7 +7959,27 @@ function cmInit(){
 function cmSetFiltro(f, btn){
   CM.filtro=f;
   document.querySelectorAll('#cmFilterRow .cm-qf').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.cm-kpi-card.clickable').forEach(function(k){k.classList.remove('active');});
   btn.classList.add('active');
+  cmRender();
+}
+
+// Tarjetas "Listos para comisionar" / "No listos aún": clic activa ese filtro,
+// clic de nuevo sobre la misma vuelve a "Todos los clientes" (toggle).
+function cmToggleKpiFiltro(card){
+  var f = card.getAttribute('data-kpi-f');
+  var yaActivo = CM.filtro === f;
+  document.querySelectorAll('#cmFilterRow .cm-qf').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.cm-kpi-card.clickable').forEach(function(k){k.classList.remove('active');});
+
+  if(yaActivo){
+    CM.filtro='todos';
+    var btnTodos=document.querySelector('#cmFilterRow .cm-qf[data-f="todos"]');
+    if(btnTodos) btnTodos.classList.add('active');
+  } else {
+    CM.filtro=f;
+    card.classList.add('active');
+  }
   cmRender();
 }
 
@@ -7969,7 +7997,7 @@ function cmRender(){
   else if(lider) base=base.filter(function(r){return r['EJECUTIVO']===lider;});
 
   var total=base.length;
-  var listos=base.filter(function(r){return cmEstatusLegalOk(r['ESTATUS_LEGAL']) && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI';}).length;
+  var listos=base.filter(cmListoComision).length;
   var noListos=total-listos;
   document.getElementById('cmKpiTotal').textContent=total;
   document.getElementById('cmKpiListos').textContent=listos;
@@ -7985,6 +8013,8 @@ function cmRender(){
     if(CM.filtro==='falta_gestion')return gFrac<2;
     if(CM.filtro==='falta_bienvenida')return !bienvOk;
     if(CM.filtro==='al_dia')return lOk && gFrac===2;
+    if(CM.filtro==='listos_comision')return cmListoComision(r);
+    if(CM.filtro==='no_listos_comision')return !cmListoComision(r);
     return true;
   });
   data.sort(function(a,b){
@@ -8066,6 +8096,7 @@ function cmOpenGestion(rif){
     elMeta.textContent=(r['RIF']||'')+' · '+(r['EJECUTIVO']||'');
     var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
     var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+    var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
 
     elBadges.innerHTML=
       '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
@@ -8198,4 +8229,3 @@ document.getElementById('loader').classList.add('off');
 </script>
 </body>
 </html>
-  
