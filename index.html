@@ -1712,7 +1712,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIZU9AAuqiXR0hwDmaOEj-Rivn0XzyQQnhpQnzbwsMWaDHDj7FxlZMuECUG_AotoHoew/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzoM-h3ftWpbMpiJbQtYMWjW_L8eOXVSgrjdsv7p4S7kzFtW1CjQnxZP4uRhVsZED5NLw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -8097,6 +8097,7 @@ function cmOpenGestion(rif){
     var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
     var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
     var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
 
     elBadges.innerHTML=
       '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
@@ -8112,12 +8113,12 @@ function cmOpenGestion(rif){
         ? '<div class="cm-gd-done-msg" style="color:var(--text3)">➖ Fuera de la ventana de evaluación</div>'+cmAdminOverrideHTML(rif,'')
         : '<button class="cm-gd-btn wa" onclick="cmContactarCobro(\''+esc(rif)+'\')">💬 Contactar — Recordar pago de instalación</button>'+cmAdminOverrideHTML(rif,'SI');
 
-  // Proforma: conectada a la acción real generarProforma() en Apps Script
-  // (archivo proforma_comercial.gs) — genera el PDF, lo guarda en la carpeta
-  // Drive del cliente y marca PROFORMA_ENVIADA=SI. La Carta de Bienvenida
-  // sigue pendiente porque su plantilla visual todavía no está lista.
+  // Proforma y Carta de Bienvenida: conectadas a las acciones reales
+  // generarProforma() / generarCartaBienvenida() en Apps Script
+  // (proforma_comercial.gs / carta_bienvenida.gs) — generan el PDF con
+  // la plantilla real, guardan copia en Drive y marcan *_ENVIADA=SI.
   elBienv.innerHTML =
-    '<button class="cm-gd-btn outline" onclick="toast(\'Pendiente: conectar con la plantilla de Bienvenida\',\'ok\')">⬇️ Descargar Carta de Bienvenida</button>'
+    cmBienvenidaBtnHTML(rif, bienv, r['FECHA_BIENVENIDA_ENVIADA'])
     +cmProformaBtnHTML(rif, prof, r['FECHA_PROFORMA_ENVIADA'])
     +'<button class="cm-gd-btn" onclick="toast(\'Pendiente: conectar envío de correo con adjuntos\',\'ok\')">📧 Enviar por correo (con ambos adjuntos)</button>'
     +'<button class="cm-gd-btn wa" onclick="cmContactarBienvenida(\''+esc(rif)+'\')">💬 Contactar — Bienvenida</button>'
@@ -8128,6 +8129,57 @@ function cmOpenGestion(rif){
     console.error('cmOpenGestion error:', err);
     toast('Error abriendo Gestión: '+err.message,'err');
   }
+}
+
+function cmBienvenidaBtnHTML(rif, yaEnviada, fechaEnviada){
+  var rifSafe=esc(rif);
+  if(yaEnviada){
+    return '<div class="cm-gd-done-msg">✓ Carta de Bienvenida generada'+(fechaEnviada?(' — '+esc(fechaEnviada)):'')+'</div>'
+      +'<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>';
+  }
+  return '<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Descargar Carta de Bienvenida</button>';
+}
+
+function cmDescargarBienvenida(rif){
+  if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
+  var btn=document.getElementById('cmBtnBienvenida');
+  var textoOriginal = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'generarCartaBienvenida', rif:rif, usuario:S.user
+  })}).then(function(r){return r.json();}).then(function(rs){
+    if(!rs.ok){
+      toast('Error generando carta: '+(rs.error||'desconocido'),'err');
+      if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+      return;
+    }
+    try{
+      var byteChars=atob(rs.fileBase64);
+      var byteNums=new Array(byteChars.length);
+      for(var i=0;i<byteChars.length;i++) byteNums[i]=byteChars.charCodeAt(i);
+      var blob=new Blob([new Uint8Array(byteNums)],{type:rs.mimeType||'application/pdf'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=rs.fileName||('Carta_Bienvenida_'+rif+'.pdf');
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }catch(e){
+      toast('Carta generada pero no se pudo descargar automáticamente: '+e.message,'err');
+    }
+
+    var reg=cmFindByRif(rif);
+    if(reg){
+      reg['BIENVENIDA_ENVIADA']='SI';
+      reg['FECHA_BIENVENIDA_ENVIADA']=new Date().toLocaleDateString('es-VE');
+    }
+    toast('Carta de Bienvenida generada y descargada','ok');
+    cmOpenGestion(rif);
+    cmRender();
+  }).catch(function(){
+    toast('Sin conexión — no se pudo generar la carta','err');
+    if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+  });
 }
 
 function cmProformaBtnHTML(rif, yaEnviada, fechaEnviada){
