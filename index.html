@@ -814,6 +814,8 @@ tbody tr:hover td{background:var(--surface2)}
 .gmenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);font-size:12px;padding:8px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
 .gmenu button:hover{background:var(--surface2)}
 .gmenu button.danger{color:var(--red)}
+.gmenu-sec{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);padding:7px 10px 3px}
+.gmenu-divider{height:1px;background:var(--border);margin:5px 2px}
 </style>
 </head>
 <body>
@@ -1714,7 +1716,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw__3DBNGe75H7VSDKWpojDerPDBed8Sh39Ok-7ZNa3ee5_FTxAGb63-g2qePKJhVVjyw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWEPLeVjmSKsTgk07rIdhG60UihVMDT5xY4wEJTdxnDCO_6Rz3ynjoc8ZsKFSckuIfwg/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -8133,39 +8135,50 @@ function cmAbrirGestionComercial(rif){
 }
 
 // ── Pestaña "Gestión" del drawer de Expediente (modo Comercial) ──────────
-// Checklist de 3 filas (Cobranza / Bienvenida / Proforma): un ícono de
-// estado + una acción principal por fila. Lo secundario (contactar por
-// WhatsApp, override de Admin) vive en el menú "⋯" para no apilar botones.
+// Checklist de 4 filas (Documentos / Cobranza / Bienvenida / Proforma / Correo
+// van 4 ítems reales: Documentos, Cobranza, Bienvenida+Proforma cuentan por
+// separado, Correo). Un ícono de estado + una acción principal por fila.
+// Lo secundario (WhatsApp con selección de número, override de Admin) vive
+// en el menú "⋯" para no apilar botones.
 function renderTabGestionComercial(r){
   var panel=document.getElementById('tab-gestion-comercial');
   if(!panel||!r)return;
   var rif=r['RIF'];
   var rifSafe=esc(rif);
+  var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
   var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
   var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
   var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+  var correoEnv=(r['CORREO_ENVIADO']||'').toString().trim().toUpperCase()==='SI';
 
-  var completos=[cxc==='SI'||cxc==='NO_APLICA', bienv, prof].filter(Boolean).length;
-  var pct=Math.round(completos/3*100);
+  var completos=[lOk, cxc==='SI'||cxc==='NO_APLICA', (bienv&&prof), correoEnv].filter(Boolean).length;
+  var pct=Math.round(completos/4*100);
   var cntEl=document.querySelector('#tab-btn-gestion-comercial .cnt');
-  if(cntEl)cntEl.textContent=completos+'/3';
+  if(cntEl)cntEl.textContent=completos+'/4';
 
   var h='<div class="gestion-progress">'
     +'<div class="gestion-progress-bar"><div class="gestion-progress-fill" style="width:'+pct+'%"></div></div>'
-    +'<div class="gestion-progress-lbl">'+completos+' de 3 completado</div></div>';
+    +'<div class="gestion-progress-lbl">'+completos+' de 4 completado</div></div>';
+
+  // ── Documentos legales ──
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">Documentos legales</div>'
+    +'<div class="gitem-sub" id="gsub-docs">'+(lOk?'Completos':esc(r['ESTATUS_LEGAL']||'Pendiente de solicitar'))+'</div></div>'
+    +'<div class="gitem-actions">'+cmGestionMenuHTML(rif,'docs',lOk?'SI':'')+'</div></div>';
 
   // ── Cobranza ──
   h+='<div class="gitem">'
     +'<div class="gitem-dot '+(cxc==='SI'?'ok':cxc==='NO_APLICA'?'no':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+'</div>'
     +'<div class="gitem-body"><div class="gitem-title">Cobranza de instalación</div>'
-    +'<div class="gitem-sub">'+(cxc==='SI'?'Pagado':cxc==='NO_APLICA'?'Fuera de la ventana de evaluación':'Pendiente de pago')+'</div></div>'
+    +'<div class="gitem-sub" id="gsub-cxc">'+(cxc==='SI'?'Pagado':cxc==='NO_APLICA'?'Fuera de la ventana de evaluación':'Pendiente de pago')+'</div></div>'
     +'<div class="gitem-actions">'+cmGestionMenuHTML(rif,'cxc',cxc)+'</div></div>';
 
   // ── Carta de Bienvenida ──
   h+='<div class="gitem">'
     +'<div class="gitem-dot '+(bienv?'ok':'pend')+'">'+(bienv?'✓':'⏳')+'</div>'
     +'<div class="gitem-body"><div class="gitem-title">Carta de Bienvenida</div>'
-    +'<div class="gitem-sub">'+(bienv?('Generada'+(r['FECHA_BIENVENIDA_ENVIADA']?(' — '+esc(r['FECHA_BIENVENIDA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
+    +'<div class="gitem-sub" id="gsub-bienvenida">'+(bienv?('Generada'+(r['FECHA_BIENVENIDA_ENVIADA']?(' — '+esc(r['FECHA_BIENVENIDA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
     +'<div class="gitem-actions">'
     +'<button class="gbtn'+(bienv?' outline':'')+'" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ '+(bienv?'Volver a descargar':'Generar y descargar')+'</button>'
     +cmGestionMenuHTML(rif,'bienvenida',bienv?'SI':'')
@@ -8181,35 +8194,192 @@ function renderTabGestionComercial(r){
     +cmGestionMenuHTML(rif,'proforma',prof?'SI':'')
     +'</div></div>';
 
-  h+='<div style="margin-top:18px;font-size:11.5px;color:var(--text3);line-height:1.6">⚠️ WhatsApp no permite adjuntar archivos automáticamente — recuerda adjuntar los documentos que acabas de descargar.</div>';
+  // ── Envío por correo — una sola vez, requiere Bienvenida + Proforma listas ──
+  var puedeEnviarCorreo=bienv&&prof;
+  var correoSub;
+  if(correoEnv) correoSub='Enviado'+(r['CORREO_ENVIADO_POR']?(' por '+esc(r['CORREO_ENVIADO_POR'])):'')+(r['FECHA_CORREO_ENVIADO']?(' — '+esc(r['FECHA_CORREO_ENVIADO'])):'');
+  else if(!puedeEnviarCorreo) correoSub='Genera primero la Bienvenida y la Proforma';
+  else correoSub='Pendiente de enviar (una sola vez)';
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(correoEnv?'ok':'pend')+'">'+(correoEnv?'✓':'✉️')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">Envío por correo</div>'
+    +'<div class="gitem-sub">'+correoSub+'</div></div>'
+    +'<div class="gitem-actions">'
+    + (correoEnv ? '' : '<button class="gbtn" id="cmBtnCorreo"'+(puedeEnviarCorreo?'':' disabled style="opacity:.5;cursor:not-allowed"')+' onclick="'+(puedeEnviarCorreo?'cmEnviarCorreoGestion(\''+rifSafe+'\')':'')+'">✉️ Enviar por correo</button>')
+    + cmGestionMenuHTML(rif,'correo',correoEnv?'SI':'')
+    +'</div></div>';
+
+  h+='<div style="margin-top:18px;font-size:11.5px;color:var(--text3);line-height:1.6">⚠️ WhatsApp no permite adjuntar archivos automáticamente — si necesitas mandar los PDF, usa "Enviar por correo".</div>';
 
   panel.innerHTML=h;
+  cmCargarUltimosContactosWA(rif);
 }
 
-// Menú "⋯" de cada fila: WhatsApp (si aplica) + override de Admin (si aplica).
-// Devuelve '' (sin menú) si no hay ninguna acción secundaria que ofrecer.
+// Trae el último contacto por WhatsApp de cada tipo (Documentos/Cobranza/
+// Bienvenida) desde Seguimiento — ya se registraba antes, solo faltaba
+// mostrarlo. No bloquea el render principal, llega y se pinta después.
+function cmCargarUltimosContactosWA(rif){
+  if(!APPS_SCRIPT_URL)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
+    .then(function(res){return res.json();})
+    .then(function(data){
+      var logs=data.ok&&data.registros?data.registros:[];
+      var mapa={'WA-DocsComercial':'gsub-docs','WA-CobroComercial':'gsub-cxc','WA-BienvenidaComercial':'gsub-bienvenida'};
+      Object.keys(mapa).forEach(function(tipo){
+        var ultimo=logs.filter(function(e){return e.tipo===tipo;})[0]; // ya vienen más reciente primero
+        if(!ultimo)return;
+        var el=document.getElementById(mapa[tipo]);
+        if(el)el.innerHTML+=' <span style="color:var(--text3)">· último WA: '+esc(ultimo.usuario||'')+' — '+esc(ultimo.fecha||'')+'</span>';
+      });
+    }).catch(function(){});
+}
+
+// Menú "⋯" de cada fila: WhatsApp con selección de número (si aplica) +
+// override de Admin (si aplica). Devuelve '' si no hay nada que ofrecer.
 function cmGestionMenuHTML(rif, tipo, valorActual){
+  var r=cmFindByRif(rif);
   var rifSafe=esc(rif);
   var items='';
-  if(tipo==='cxc'){
-    if(valorActual!=='SI') items+='<button onclick="cmGestionMenuCerrar();cmContactarCobro(\''+rifSafe+'\')">💬 Contactar por WhatsApp</button>';
-    if(S.rol==='ADMIN'){
-      var accion=valorActual==='SI'?'Revertir a pendiente':'Marcar como pagado manualmente';
-      var nuevoValor=valorActual==='SI'?'':'SI';
-      items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCxC(\''+rifSafe+'\',\''+nuevoValor+'\')">⚙️ Admin: '+accion+'</button>';
-    }
-  } else {
-    var accionGAS=tipo==='bienvenida'?'marcarBienvenidaManual':'marcarProformaManual';
-    if(tipo==='bienvenida') items+='<button onclick="cmGestionMenuCerrar();cmContactarBienvenida(\''+rifSafe+'\')">💬 Contactar por WhatsApp</button>';
-    if(S.rol==='ADMIN'){
-      var yaSi=valorActual==='SI';
-      var accion2=yaSi?'Revertir a pendiente':'Marcar como enviada manualmente';
-      var nuevoValor2=yaSi?'':'SI';
-      items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\''+accionGAS+'\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2+'</button>';
-    }
+
+  if(tipo==='docs'||tipo==='cxc'||tipo==='bienvenida'){
+    items+=cmWhatsAppMenuItems(r, tipo);
   }
+
+  if(tipo==='cxc'&&S.rol==='ADMIN'){
+    var accion=valorActual==='SI'?'Revertir a pendiente':'Marcar como pagado manualmente';
+    var nuevoValor=valorActual==='SI'?'':'SI';
+    if(items)items+='<div class="gmenu-divider"></div>';
+    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCxC(\''+rifSafe+'\',\''+nuevoValor+'\')">⚙️ Admin: '+accion+'</button>';
+  }
+  if((tipo==='bienvenida'||tipo==='proforma')&&S.rol==='ADMIN'){
+    var accionGAS=tipo==='bienvenida'?'marcarBienvenidaManual':'marcarProformaManual';
+    var yaSi=valorActual==='SI';
+    var accion2=yaSi?'Revertir a pendiente':'Marcar como enviada manualmente';
+    var nuevoValor2=yaSi?'':'SI';
+    if(items)items+='<div class="gmenu-divider"></div>';
+    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\''+accionGAS+'\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2+'</button>';
+  }
+  if(tipo==='correo'&&S.rol==='ADMIN'){
+    var yaSiC=valorActual==='SI';
+    var accion3=yaSiC?'Revertir / permitir reenvío':'Marcar como enviado manualmente';
+    var nuevoValor3=yaSiC?'':'SI';
+    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCorreoManual(\''+rifSafe+'\',\''+nuevoValor3+'\')">⚙️ Admin: '+accion3+'</button>';
+  }
+
   if(!items) return '';
   return '<div class="gmenu-wrap"><button class="gmenu-btn" onclick="cmGestionMenuToggle(this)">⋯</button><div class="gmenu">'+items+'</div></div>';
+}
+
+// Construye las opciones de WhatsApp para un ítem: un botón por cada número
+// que el cliente SÍ tiene (Rep.1 / Rep.2 / Proham), más copiar mensaje y
+// número manual — nunca se inventa ni se asume un número.
+function cmWhatsAppMenuItems(r, tipo){
+  if(!r)return'';
+  var rifSafe=esc(r['RIF']);
+  var numeros=[
+    {lbl:'Rep. 1', num:r['NUMERO_REPRESENTANTES']},
+    {lbl:'Rep. 2', num:r['NUMERO_REPRESENTANTES2']},
+    {lbl:'Proham', num:r['TELEFONO_PROHAM']}
+  ].filter(function(o){return !!(o.num&&o.num.toString().trim());});
+
+  var items='<div class="gmenu-sec">WhatsApp</div>';
+  numeros.forEach(function(o){
+    items+='<button onclick="cmGestionMenuCerrar();cmEnviarWA(\''+rifSafe+'\',\''+esc(o.num)+'\',\''+tipo+'\')">💬 '+o.lbl+' — '+esc(formatWANumber(o.num))+'</button>';
+  });
+  items+='<button onclick="cmGestionMenuCerrar();cmCopiarMensajeWA(\''+rifSafe+'\',\''+tipo+'\')">📋 Copiar mensaje</button>';
+  items+='<button onclick="cmGestionMenuCerrar();cmWAOtroNumero(\''+rifSafe+'\',\''+tipo+'\')">✏️ Otro número...</button>';
+  return items;
+}
+
+// Mensaje por tipo — una sola fuente de verdad, la usan el envío directo,
+// copiar mensaje y el número manual, para que el texto nunca se desincronice.
+function cmMensajeWA(r, tipo){
+  var nombre=r['RAZON SOCIAL']||'';
+  if(tipo==='docs')       return 'Hola, te contactamos de Airtek respecto al expediente de '+nombre+' — nos falta completar algunos documentos para avanzar. ¿Podemos coordinar el envío?';
+  if(tipo==='cxc')        return 'Hola, te contactamos de Airtek para recordarte el pago de la instalación de '+nombre+'. Quedamos atentos.';
+  if(tipo==='bienvenida') return '¡Bienvenido a Airtek, '+nombre+'! Estamos para apoyarte en todo lo que necesites.';
+  return '';
+}
+
+function cmEnviarWA(rif, numero, tipo){
+  var r=cmFindByRif(rif); if(!r)return;
+  var msg=cmMensajeWA(r, tipo);
+  openWA(numero, msg, r, 'WA-'+({docs:'Docs',cxc:'Cobro',bienvenida:'Bienvenida'}[tipo]||tipo)+'Comercial');
+  if(tipo==='docs') cmMarcarDocumentosSolicitados(rif);
+}
+function cmCopiarMensajeWA(rif, tipo){
+  var r=cmFindByRif(rif); if(!r)return;
+  var msg=cmMensajeWA(r, tipo);
+  navigator.clipboard.writeText(msg).then(function(){toast('Mensaje copiado','ok');}).catch(function(){toast('No se pudo copiar','err');});
+  if(tipo==='docs') cmMarcarDocumentosSolicitados(rif);
+}
+function cmWAOtroNumero(rif, tipo){
+  var num=prompt('Número de WhatsApp (con código de país, ej. 584121234567):','');
+  if(!num)return;
+  cmEnviarWA(rif, num, tipo);
+}
+
+// Cuando el líder pide documentos (por cualquier vía: número directo,
+// copiar mensaje u otro número), el estatus pasa a DOCUMENTOS SOLICITADOS
+// — confirmado con Gualfredo. No repite la llamada si ya está en ese estatus.
+function cmMarcarDocumentosSolicitados(rif){
+  var r=cmFindByRif(rif); if(!r)return;
+  var estatusActual=(r['ESTATUS_LEGAL']||'').toString().trim().toUpperCase();
+  if(estatusActual==='DOCUMENTOS SOLICITADOS')return;
+  if(!APPS_SCRIPT_URL)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'cambiarEstatus', rif:rif, estatus:'DOCUMENTOS SOLICITADOS', usuario:S.user||'app'
+  })}).then(function(res){return res.json();}).then(function(rs){
+    if(rs.ok){
+      r['ESTATUS_LEGAL']='DOCUMENTOS SOLICITADOS';
+      renderTabGestionComercial(r);
+      var elDatos=document.getElementById('tab-datos');
+      if(elDatos&&elDatos.classList.contains('active'))renderTabDatos(r);
+      cmRender();
+    }
+  }).catch(function(){});
+}
+
+function cmEnviarCorreoGestion(rif){
+  if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
+  var btn=document.getElementById('cmBtnCorreo');
+  var textoOriginal=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'enviarCorreoGestionComercial', rif:rif, usuario:S.user
+  })}).then(function(r){return r.json();}).then(function(rs){
+    if(!rs.ok){
+      toast('Error enviando correo: '+(rs.error||'desconocido'),'err');
+      if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+      return;
+    }
+    var reg=cmFindByRif(rif);
+    if(reg){
+      reg['CORREO_ENVIADO']='SI';
+      reg['CORREO_ENVIADO_POR']=rs.enviadoPor||S.user;
+      reg['FECHA_CORREO_ENVIADO']=rs.fecha||new Date().toLocaleDateString('es-VE');
+      // El envío también generó/actualizó Proforma y Bienvenida del lado GAS
+      reg['PROFORMA_ENVIADA']='SI';
+      reg['BIENVENIDA_ENVIADA']='SI';
+    }
+    toast('Correo enviado a '+(rs.correo||'')+' ✓','ok');
+    renderTabGestionComercial(reg);
+    cmRender();
+  }).catch(function(){
+    toast('Sin conexión — no se pudo enviar el correo','err');
+    if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+  });
+}
+
+function cmForzarCorreoManual(rif, valor){
+  var motivo=prompt('Motivo del cambio manual (queda registrado en Historial):', 'Corrección manual');
+  if(motivo===null)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'marcarCorreoManual',rif:rif,valor:valor,usuario:S.user,motivo:motivo})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Correo actualizado manualmente ✓','ok');
+      reloadData().then(function(){renderTabGestionComercial(cmFindByRif(rif));cmRender();});
+    }).catch(function(){toast('Sin conexión','err');});
 }
 function cmGestionMenuToggle(btn){
   var menu=btn.nextElementSibling;
@@ -8332,22 +8502,12 @@ function cmForzarCxC(rif, valor){
 }
 
 function cmContactarDocs(rif){
+  // Ya no se usa desde el menú de Gestión (reemplazada por cmWhatsAppMenuItems/
+  // cmEnviarWA), se deja por compatibilidad si algo externo la referenciara.
   var r=cmFindByRif(rif); if(!r)return;
-  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
-  var msg='Hola, te contactamos de Airtek respecto al expediente de '+(r['RAZON SOCIAL']||'')+' — nos falta completar algunos documentos para avanzar. ¿Podemos coordinar el envío?';
-  openWA(num, msg, r, 'WA-DocsComercial');
-}
-function cmContactarCobro(rif){
-  var r=cmFindByRif(rif); if(!r)return;
-  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
-  var msg='Hola, te contactamos de Airtek para recordarte el pago de la instalación de '+(r['RAZON SOCIAL']||'')+'. Quedamos atentos.';
-  openWA(num, msg, r, 'WA-CobroComercial');
-}
-function cmContactarBienvenida(rif){
-  var r=cmFindByRif(rif); if(!r)return;
-  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||'');
-  var msg='¡Bienvenido a Airtek, '+(r['RAZON SOCIAL']||'')+'! Estamos para apoyarte en todo lo que necesites.';
-  openWA(num, msg, r, 'WA-BienvenidaComercial');
+  var num=formatWANumber(r['NUMERO_REPRESENTANTES']||r['NUMERO_REPRESENTANTES2']||r['TELEFONO_PROHAM']||'');
+  openWA(num, cmMensajeWA(r,'docs'), r, 'WA-DocsComercial');
+  cmMarcarDocumentosSolicitados(rif);
 }
 // ── Fin módulo Comercial — Clientes Nuevos ─────────────────────────
 
