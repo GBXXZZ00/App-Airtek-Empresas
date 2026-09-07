@@ -339,11 +339,6 @@ tbody tr:hover td{background:var(--surface2)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
 .tab-panel{display:none;padding:20px;overflow-y:auto;flex:1;animation:fadeIn .18s var(--ease-out)}
 .tab-panel.active{display:block}
-/* Drawer de Gestión (módulo Comercial): panel propio, aislado de .tab-panel
-   a propósito — showTab() manipula .tab-panel de forma global (sin acotar
-   al drawer del expediente), lo que dejaba este panel oculto para siempre
-   después de tocar las pestañas Datos/Documentos/IA del otro drawer. */
-.cm-gd-panel{flex:1;animation:fadeIn .18s var(--ease-out)}
 
 /* FORM */
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -785,21 +780,40 @@ tbody tr:hover td{background:var(--surface2)}
 .cm-ind2-detail{font-size:10.5px;color:var(--text);margin-top:2px;font-weight:600;text-align:center;line-height:1.25}
 .cm-ind2-frac{font-size:10.5px;color:var(--text2);font-weight:600;margin-left:auto}
 
-.cm-gd-info{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px}
-.cm-gd-info-name{font-size:14px;font-weight:700;color:var(--text)}
-.cm-gd-info-meta{font-size:11.5px;color:var(--text2);margin-top:2px}
-.cm-gd-info-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.cm-gd-badge{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:12px}
-.cm-gd-badge.ok{background:var(--green-dim);color:var(--green)}
-.cm-gd-badge.pend{background:var(--amber-dim);color:var(--amber)}
-.cm-gd-section{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
-.cm-gd-section-title{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px}
-.cm-gd-done-msg{font-size:12px;color:var(--green);font-weight:600}
-.cm-gd-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:10px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px;transition:transform .12s var(--ease-out)}
-.cm-gd-btn:active{transform:scale(.98)}
-.cm-gd-btn.wa{background:#25D366}
-.cm-gd-btn.outline{background:none;border:1px solid var(--border2);color:var(--text)}
-.cm-gd-note{font-size:10.5px;color:var(--amber);background:var(--amber-dim);border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.4}
+/* ── Pestaña "Datos": resumen de estado (solo modo Comercial) ────── */
+.resumen{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px}
+.resumen-name{font-size:14px;font-weight:700;color:var(--text)}
+.resumen-meta{font-size:11.5px;color:var(--text2);margin-top:2px}
+.resumen-badges{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.badge{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:12px;display:inline-flex;align-items:center;gap:4px}
+.badge.ok{background:var(--green-dim);color:var(--green)}
+.badge.pend{background:var(--amber-dim);color:var(--amber)}
+.badge.no{background:var(--red-dim);color:var(--red)}
+
+/* ── Pestaña "Gestión" (Cobranza/Bienvenida/Proforma) — checklist ── */
+.gestion-progress{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.gestion-progress-bar{flex:1;height:6px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.gestion-progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width .3s var(--ease-out)}
+.gestion-progress-lbl{font-size:11.5px;font-weight:600;color:var(--text2);white-space:nowrap}
+.gitem{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:var(--surface)}
+.gitem-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.gitem-dot.ok{background:var(--green-dim);color:var(--green)}
+.gitem-dot.pend{background:var(--amber-dim);color:var(--amber)}
+.gitem-dot.no{background:var(--red-dim);color:var(--red)}
+.gitem-body{flex:1;min-width:0}
+.gitem-title{font-size:13px;font-weight:600;color:var(--text)}
+.gitem-sub{font-size:11.5px;color:var(--text2);margin-top:1px}
+.gitem-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.gbtn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:transform .12s var(--ease-out)}
+.gbtn:active{transform:scale(.97)}
+.gbtn.outline{background:none;border:1px solid var(--border2);color:var(--text)}
+.gmenu-wrap{position:relative}
+.gmenu-btn{background:none;border:1px solid var(--border);color:var(--text2);border-radius:7px;width:32px;height:32px;font-size:15px;cursor:pointer;font-family:inherit}
+.gmenu{position:absolute;right:0;top:38px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:210px;padding:6px;display:none;z-index:10}
+.gmenu.open{display:block}
+.gmenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);font-size:12px;padding:8px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+.gmenu button:hover{background:var(--surface2)}
+.gmenu button.danger{color:var(--red)}
 </style>
 </head>
 <body>
@@ -1211,34 +1225,6 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="cm-client-list" id="cmClientList"></div>
     </div>
 
-    <div class="drawer-bg" id="cmGestionBg" onclick="cmCloseGestionIf(event)">
-      <div class="drawer">
-        <div class="drawer-hd">
-          <div class="drawer-title">Gestión de Cliente</div>
-          <button class="drawer-close" onclick="cmCloseGestion()">✕</button>
-        </div>
-        <div class="cm-gd-panel" style="padding:20px;overflow-y:auto">
-          <div class="cm-gd-info">
-            <div class="cm-gd-info-name" id="cmGdRazon">—</div>
-            <div class="cm-gd-info-meta" id="cmGdMeta">—</div>
-            <div class="cm-gd-info-badges" id="cmGdBadges"></div>
-          </div>
-          <div class="cm-gd-section" id="cmSecDocs">
-            <div class="cm-gd-section-title">📄 Documentos legales</div>
-            <div id="cmSecDocsContent"></div>
-          </div>
-          <div class="cm-gd-section" id="cmSecCobranza">
-            <div class="cm-gd-section-title">💰 Cobranza</div>
-            <div id="cmSecCobranzaContent"></div>
-          </div>
-          <div class="cm-gd-section" id="cmSecBienv">
-            <div class="cm-gd-section-title">✉️ Bienvenida y Proforma</div>
-            <div id="cmSecBienvContent"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="view" id="view-seguimiento">
 
       <!-- CABECERA -->
@@ -1459,12 +1445,14 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="tabs">
       <button class="tab active" onclick="showTab('datos')">Datos</button>
       <button class="tab" onclick="showTab('documentos')">Documentos</button>
+      <button class="tab" id="tab-btn-gestion-comercial" style="display:none" onclick="showTab('gestion-comercial')">Gestión <span class="cnt" style="background:var(--amber-dim);color:var(--amber);border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:2px">0/3</span></button>
       <button class="tab" id="tab-btn-seguimiento" onclick="showTab('seguimiento_cli')">Seguimiento</button>
       <button class="tab" id="tab-btn-historial" onclick="showTab('historial')">Historial</button>
       <button class="tab" id="tab-btn-verificacion" style="display:none" onclick="showTab('verificacion')">🤖 IA</button>
     </div>
     <div class="tab-panel active" id="tab-datos"></div>
     <div class="tab-panel" id="tab-documentos"></div>
+    <div class="tab-panel" id="tab-gestion-comercial"></div>
     <div class="tab-panel" id="tab-historial"></div>
     <div class="tab-panel" id="tab-seguimiento_cli"></div>
     <div class="tab-panel" id="tab-verificacion"></div>
@@ -2396,21 +2384,30 @@ function openExp(idx){
   openExpRecord(r);
 }
 
+// Bandera de contexto: true cuando el drawer de Expediente se abrió desde el
+// Módulo Comercial (openExpRecord con opts.modoComercial). La lee
+// renderTabDatos() para mostrar el resumen de estado y ocultar Contacto Directo.
+var _drawerModoComercial = false;
+
 function openExpRecord(r, opts){
   if(!r)return;
   opts=opts||{};
+  _drawerModoComercial=!!opts.modoComercial;
   S.cur={...r};S.nReps=countReps(r);
   document.getElementById('drawerTitle').textContent=r['RAZON SOCIAL'];
   var docsBadge=document.getElementById('drawerDocsBadge');
   if(docsBadge)docsBadge.style.display=tieneAlgunDocumento(r)?'inline-block':'none';
   renderTabDatos(r);renderTabDocs(r);renderTabHist(r);renderTabSegFromGAS(r);renderStBtns(r);
-  // Modo liviano (abierto desde Módulo Comercial) — solo Datos + Documentos.
-  // Aditivo: si opts.modoComercial no viene, el drawer se comporta exactamente
-  // igual que siempre (las 4 pestañas visibles).
+  // Modo liviano (abierto desde Módulo Comercial) — Datos + Documentos + Gestión,
+  // sin Seguimiento/Historial. Aditivo: si opts.modoComercial no viene, el drawer
+  // se comporta exactamente igual que siempre (las 4 pestañas de toda la vida).
   var btnSeg=document.getElementById('tab-btn-seguimiento');
   var btnHist=document.getElementById('tab-btn-historial');
+  var btnGestion=document.getElementById('tab-btn-gestion-comercial');
   if(btnSeg)btnSeg.style.display=opts.modoComercial?'none':'';
   if(btnHist)btnHist.style.display=opts.modoComercial?'none':'';
+  if(btnGestion)btnGestion.style.display=opts.modoComercial?'':'none';
+  if(opts.modoComercial)renderTabGestionComercial(r);
   // Limpiar TODA selección visual al abrir un nuevo cliente
   document.querySelectorAll('.client-card.selected').forEach(function(c){c.classList.remove('selected');});
   if(_lastCard){clearTimeout(_lastCardTimer);_lastCard=null;}
@@ -2422,7 +2419,7 @@ function openExpRecord(r, opts){
   S.iaResultado=null;
   var panelIA=document.getElementById('tab-verificacion');
   if(panelIA)panelIA.innerHTML='';
-  showTab('datos');
+  showTab(opts.tabInicial||'datos');
   const bg=document.getElementById('drawerBg');
   bg.classList.add('open');
   var alBg=document.getElementById('alDrawerBg'); if(alBg)alBg.classList.remove('open');
@@ -2451,8 +2448,27 @@ function renderTabDatos(r){
   var dy=calcDays(r['Fecha de Instalacion Cliente']);
   var dc=dy===null?'var(--text3)':dy<=30?'var(--green)':dy<=90?'var(--amber)':'var(--red)';
 
+  var h='';
+
+  // ── Resumen de estado — solo modo Comercial (Legal/Cobranza/Bienvenida/Proforma) ──
+  if(_drawerModoComercial){
+    var lOkR=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
+    var cxcR=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+    var bienvR=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    var profR=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+    h+='<div class="resumen">'
+      +'<div class="resumen-name">'+esc(r['RAZON SOCIAL']||'')+'</div>'
+      +'<div class="resumen-meta">'+esc(r['RIF']||'')+' · '+esc(r['EJECUTIVO']||'')+'</div>'
+      +'<div class="resumen-badges">'
+      +'<span class="badge '+(lOkR?'ok':'pend')+'">'+(lOkR?'✓':'⏳')+' Legal: '+esc(r['ESTATUS_LEGAL']||'—')+'</span>'
+      +'<span class="badge '+(cxcR==='SI'?'ok':cxcR==='NO_APLICA'?'no':'pend')+'">'+(cxcR==='SI'?'✓ Cobranza pagada':cxcR==='NO_APLICA'?'➖ Cobranza no aplica':'⏳ Cobranza pendiente')+'</span>'
+      +'<span class="badge '+(bienvR?'ok':'pend')+'">'+(bienvR?'✓ Bienvenida enviada':'⏳ Bienvenida pendiente')+'</span>'
+      +'<span class="badge '+(profR?'ok':'pend')+'">'+(profR?'✓ Proforma enviada':'⏳ Proforma pendiente')+'</span>'
+      +'</div></div>';
+  }
+
   // ── Datos de la empresa (siempre readonly) ─────────────────────
-  var h='<div class="fg">';
+  h+='<div class="fg">';
   h+='<div class="field"><label>Razón Social</label><input readonly value="'+esc(r['RAZON SOCIAL']||'')+'"></div>';
   h+='<div class="field"><label>RIF</label><input readonly value="'+esc(r['RIF']||'')+'"></div>';
   h+='<div class="field"><label>Tipo de Cliente</label><input readonly value="'+esc(r['TIPO_CLIENTE']||'')+'"></div>';
@@ -2493,8 +2509,9 @@ function renderTabDatos(r){
   }
   h+='</div></div>';
 
-  // ── Panel de contacto directo (igual que antes) ─────────────────
-  h+=renderDrawerComm(r);
+  // ── Panel de contacto directo — oculto en modo Comercial (no hace       ──
+  // falta ahí, confirmado); se muestra igual que siempre en el resto de la app.
+  if(!_drawerModoComercial) h+=renderDrawerComm(r);
 
   // ── Cliente TOP (Aliados Comerciales v1.0) — additivo, no afecta lo demás ──
   var puedeMarcarTop=(S.rol==='ADMIN'||(S.rol==='LIDER'&&S.user===r['EJECUTIVO']));
@@ -8087,7 +8104,7 @@ function cmRender(){
     var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
     var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
     var tip='Cobranza '+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'✗')+' · Bienvenida '+(bienv?'✓':'✗')+' · Proforma '+(prof?'✓':'✗');
-    var gestInd='<div class="cm-ind2" title="'+esc(tip)+'" onclick="cmOpenGestion(\''+rifSafe+'\')">'
+    var gestInd='<div class="cm-ind2" title="'+esc(tip)+'" onclick="cmAbrirGestionComercial(\''+rifSafe+'\')">'
       +'<div class="cm-ind2-top"><span class="cm-ind2-dot '+(gOk?'ok':'pend')+'"></span><span class="cm-ind2-lbl">Gestión</span><span class="cm-ind2-frac">'+gFrac+'/2</span></div>'
       +'<div class="cm-ind2-detail">'+(gOk?'Completo':'Pendiente')+'</div></div>';
 
@@ -8106,80 +8123,106 @@ function cmFindByRif(rif){
 function cmOpenLegal(rif){
   var r=cmFindByRif(rif);
   if(!r){toast('Cliente no encontrado','err');return;}
-  openExpRecord(r, {modoComercial:true});
+  openExpRecord(r, {modoComercial:true, tabInicial:'datos'});
 }
 
-function cmCloseGestionIf(e){ if(e.target.id==='cmGestionBg') cmCloseGestion(); }
-function cmCloseGestion(){ document.getElementById('cmGestionBg').classList.remove('open'); CM.gestionCliente=null; }
-
-function cmOpenGestion(rif){
-  try{
-    var r=cmFindByRif(rif);
-    if(!r){toast('Cliente no encontrado (RIF: '+rif+')','err');return;}
-    CM.gestionCliente=rif;
-
-    var elRazon=document.getElementById('cmGdRazon');
-    var elMeta=document.getElementById('cmGdMeta');
-    var elBadges=document.getElementById('cmGdBadges');
-    var elDocs=document.getElementById('cmSecDocsContent');
-    var elCxc=document.getElementById('cmSecCobranzaContent');
-    var elBienv=document.getElementById('cmSecBienvContent');
-    var elBg=document.getElementById('cmGestionBg');
-    if(!elRazon||!elMeta||!elBadges||!elDocs||!elCxc||!elBienv||!elBg){
-      toast('Error: falta un elemento del drawer en la página (recarga e intenta de nuevo)','err');
-      console.error('cmOpenGestion: elemento faltante', {elRazon,elMeta,elBadges,elDocs,elCxc,elBienv,elBg});
-      return;
-    }
-
-    elRazon.textContent=r['RAZON SOCIAL']||'';
-    elMeta.textContent=(r['RIF']||'')+' · '+(r['EJECUTIVO']||'');
-    var lOk=cmEstatusLegalOk(r['ESTATUS_LEGAL']);
-    var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
-    var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
-    var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
-
-    elBadges.innerHTML=
-      '<span class="cm-gd-badge '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+' Legal</span>'+
-      '<span class="cm-gd-badge '+(cxc==='SI'?'ok':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+' Cobranza</span>';
-
-    elDocs.innerHTML = lOk
-      ? '<div class="cm-gd-done-msg">✓ Documentos completos — nada pendiente aquí</div>'
-      : '<button class="cm-gd-btn wa" onclick="cmContactarDocs(\''+esc(rif)+'\')">💬 Contactar cliente — Documentos faltantes</button>';
-
-    elCxc.innerHTML = cxc==='SI'
-      ? '<div class="cm-gd-done-msg">✓ Pago de instalación confirmado</div>'+cmAdminOverrideHTML(rif,'')
-      : cxc==='NO_APLICA'
-        ? '<div class="cm-gd-done-msg" style="color:var(--text3)">➖ Fuera de la ventana de evaluación</div>'+cmAdminOverrideHTML(rif,'')
-        : '<button class="cm-gd-btn wa" onclick="cmContactarCobro(\''+esc(rif)+'\')">💬 Contactar — Recordar pago de instalación</button>'+cmAdminOverrideHTML(rif,'SI');
-
-  // Proforma y Carta de Bienvenida: conectadas a las acciones reales
-  // generarProforma() / generarCartaBienvenida() en Apps Script
-  // (proforma_comercial.gs / carta_bienvenida.gs) — generan el PDF con
-  // la plantilla real, guardan copia en Drive y marcan *_ENVIADA=SI.
-  elBienv.innerHTML =
-    cmBienvenidaBtnHTML(rif, bienv, r['FECHA_BIENVENIDA_ENVIADA'])
-    +cmProformaBtnHTML(rif, prof, r['FECHA_PROFORMA_ENVIADA'])
-    +'<button class="cm-gd-btn" onclick="toast(\'Pendiente: conectar envío de correo con adjuntos\',\'ok\')">📧 Enviar por correo (con ambos adjuntos)</button>'
-    +'<button class="cm-gd-btn wa" onclick="cmContactarBienvenida(\''+esc(rif)+'\')">💬 Contactar — Bienvenida</button>'
-    +'<div class="cm-gd-note">⚠️ WhatsApp no permite adjuntar archivos automáticamente — recuerda adjuntar los documentos que acabas de descargar.</div>';
-
-    elBg.classList.add('open');
-  }catch(err){
-    console.error('cmOpenGestion error:', err);
-    toast('Error abriendo Gestión: '+err.message,'err');
-  }
+function cmAbrirGestionComercial(rif){
+  var r=cmFindByRif(rif);
+  if(!r){toast('Cliente no encontrado (RIF: '+rif+')','err');return;}
+  openExpRecord(r, {modoComercial:true, tabInicial:'gestion-comercial'});
 }
 
-function cmBienvenidaBtnHTML(rif, yaEnviada, fechaEnviada){
+// ── Pestaña "Gestión" del drawer de Expediente (modo Comercial) ──────────
+// Checklist de 3 filas (Cobranza / Bienvenida / Proforma): un ícono de
+// estado + una acción principal por fila. Lo secundario (contactar por
+// WhatsApp, override de Admin) vive en el menú "⋯" para no apilar botones.
+function renderTabGestionComercial(r){
+  var panel=document.getElementById('tab-gestion-comercial');
+  if(!panel||!r)return;
+  var rif=r['RIF'];
   var rifSafe=esc(rif);
-  if(yaEnviada){
-    return '<div class="cm-gd-done-msg">✓ Carta de Bienvenida generada'+(fechaEnviada?(' — '+esc(fechaEnviada)):'')+'</div>'
-      +'<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>'
-      +cmAdminOverrideGenericoHTML(rif, 'la Carta de Bienvenida', 'marcarBienvenidaManual', true);
-  }
-  return '<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Descargar Carta de Bienvenida</button>'
-    +cmAdminOverrideGenericoHTML(rif, 'la Carta de Bienvenida', 'marcarBienvenidaManual', false);
+  var cxc=(r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase();
+  var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+  var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
+
+  var completos=[cxc==='SI'||cxc==='NO_APLICA', bienv, prof].filter(Boolean).length;
+  var pct=Math.round(completos/3*100);
+  var cntEl=document.querySelector('#tab-btn-gestion-comercial .cnt');
+  if(cntEl)cntEl.textContent=completos+'/3';
+
+  var h='<div class="gestion-progress">'
+    +'<div class="gestion-progress-bar"><div class="gestion-progress-fill" style="width:'+pct+'%"></div></div>'
+    +'<div class="gestion-progress-lbl">'+completos+' de 3 completado</div></div>';
+
+  // ── Cobranza ──
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(cxc==='SI'?'ok':cxc==='NO_APLICA'?'no':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">Cobranza de instalación</div>'
+    +'<div class="gitem-sub">'+(cxc==='SI'?'Pagado':cxc==='NO_APLICA'?'Fuera de la ventana de evaluación':'Pendiente de pago')+'</div></div>'
+    +'<div class="gitem-actions">'+cmGestionMenuHTML(rif,'cxc',cxc)+'</div></div>';
+
+  // ── Carta de Bienvenida ──
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(bienv?'ok':'pend')+'">'+(bienv?'✓':'⏳')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">Carta de Bienvenida</div>'
+    +'<div class="gitem-sub">'+(bienv?('Generada'+(r['FECHA_BIENVENIDA_ENVIADA']?(' — '+esc(r['FECHA_BIENVENIDA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
+    +'<div class="gitem-actions">'
+    +'<button class="gbtn'+(bienv?' outline':'')+'" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ '+(bienv?'Volver a descargar':'Generar y descargar')+'</button>'
+    +cmGestionMenuHTML(rif,'bienvenida',bienv?'SI':'')
+    +'</div></div>';
+
+  // ── Proforma ──
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(prof?'ok':'pend')+'">'+(prof?'✓':'⏳')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">Proforma</div>'
+    +'<div class="gitem-sub">'+(prof?('Generada'+(r['FECHA_PROFORMA_ENVIADA']?(' — '+esc(r['FECHA_PROFORMA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
+    +'<div class="gitem-actions">'
+    +'<button class="gbtn'+(prof?' outline':'')+'" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ '+(prof?'Volver a descargar':'Generar y descargar')+'</button>'
+    +cmGestionMenuHTML(rif,'proforma',prof?'SI':'')
+    +'</div></div>';
+
+  h+='<div style="margin-top:18px;font-size:11.5px;color:var(--text3);line-height:1.6">⚠️ WhatsApp no permite adjuntar archivos automáticamente — recuerda adjuntar los documentos que acabas de descargar.</div>';
+
+  panel.innerHTML=h;
 }
+
+// Menú "⋯" de cada fila: WhatsApp (si aplica) + override de Admin (si aplica).
+// Devuelve '' (sin menú) si no hay ninguna acción secundaria que ofrecer.
+function cmGestionMenuHTML(rif, tipo, valorActual){
+  var rifSafe=esc(rif);
+  var items='';
+  if(tipo==='cxc'){
+    if(valorActual!=='SI') items+='<button onclick="cmGestionMenuCerrar();cmContactarCobro(\''+rifSafe+'\')">💬 Contactar por WhatsApp</button>';
+    if(S.rol==='ADMIN'){
+      var accion=valorActual==='SI'?'Revertir a pendiente':'Marcar como pagado manualmente';
+      var nuevoValor=valorActual==='SI'?'':'SI';
+      items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCxC(\''+rifSafe+'\',\''+nuevoValor+'\')">⚙️ Admin: '+accion+'</button>';
+    }
+  } else {
+    var accionGAS=tipo==='bienvenida'?'marcarBienvenidaManual':'marcarProformaManual';
+    if(tipo==='bienvenida') items+='<button onclick="cmGestionMenuCerrar();cmContactarBienvenida(\''+rifSafe+'\')">💬 Contactar por WhatsApp</button>';
+    if(S.rol==='ADMIN'){
+      var yaSi=valorActual==='SI';
+      var accion2=yaSi?'Revertir a pendiente':'Marcar como enviada manualmente';
+      var nuevoValor2=yaSi?'':'SI';
+      items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\''+accionGAS+'\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2+'</button>';
+    }
+  }
+  if(!items) return '';
+  return '<div class="gmenu-wrap"><button class="gmenu-btn" onclick="cmGestionMenuToggle(this)">⋯</button><div class="gmenu">'+items+'</div></div>';
+}
+function cmGestionMenuToggle(btn){
+  var menu=btn.nextElementSibling;
+  var wasOpen=menu.classList.contains('open');
+  document.querySelectorAll('.gmenu.open').forEach(function(m){m.classList.remove('open');});
+  if(!wasOpen)menu.classList.add('open');
+}
+function cmGestionMenuCerrar(){
+  document.querySelectorAll('.gmenu.open').forEach(function(m){m.classList.remove('open');});
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.gmenu-wrap')) cmGestionMenuCerrar();
+});
 
 function cmDescargarBienvenida(rif){
   if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
@@ -8215,23 +8258,12 @@ function cmDescargarBienvenida(rif){
       reg['FECHA_BIENVENIDA_ENVIADA']=new Date().toLocaleDateString('es-VE');
     }
     toast('Carta de Bienvenida generada y descargada','ok');
-    cmOpenGestion(rif);
+    renderTabGestionComercial(cmFindByRif(rif));
     cmRender();
   }).catch(function(){
     toast('Sin conexión — no se pudo generar la carta','err');
     if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
   });
-}
-
-function cmProformaBtnHTML(rif, yaEnviada, fechaEnviada){
-  var rifSafe=esc(rif);
-  if(yaEnviada){
-    return '<div class="cm-gd-done-msg">✓ Proforma generada'+(fechaEnviada?(' — '+esc(fechaEnviada)):'')+'</div>'
-      +'<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>'
-      +cmAdminOverrideGenericoHTML(rif, 'la Proforma', 'marcarProformaManual', true);
-  }
-  return '<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Descargar Proforma</button>'
-    +cmAdminOverrideGenericoHTML(rif, 'la Proforma', 'marcarProformaManual', false);
 }
 
 function cmDescargarProforma(rif){
@@ -8269,24 +8301,12 @@ function cmDescargarProforma(rif){
       reg['FECHA_PROFORMA_ENVIADA']=new Date().toLocaleDateString('es-VE');
     }
     toast('Proforma generada y descargada ('+(rs.numero||'')+')','ok');
-    cmOpenGestion(rif);
+    renderTabGestionComercial(cmFindByRif(rif));
     cmRender();
   }).catch(function(){
     toast('Sin conexión — no se pudo generar la proforma','err');
     if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
   });
-}
-
-// Override manual genérico para Admin — mismo patrón visual y de flujo que
-// cmAdminOverrideHTML/cmForzarCxC (Cobranza), pero reutilizable para
-// cualquier campo *_ENVIADA con su propia acción GAS. No toca ni reemplaza
-// el de Cobranza — ese sigue intacto.
-function cmAdminOverrideGenericoHTML(rif, etiqueta, accionGAS, yaMarcado){
-  if(S.rol!=='ADMIN') return '';
-  var accionTexto = yaMarcado ? 'Revertir a pendiente' : 'Marcar '+etiqueta+' como enviada manualmente';
-  var valor = yaMarcado ? '' : 'SI';
-  return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
-    +'<button class="cm-gd-btn outline" style="font-size:10.5px;padding:6px 10px" onclick="cmForzarCampoManual(\''+esc(rif)+'\',\''+accionGAS+'\',\''+valor+'\')">⚙️ Admin: '+accionTexto+'</button></div>';
 }
 
 function cmForzarCampoManual(rif, accionGAS, valor){
@@ -8296,16 +8316,8 @@ function cmForzarCampoManual(rif, accionGAS, valor){
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       toast('Actualizado manualmente ✓','ok');
-      reloadData().then(function(){cmOpenGestion(rif);cmRender();});
+      reloadData().then(function(){renderTabGestionComercial(cmFindByRif(rif));cmRender();});
     }).catch(function(){toast('Sin conexión','err');});
-}
-
-function cmAdminOverrideHTML(rif, valorSugerido){
-  if(S.rol!=='ADMIN') return '';
-  var accionTexto = valorSugerido==='SI' ? 'Marcar como pagado manualmente' : 'Revertir a pendiente';
-  var valor = valorSugerido==='SI' ? 'SI' : '';
-  return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
-    +'<button class="cm-gd-btn outline" style="font-size:10.5px;padding:6px 10px" onclick="cmForzarCxC(\''+esc(rif)+'\',\''+valor+'\')">⚙️ Admin: '+accionTexto+'</button></div>';
 }
 
 function cmForzarCxC(rif, valor){
@@ -8315,7 +8327,7 @@ function cmForzarCxC(rif, valor){
     .then(function(r){return r.json();}).then(function(rs){
       if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
       toast('Cobranza actualizada manualmente ✓','ok');
-      reloadData().then(function(){cmOpenGestion(rif);cmRender();});
+      reloadData().then(function(){renderTabGestionComercial(cmFindByRif(rif));cmRender();});
     }).catch(function(){toast('Sin conexión','err');});
 }
 
