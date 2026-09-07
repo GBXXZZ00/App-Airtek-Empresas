@@ -339,6 +339,11 @@ tbody tr:hover td{background:var(--surface2)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
 .tab-panel{display:none;padding:20px;overflow-y:auto;flex:1;animation:fadeIn .18s var(--ease-out)}
 .tab-panel.active{display:block}
+/* Drawer de Gestión (módulo Comercial): panel propio, aislado de .tab-panel
+   a propósito — showTab() manipula .tab-panel de forma global (sin acotar
+   al drawer del expediente), lo que dejaba este panel oculto para siempre
+   después de tocar las pestañas Datos/Documentos/IA del otro drawer. */
+.cm-gd-panel{flex:1;animation:fadeIn .18s var(--ease-out)}
 
 /* FORM */
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -1165,12 +1170,21 @@ tbody tr:hover td{background:var(--surface2)}
         <div class="cm-role-hint" id="cmRoleHint"></div>
       </div>
 
-      <div class="cm-controls-row">
+      <div class="cm-filter-row" style="margin-bottom:10px">
+        <button class="cm-qf active" id="cmVistaActivos" onclick="cmSetVista('activos')">Clientes Nuevos</button>
+        <button class="cm-qf" id="cmVistaHistorico" onclick="cmSetVista('historico')">📋 Histórico</button>
+      </div>
+
+      <div class="cm-hist-note" id="cmHistNote" style="display:none;font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:14px">
+        Clientes instalados antes del 21 de agosto de 2026 — regla de comisión anterior, ya congelada. El motor no los vuelve a evaluar ni a trasladar de mes.
+      </div>
+
+      <div class="cm-controls-row" id="cmControlsRow">
         <select class="cm-sel" id="cmMesFilter" onchange="cmRender()"></select>
         <select class="cm-sel" id="cmLiderFilter" onchange="cmRender()" disabled><option value="">Todos los líderes</option></select>
       </div>
 
-      <div class="cm-kpi-row">
+      <div class="cm-kpi-row" id="cmKpiRow">
         <div class="cm-kpi-card">
           <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiTotal">0</span></div>
           <div class="cm-kpi-lbl">📦 Instalados este mes</div>
@@ -1203,7 +1217,7 @@ tbody tr:hover td{background:var(--surface2)}
           <div class="drawer-title">Gestión de Cliente</div>
           <button class="drawer-close" onclick="cmCloseGestion()">✕</button>
         </div>
-        <div class="tab-panel active" style="padding:20px;overflow-y:auto">
+        <div class="cm-gd-panel" style="padding:20px;overflow-y:auto">
           <div class="cm-gd-info">
             <div class="cm-gd-info-name" id="cmGdRazon">—</div>
             <div class="cm-gd-info-meta" id="cmGdMeta">—</div>
@@ -1712,7 +1726,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzoM-h3ftWpbMpiJbQtYMWjW_L8eOXVSgrjdsv7p4S7kzFtW1CjQnxZP4uRhVsZED5NLw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw__3DBNGe75H7VSDKWpojDerPDBed8Sh39Ok-7ZNa3ee5_FTxAGb63-g2qePKJhVVjyw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -7891,7 +7905,12 @@ function alPromoverCliente(idSolicitud){
 // Reutiliza: S.all, S.cfg, S.user, S.rol, openExpRecord(), toast(),
 // openWA(), regAccion(), calcDays(), parseDate(), esc(), normalizeStr(),
 // formatWANumber(), SI (leyenda de estatus). No duplica ninguna de estas.
-var CM = {filtro:'todos', gestionCliente:null};
+var CM = {filtro:'todos', gestionCliente:null, vista:'activos'};
+
+// Debe coincidir EXACTO con FECHA_CORTE_REGLA_NUEVA en motor_comercial_lideres.gs.
+// Instalados antes de esta fecha = Histórico (regla vieja, congelada).
+// Instalados desde esta fecha = Activos (regla nueva: máx. 2 cortes).
+var FECHA_CORTE_REGLA_NUEVA = new Date(2026, 7, 21); // 21 de agosto de 2026
 
 function cmMesComisionEfectivo(r){
   // Fuente de verdad: la columna que escribe el trigger diario. Si todavía
@@ -7983,6 +8002,18 @@ function cmToggleKpiFiltro(card){
   cmRender();
 }
 
+// Toggle entre "Clientes Nuevos" (regla nueva, desde el 21/ago/2026) e
+// "Histórico" (todo lo anterior, ya congelado — el motor no lo toca más).
+function cmSetVista(v){
+  CM.vista=v;
+  document.getElementById('cmVistaActivos').classList.toggle('active', v==='activos');
+  document.getElementById('cmVistaHistorico').classList.toggle('active', v==='historico');
+  document.getElementById('cmControlsRow').style.display = v==='activos' ? '' : 'none';
+  document.getElementById('cmKpiRow').style.display = v==='activos' ? '' : 'none';
+  document.getElementById('cmHistNote').style.display = v==='historico' ? '' : 'none';
+  cmRender();
+}
+
 function cmRender(){
   var mes=Number(document.getElementById('cmMesFilter').value);
   var lider=document.getElementById('cmLiderFilter').value;
@@ -7990,6 +8021,10 @@ function cmRender(){
 
   var base=(S.all||[]).filter(function(r){
     if((r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL')return false;
+    var fInst=parseDate(r['Fecha de Instalacion Cliente']);
+    var esHistorico = fInst && fInst<FECHA_CORTE_REGLA_NUEVA;
+    if(CM.vista==='historico') return !!esHistorico;
+    if(esHistorico) return false; // Activos nunca mezcla clientes de la regla vieja
     var clave=2026+'-'+String(mes+1).padStart(2,'0');
     return cmMesComisionEfectivo(r)===clave;
   });
@@ -8034,10 +8069,14 @@ function cmRender(){
     var gFrac=cmGestionFrac(r);
     var gOk=gFrac===2;
     var readyTag=(lOk && (r['CXC_INSTALACION_SOLVENTE']||'').toString().trim().toUpperCase()==='SI')?'<div class="cm-ready-tag">✓ Listo para comisionar</div>':'';
+    var noComTag=(r['ESTADO_COMISION']||'').toString().trim().toUpperCase()==='NO_COMISIONADO'
+      ?'<div class="cm-ready-tag" style="color:var(--red);background:var(--red-dim);border-color:var(--red)">✗ No comisionable — venció el 2do corte</div>':'';
     var nota=(r['NOTA_COMISION']||'').toString().trim();
     var notaTag=nota?'<div class="cm-tag" style="color:var(--amber);border-color:var(--amber)" title="'+esc(nota)+'">↪ '+esc(nota)+'</div>':'';
     var cant=Number(r['CANT_SERVICIOS']||1);
     var multiTag=cant>1?'<span class="cm-tag">· +'+(cant-1)+' servicio(s) más</span>':'';
+    var fechaInstD=parseDate(r['Fecha de Instalacion Cliente']);
+    var instTag=fechaInstD?'<span class="cm-tag">Instalado: '+fechaInstD.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'})+'</span>':'';
     var rifSafe=esc(r['RIF']);
 
     var legalInd='<div class="cm-ind2" onclick="cmOpenLegal(\''+rifSafe+'\')">'
@@ -8055,7 +8094,7 @@ function cmRender(){
     return '<div class="cm-card urg-'+b+'">'
       +'<div class="cm-urg-badge urg-'+b+'"><div class="cm-urg-num">'+(dias!==null?dias:'—')+'</div><div class="cm-urg-lbl">días</div></div>'
       +'<div class="cm-main"><div class="cm-name">'+esc(r['RAZON SOCIAL'])+'</div>'
-      +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+multiTag+'</div>'+readyTag+notaTag+'</div>'
+      +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+instTag+multiTag+'</div>'+readyTag+noComTag+notaTag+'</div>'
       +'<div class="cm-indicators">'+legalInd+gestInd+'</div></div>';
   }).join('');
 }
@@ -8135,9 +8174,11 @@ function cmBienvenidaBtnHTML(rif, yaEnviada, fechaEnviada){
   var rifSafe=esc(rif);
   if(yaEnviada){
     return '<div class="cm-gd-done-msg">✓ Carta de Bienvenida generada'+(fechaEnviada?(' — '+esc(fechaEnviada)):'')+'</div>'
-      +'<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>';
+      +'<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>'
+      +cmAdminOverrideGenericoHTML(rif, 'la Carta de Bienvenida', 'marcarBienvenidaManual', true);
   }
-  return '<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Descargar Carta de Bienvenida</button>';
+  return '<button class="cm-gd-btn outline" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ Descargar Carta de Bienvenida</button>'
+    +cmAdminOverrideGenericoHTML(rif, 'la Carta de Bienvenida', 'marcarBienvenidaManual', false);
 }
 
 function cmDescargarBienvenida(rif){
@@ -8186,9 +8227,11 @@ function cmProformaBtnHTML(rif, yaEnviada, fechaEnviada){
   var rifSafe=esc(rif);
   if(yaEnviada){
     return '<div class="cm-gd-done-msg">✓ Proforma generada'+(fechaEnviada?(' — '+esc(fechaEnviada)):'')+'</div>'
-      +'<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>';
+      +'<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Volver a generar / descargar</button>'
+      +cmAdminOverrideGenericoHTML(rif, 'la Proforma', 'marcarProformaManual', true);
   }
-  return '<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Descargar Proforma</button>';
+  return '<button class="cm-gd-btn outline" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ Descargar Proforma</button>'
+    +cmAdminOverrideGenericoHTML(rif, 'la Proforma', 'marcarProformaManual', false);
 }
 
 function cmDescargarProforma(rif){
@@ -8232,6 +8275,29 @@ function cmDescargarProforma(rif){
     toast('Sin conexión — no se pudo generar la proforma','err');
     if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
   });
+}
+
+// Override manual genérico para Admin — mismo patrón visual y de flujo que
+// cmAdminOverrideHTML/cmForzarCxC (Cobranza), pero reutilizable para
+// cualquier campo *_ENVIADA con su propia acción GAS. No toca ni reemplaza
+// el de Cobranza — ese sigue intacto.
+function cmAdminOverrideGenericoHTML(rif, etiqueta, accionGAS, yaMarcado){
+  if(S.rol!=='ADMIN') return '';
+  var accionTexto = yaMarcado ? 'Revertir a pendiente' : 'Marcar '+etiqueta+' como enviada manualmente';
+  var valor = yaMarcado ? '' : 'SI';
+  return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">'
+    +'<button class="cm-gd-btn outline" style="font-size:10.5px;padding:6px 10px" onclick="cmForzarCampoManual(\''+esc(rif)+'\',\''+accionGAS+'\',\''+valor+'\')">⚙️ Admin: '+accionTexto+'</button></div>';
+}
+
+function cmForzarCampoManual(rif, accionGAS, valor){
+  var motivo=prompt('Motivo del cambio manual (queda registrado en Historial):', 'Marcado manual — se envió fuera del sistema');
+  if(motivo===null) return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:accionGAS,rif:rif,valor:valor,usuario:S.user,motivo:motivo})})
+    .then(function(r){return r.json();}).then(function(rs){
+      if(!rs.ok){toast('Error: '+(rs.error||''),'err');return;}
+      toast('Actualizado manualmente ✓','ok');
+      reloadData().then(function(){cmOpenGestion(rif);cmRender();});
+    }).catch(function(){toast('Sin conexión','err');});
 }
 
 function cmAdminOverrideHTML(rif, valorSugerido){
