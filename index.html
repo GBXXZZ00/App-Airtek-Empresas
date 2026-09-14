@@ -1716,7 +1716,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWEPLeVjmSKsTgk07rIdhG60UihVMDT5xY4wEJTdxnDCO_6Rz3ynjoc8ZsKFSckuIfwg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDrGJB4Fgq0BWjpech6LBzFAnlSCKFyeP39-6yZOd1llc_LcR6F9pe4RMPNNNGeqq2UA/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -2481,35 +2481,42 @@ function renderTabDatos(r){
   h+='<div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div>';
   h+='</div>';
 
-  // ── Estatus legal (readonly, solo visual) ──────────────────────
-  h+='<div class="sec-lbl">Estatus Legal</div>';
-  h+='<div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL']||'')+'" style="font-weight:600"></div></div>';
-
-  // ── Régimen de Firma — autocompletado por IA, editable por Admin/Abogado ──
-  var puedeEditarRegimen=(S.rol==='ADMIN'||S.rol==='ABOGADO');
-  var regimenActual=(r['REGIMEN_FIRMA']||'').toString().trim().toUpperCase();
-  h+='<div class="sec-lbl">Régimen de Firma <span style="font-weight:400;font-size:9px;color:var(--text3)">(detectado por IA al analizar el Acta, ajustable manualmente)</span></div>';
-  h+='<div class="fg full"><div class="field">';
-  if(puedeEditarRegimen){
-    h+='<div class="regimen-cards">';
-    var opciones=[
-      {val:'',icon:'❓',lbl:'Sin definir'},
-      {val:'INDIVIDUAL',icon:'👤',lbl:'Individual / Separada'},
-      {val:'CONJUNTA',icon:'👥',lbl:'Conjunta'},
-    ];
-    opciones.forEach(function(op){
-      var sel=regimenActual===op.val?'selected':'';
-      h+='<div class="regimen-card '+sel+'" onclick="cambiarRegimenFirma(\''+op.val+'\')" title="'+op.lbl+'">'
-        +'<div class="rc-icon">'+op.icon+'</div>'
-        +'<div class="rc-lbl">'+op.lbl+'</div>'
-        +'</div>';
-    });
-    h+='</div>';
-  } else {
-    var regimenTxt=regimenActual==='INDIVIDUAL'?'Individual / Separada':regimenActual==='CONJUNTA'?'Conjunta':'Sin definir';
-    h+='<input readonly value="'+esc(regimenTxt)+'">';
+  // ── Estatus legal — oculto en modo Comercial (ya está en el badge de arriba) ──
+  if(!_drawerModoComercial){
+    h+='<div class="sec-lbl">Estatus Legal</div>';
+    h+='<div class="fg full"><div class="field"><label>Estatus actual</label><input readonly value="'+esc(r['ESTATUS_LEGAL']||'')+'" style="font-weight:600"></div></div>';
   }
-  h+='</div></div>';
+
+  // ── Régimen de Firma — oculto en modo Comercial (confirmado); en su lugar
+  // va el resumen de documentos/observaciones, que es lo que sí hace falta ahí. ──
+  if(_drawerModoComercial){
+    h+=renderResumenDocumentos(r);
+  } else {
+    var puedeEditarRegimen=(S.rol==='ADMIN'||S.rol==='ABOGADO');
+    var regimenActual=(r['REGIMEN_FIRMA']||'').toString().trim().toUpperCase();
+    h+='<div class="sec-lbl">Régimen de Firma <span style="font-weight:400;font-size:9px;color:var(--text3)">(detectado por IA al analizar el Acta, ajustable manualmente)</span></div>';
+    h+='<div class="fg full"><div class="field">';
+    if(puedeEditarRegimen){
+      h+='<div class="regimen-cards">';
+      var opciones=[
+        {val:'',icon:'❓',lbl:'Sin definir'},
+        {val:'INDIVIDUAL',icon:'👤',lbl:'Individual / Separada'},
+        {val:'CONJUNTA',icon:'👥',lbl:'Conjunta'},
+      ];
+      opciones.forEach(function(op){
+        var sel=regimenActual===op.val?'selected':'';
+        h+='<div class="regimen-card '+sel+'" onclick="cambiarRegimenFirma(\''+op.val+'\')" title="'+op.lbl+'">'
+          +'<div class="rc-icon">'+op.icon+'</div>'
+          +'<div class="rc-lbl">'+op.lbl+'</div>'
+          +'</div>';
+      });
+      h+='</div>';
+    } else {
+      var regimenTxt=regimenActual==='INDIVIDUAL'?'Individual / Separada':regimenActual==='CONJUNTA'?'Conjunta':'Sin definir';
+      h+='<input readonly value="'+esc(regimenTxt)+'">';
+    }
+    h+='</div></div>';
+  }
 
   // ── Panel de contacto directo — oculto en modo Comercial (no hace       ──
   // falta ahí, confirmado); se muestra igual que siempre en el resto de la app.
@@ -2566,34 +2573,9 @@ function renderTabDocs(r){
   var esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
   var puedeEditar=(S.rol==='ADMIN'||S.rol==='ABOGADO');
 
-  // ── Parsear estados del campo Observacion ──────────────────────
-  // Soporta formato nuevo [DOCS:cod:estado,...] y legado [FALTANTES:cod,...]
-  var obsRaw=r['Observacion']||'';
-  var estadosDoc={};  // { codigo: 'ok'|'problema'|'faltante' }
-  var detText='';
-  var obsClean='';
-
-  var docsMatch=obsRaw.match(/\[DOCS:([^\]]*)\]/);
-  var detMatch=obsRaw.match(/\[DETALLE:([^\]]*)\]/);
-  var faltLegadoMatch=obsRaw.match(/\[FALTANTES:([^\]]*)\]/);
-
-  if(docsMatch){
-    docsMatch[1].split(',').forEach(function(part){
-      var p=part.trim().split(':');
-      if(p.length>=2)estadosDoc[p[0].trim()]=p[1].trim();
-    });
-  } else if(faltLegadoMatch){
-    // Compatibilidad hacia atrás — los que estaban marcados como faltante
-    faltLegadoMatch[1].split(',').forEach(function(k){
-      if(k.trim())estadosDoc[k.trim()]='faltante';
-    });
-  }
-  if(detMatch)detText=detMatch[1];
-  obsClean=obsRaw
-    .replace(/\[DOCS:[^\]]*\]/g,'')
-    .replace(/\[FALTANTES:[^\]]*\]/g,'')
-    .replace(/\[DETALLE:[^\]]*\]/g,'')
-    .trim();
+  // ── Observaciones por documento (parser compartido con Datos/renderResumenDocumentos) ──
+  var parsedObs=parseObsDoc_(r);
+  var estadosDoc=parsedObs.estadosDoc;
 
   // ── Definición de documentos ───────────────────────────────────
   var repSections=[];
@@ -2741,21 +2723,12 @@ function renderTabDocs(r){
   }
   h+='</div>';
 
-  // ── Checklist de estados — Admin y Abogado editan, Líder lee ───
-  var faltItems=[
-    {k:'CEDULA_REP',   lbl:'Cédula del Representante Legal'},
-    {k:'RIF_REP',      lbl:'RIF personal del Representante Legal'},
-    {k:'CORREO_REP',   lbl:'Correo del Representante'},
-    {k:'NUMERO_REP',   lbl:'Número (WhatsApp) del Representante'},
-    {k:'RIF_EMPRESA',  lbl:'RIF vigente de la empresa'},
-    {k:'ACTA_CONST',   lbl:'Acta Constitutiva'},
-    {k:'ACTA_ASAMBLEA',lbl:'Acta de Asamblea'},
-    ...(esISP?[{k:'CONATEL',lbl:'Habilitación CONATEL'}]:[]),
-  ];
+  // ── Checklist de estados — Admin y Abogado editan, Líder lee + responde ──
+  var faltItems=getFaltItems_(esISP);
 
   h+='<div class="falt-panel'+(puedeEditar?'':' falt-readonly')+'">';
   h+='<div class="falt-title">📋 Estado de documentos';
-  if(!puedeEditar)h+=' <span style="font-size:9px;font-weight:400;color:var(--text3)">(solo lectura)</span>';
+  if(!puedeEditar)h+=' <span style="font-size:9px;font-weight:400;color:var(--text3)">(solo lectura — puedes responder observaciones abajo)</span>';
   h+='</div>';
   h+='<div class="falt-legend">';
   h+='<span>✅ OK</span><span>⚠️ Con problema</span><span>❌ Faltante</span>';
@@ -2779,7 +2752,12 @@ function renderTabDocs(r){
     else                            tieneURL=colAsociada&&cleanDocUrl(r[colAsociada]||'').startsWith('http');
     var estado=estadosDoc[item.k]||(tieneURL?'ok':'neutro');
     var clsCls=estado==='ok'?'fi-ok':estado==='problema'?'fi-problema':estado==='faltante'?'fi-faltante':'fi-neutro';
+    var notaDoc=parsedObs.notas[item.k]||'';
+    var respDoc=parsedObs.resps[item.k]||'';
+    var conProblema=(estado==='problema'||estado==='faltante');
+
     h+='<div class="falt-item3 '+clsCls+'" id="fi3_'+item.k+'">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">';
     h+='<span class="fi-lbl">'+item.lbl+'</span>';
     if(puedeEditar){
       h+='<div class="fi-pills">';
@@ -2793,21 +2771,30 @@ function renderTabDocs(r){
       h+='<span style="font-size:10px;font-weight:700;color:'+clrPill+';padding:2px 7px;border-radius:4px;border:1px solid '+clrPill+'">'+ico+'</span>';
     }
     h+='</div>';
+
+    // Nota específica de ESTE documento — Admin/Abogado la escribe, todos la ven
+    if(puedeEditar){
+      h+='<input class="fi-nota-input" id="fnota_'+item.k+'" value="'+esc(notaDoc)+'" placeholder="Nota de este documento (ej. RIF vencido desde feb 2026)..." style="width:100%;margin-top:6px;font-size:11.5px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface)" onchange="saveFaltantes()">';
+    } else if(notaDoc){
+      h+='<div style="font-size:11.5px;color:var(--text2);margin-top:5px">📝 '+esc(notaDoc)+'</div>';
+    }
+
+    // Respuesta del líder — solo si el documento tiene problema/falta; el líder
+    // escribe la suya, el resto de roles la ve en solo lectura.
+    if(conProblema){
+      if(S.rol==='LIDER'){
+        h+='<div style="margin-top:6px;display:flex;gap:6px">'
+          +'<input id="resp_'+item.k+'" value="'+esc(respDoc)+'" placeholder="Tu respuesta a esta observación..." style="flex:1;font-size:11.5px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface)">'
+          +'<button class="gbtn outline" style="padding:5px 10px;font-size:11px" onclick="guardarRespuestaLider(\''+esc(r['RIF'])+'\',\''+item.k+'\')">Guardar</button>'
+          +'</div>';
+      } else if(respDoc){
+        h+='<div style="font-size:11px;color:var(--accent);margin-top:5px;padding-top:5px;border-top:1px dashed var(--border2)">💬 Líder: '+esc(respDoc)+'</div>';
+      }
+    }
+
+    h+='</div>';
   });
   h+='</div>';
-
-  // Detalle / observaciones
-  h+='<div class="obs-panel">';
-  h+='<div class="obs-lbl">Observaciones</div>';
-  if(puedeEditar){
-    h+='<textarea class="falt-detail" id="falt_detail" placeholder="Detalle: ej. RIF vencido desde feb 2026, falta acta de ratificación de junta..." onchange="saveFaltantes()">'+esc(detText||obsClean)+'</textarea>';
-  } else {
-    h+='<textarea class="falt-detail" readonly placeholder="Sin observaciones">'+esc(detText||obsClean)+'</textarea>';
-  }
-  h+='</div>';
-  if(puedeEditar){
-    h+='<button class="btn btn-p btn-sm" style="margin-top:8px;width:100%" onclick="saveFaltantes()">💾 Guardar checklist</button>';
-  }
   h+='</div>';
 
   document.getElementById('tab-documentos').innerHTML=h;
@@ -3318,26 +3305,167 @@ function changeStatus(ns){
   if(APPS_SCRIPT_URL)saveField('ESTATUS_LEGAL',ns);
 }
 
+// ── Observaciones POR DOCUMENTO (v2) ──────────────────────────────────
+// Sigue viviendo en la misma columna Observacion, mismo mecanismo de
+// guardado (persistObs → cambiarEstatus con soloObs:true) — no requiere
+// backend nuevo. Formato: [DOCS:cod:estado,...][NOTA:cod:base64,...]
+// [RESP:cod:base64,...] — NOTA la escribe Admin/Abogado (por documento,
+// ya no un solo texto para todo), RESP la escribe el líder (su feedback).
+// [DETALLE:...] legado se sigue leyendo (compatibilidad) pero ya no se escribe.
+function b64enc_(str){ try{ return btoa(unescape(encodeURIComponent(str))); }catch(e){ return ''; } }
+function b64dec_(b64){ try{ return decodeURIComponent(escape(atob(b64))); }catch(e){ return ''; } }
+
+// Lista de documentos evaluables — misma que ya existía en renderTabDocs,
+// factorizada aquí para que Datos y Documentos usen exactamente la misma.
+function getFaltItems_(esISP){
+  return [
+    {k:'CEDULA_REP',   lbl:'Cédula del Representante Legal'},
+    {k:'RIF_REP',      lbl:'RIF personal del Representante Legal'},
+    {k:'CORREO_REP',   lbl:'Correo del Representante'},
+    {k:'NUMERO_REP',   lbl:'Número (WhatsApp) del Representante'},
+    {k:'RIF_EMPRESA',  lbl:'RIF vigente de la empresa'},
+    {k:'ACTA_CONST',   lbl:'Acta Constitutiva'},
+    {k:'ACTA_ASAMBLEA',lbl:'Acta de Asamblea'},
+    ...(esISP?[{k:'CONATEL',lbl:'Habilitación CONATEL'}]:[]),
+  ];
+}
+
+function parseObsDoc_(r){
+  var obsRaw=(r&&r['Observacion']||'').toString();
+  var estadosDoc={}, notas={}, resps={};
+  var docsMatch=obsRaw.match(/\[DOCS:([^\]]*)\]/);
+  var notaMatch=obsRaw.match(/\[NOTA:([^\]]*)\]/);
+  var respMatch=obsRaw.match(/\[RESP:([^\]]*)\]/);
+  var detMatch=obsRaw.match(/\[DETALLE:([^\]]*)\]/);
+  var faltLegadoMatch=obsRaw.match(/\[FALTANTES:([^\]]*)\]/);
+  if(docsMatch){
+    docsMatch[1].split(',').forEach(function(part){
+      var p=part.trim().split(':');
+      if(p.length>=2)estadosDoc[p[0].trim()]=p[1].trim();
+    });
+  } else if(faltLegadoMatch){
+    faltLegadoMatch[1].split(',').forEach(function(k){ if(k.trim())estadosDoc[k.trim()]='faltante'; });
+  }
+  function parsePares(match, destino){
+    if(!match)return;
+    match[1].split(',').forEach(function(part){
+      var i=part.indexOf(':');
+      if(i<0)return;
+      var cod=part.slice(0,i).trim();
+      var val=b64dec_(part.slice(i+1).trim());
+      if(val)destino[cod]=val;
+    });
+  }
+  parsePares(notaMatch, notas);
+  parsePares(respMatch, resps);
+  return {estadosDoc:estadosDoc, notas:notas, resps:resps, detalleLegado:detMatch?detMatch[1]:''};
+}
+
+function reconstruirObservacion_(parsed){
+  var s='';
+  var partesDocs=Object.keys(parsed.estadosDoc).filter(function(k){return parsed.estadosDoc[k]&&parsed.estadosDoc[k]!=='neutro';})
+    .map(function(k){return k+':'+parsed.estadosDoc[k];});
+  if(partesDocs.length)s+='[DOCS:'+partesDocs.join(',')+']';
+  var notaPares=Object.keys(parsed.notas).filter(function(k){return (parsed.notas[k]||'').trim();})
+    .map(function(k){return k+':'+b64enc_(parsed.notas[k].trim());});
+  if(notaPares.length)s+='[NOTA:'+notaPares.join(',')+']';
+  var respPares=Object.keys(parsed.resps).filter(function(k){return (parsed.resps[k]||'').trim();})
+    .map(function(k){return k+':'+b64enc_(parsed.resps[k].trim());});
+  if(respPares.length)s+='[RESP:'+respPares.join(',')+']';
+  return s;
+}
+
+// Líder guarda su respuesta a un documento específico — reutiliza el mismo
+// mecanismo de guardado (persistObs), sin pisar los estados/notas del Admin.
+function guardarRespuestaLider(rif, cod){
+  var r=cmFindByRif(rif); if(!r)return;
+  var input=document.getElementById('resp_'+cod);
+  if(!input)return;
+  var parsed=parseObsDoc_(r);
+  parsed.resps[cod]=input.value;
+  var nuevoObs=reconstruirObservacion_(parsed);
+  r['Observacion']=nuevoObs;
+  if(!APPS_SCRIPT_URL){toast('GAS URL no configurada','err');return;}
+  var estActual=r['ESTATUS_LEGAL']||'';
+  if(!estActual)return;
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+    action:'cambiarEstatus', rif:rif, estatus:estActual,
+    observacion:nuevoObs===''?' ':nuevoObs, soloObs:true, usuario:S.user||'app'
+  })}).then(function(res){return res.json();}).then(function(rs){
+    if(rs.ok){
+      toast('Respuesta guardada ✓','ok');
+      input.style.borderColor='var(--green)';
+      setTimeout(function(){input.style.borderColor='';},1200);
+    } else toast('Error guardando: '+(rs.error||''),'err');
+  }).catch(function(){toast('Sin conexión','err');});
+}
+
+// Resumen compacto de documentos + observaciones para la pestaña Datos
+// (modo Comercial) — reemplaza el espacio que dejó libre Régimen de Firma.
+function renderResumenDocumentos(r){
+  var esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
+  var items=getFaltItems_(esISP);
+  var parsed=parseObsDoc_(r);
+  var pendientes=items.filter(function(it){
+    var e=parsed.estadosDoc[it.k];
+    return e==='problema'||e==='faltante';
+  });
+
+  var h='<div class="sec-lbl">Estado de Documentos</div>';
+  if(!pendientes.length){
+    h+='<div class="resumen" style="margin-bottom:0"><span style="color:var(--green);font-weight:600;font-size:12.5px">✓ Sin observaciones pendientes en documentos</span></div>';
+    return h;
+  }
+  h+='<div style="display:flex;flex-direction:column;gap:8px">';
+  pendientes.forEach(function(it){
+    var estado=parsed.estadosDoc[it.k];
+    var nota=parsed.notas[it.k]||parsed.detalleLegado||'';
+    var resp=parsed.resps[it.k]||'';
+    var color=estado==='faltante'?'var(--red)':'var(--amber)';
+    var icono=estado==='faltante'?'❌':'⚠️';
+    h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface2)">';
+    h+='<div style="font-size:12px;font-weight:600;color:var(--text)">'+icono+' '+esc(it.lbl)+'</div>';
+    if(nota)h+='<div style="font-size:11.5px;color:'+color+';margin-top:3px">'+esc(nota)+'</div>';
+    if(_puedeVerRespuestaLider(r)){
+      if(resp)h+='<div style="font-size:11px;color:var(--text2);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border2)">💬 Líder: '+esc(resp)+'</div>';
+      if(S.rol==='LIDER'){
+        h+='<div style="margin-top:6px;display:flex;gap:6px">'
+          +'<input id="resp_'+it.k+'" value="'+esc(resp)+'" placeholder="Tu respuesta a esta observación..." style="flex:1;font-size:11.5px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface)">'
+          +'<button class="gbtn outline" style="padding:5px 10px;font-size:11px" onclick="guardarRespuestaLider(\''+esc(r['RIF'])+'\',\''+it.k+'\')">Guardar</button>'
+          +'</div>';
+      }
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  return h;
+}
+function _puedeVerRespuestaLider(r){ return true; } // visible para todos los roles, solo LIDER puede escribir
+
 function saveFaltantes(){
   if(!S.cur)return;
-  // Recolectar estados de los pills activos
-  var partes=[];
+  var previo=parseObsDoc_(S.cur); // no perder las respuestas del líder ya guardadas
+  var estadosDoc={};
   document.querySelectorAll('.falt-item3').forEach(function(item){
     var id=item.id||'';
     var cod=id.replace('fi3_','');
     if(!cod)return;
     var cls=item.className;
     var estado=cls.indexOf('fi-ok')>=0?'ok':cls.indexOf('fi-problema')>=0?'problema':cls.indexOf('fi-faltante')>=0?'faltante':'neutro';
-    if(estado!=='neutro')partes.push(cod+':'+estado);
+    estadosDoc[cod]=estado;
   });
-  var detail=(document.getElementById('falt_detail')||{}).value||'';
-  var structured='';
-  if(partes.length)structured+='[DOCS:'+partes.join(',')+']';
-  if(detail.trim())structured+=(structured?'\n':'')+'[DETALLE:'+detail.trim()+']';
-  S.cur['Observacion']=structured;
-  persistObs(structured);
-  var det=document.getElementById('falt_detail');
-  if(det){det.style.borderColor='var(--green)';setTimeout(function(){det.style.borderColor='';},1200);}
+  var notas={};
+  document.querySelectorAll('.fi-nota-input').forEach(function(inp){
+    var cod=(inp.id||'').replace('fnota_','');
+    if(cod)notas[cod]=inp.value;
+  });
+  var nuevoObs=reconstruirObservacion_({estadosDoc:estadosDoc, notas:notas, resps:previo.resps});
+  S.cur['Observacion']=nuevoObs;
+  persistObs(nuevoObs);
+  document.querySelectorAll('.fi-nota-input').forEach(function(inp){
+    inp.style.borderColor='var(--green)';
+    setTimeout(function(){inp.style.borderColor='';},1200);
+  });
 }
 
 function persistObs(obsValue){
@@ -8098,7 +8226,7 @@ function cmRender(){
     var instTag=fechaInstD?'<span class="cm-tag">Instalado: '+fechaInstD.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'})+'</span>':'';
     var rifSafe=esc(r['RIF']);
 
-    var legalInd='<div class="cm-ind2" onclick="cmOpenLegal(\''+rifSafe+'\')">'
+    var legalInd='<div class="cm-ind2" onclick="event.stopPropagation();cmOpenLegal(\''+rifSafe+'\')">'
       +'<div class="cm-ind2-top"><span class="cm-ind2-dot '+(lOk?'ok':'pend')+'"></span><span class="cm-ind2-lbl">Legal</span></div>'
       +'<div class="cm-ind2-detail">'+esc(r['ESTATUS_LEGAL']||'—')+'</div></div>';
 
@@ -8106,11 +8234,11 @@ function cmRender(){
     var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
     var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
     var tip='Cobranza '+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'✗')+' · Bienvenida '+(bienv?'✓':'✗')+' · Proforma '+(prof?'✓':'✗');
-    var gestInd='<div class="cm-ind2" title="'+esc(tip)+'" onclick="cmAbrirGestionComercial(\''+rifSafe+'\')">'
+    var gestInd='<div class="cm-ind2" title="'+esc(tip)+'" onclick="event.stopPropagation();cmAbrirGestionComercial(\''+rifSafe+'\')">'
       +'<div class="cm-ind2-top"><span class="cm-ind2-dot '+(gOk?'ok':'pend')+'"></span><span class="cm-ind2-lbl">Gestión</span><span class="cm-ind2-frac">'+gFrac+'/2</span></div>'
       +'<div class="cm-ind2-detail">'+(gOk?'Completo':'Pendiente')+'</div></div>';
 
-    return '<div class="cm-card urg-'+b+'">'
+    return '<div class="cm-card urg-'+b+'" style="cursor:pointer" onclick="cmOpenLegal(\''+rifSafe+'\')">'
       +'<div class="cm-urg-badge urg-'+b+'"><div class="cm-urg-num">'+(dias!==null?dias:'—')+'</div><div class="cm-urg-lbl">días</div></div>'
       +'<div class="cm-main"><div class="cm-name">'+esc(r['RAZON SOCIAL'])+'</div>'
       +'<div class="cm-meta"><span>'+esc(r['RIF'])+'</span><span class="cm-tag">'+esc(r['EJECUTIVO'])+'</span><span class="cm-tag">'+esc(r['TIPO_CLIENTE'])+'</span>'+instTag+multiTag+'</div>'+readyTag+noComTag+notaTag+'</div>'
