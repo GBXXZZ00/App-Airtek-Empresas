@@ -1186,9 +1186,12 @@ tbody tr:hover td{background:var(--surface2)}
         <div class="cm-role-hint" id="cmRoleHint"></div>
       </div>
 
-      <div class="cm-filter-row" style="margin-bottom:10px">
-        <button class="cm-qf active" id="cmVistaActivos" onclick="cmSetVista('activos')">Clientes Nuevos</button>
-        <button class="cm-qf" id="cmVistaHistorico" onclick="cmSetVista('historico')">📋 Histórico</button>
+      <div class="cm-filter-row" style="margin-bottom:10px;justify-content:space-between">
+        <div style="display:flex;gap:8px">
+          <button class="cm-qf active" id="cmVistaActivos" onclick="cmSetVista('activos')">Clientes Nuevos</button>
+          <button class="cm-qf" id="cmVistaHistorico" onclick="cmSetVista('historico')">📋 Histórico</button>
+        </div>
+        <button class="btn btn-p" id="cmBtnDriveMasivo" style="display:none" onclick="cmCrearCarpetasMasivo()">📁 Crear carpetas pendientes</button>
       </div>
 
       <div class="cm-hist-note" id="cmHistNote" style="display:none;font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:14px">
@@ -1716,7 +1719,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDrGJB4Fgq0BWjpech6LBzFAnlSCKFyeP39-6yZOd1llc_LcR6F9pe4RMPNNNGeqq2UA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRLmkHyyRIfAWrrjkVpDMgRHzIA4BtTIgTeJSLy_yeypzUW3j0AULOeW6pbsCvKfE-IQ/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -2633,6 +2636,13 @@ function renderTabDocs(r){
             (!esISP||cleanDocUrl(r['HABILITACION_CONATEL']||'').startsWith('http'));
 
   var h='';
+
+  // ── Botón "Pedir documentos" — solo modo Comercial, solo si falta algo ──
+  if(_drawerModoComercial && !cmEstatusLegalOk(r['ESTATUS_LEGAL'])){
+    h+='<div style="display:flex;justify-content:flex-end;margin-bottom:10px">'
+      +cmGestionMenuHTML(r['RIF'],'docs','','📨 Pedir documentos')
+      +'</div>';
+  }
 
   // ── Banner sin carpeta Drive ────────────────────────────────────
   var tieneCarpeta=cleanVal(r['Carpeta_Drive_URL']||'').startsWith('http');
@@ -8091,7 +8101,30 @@ function cmGestionFrac(r){
   return [cxcOk, (bienv&&prof)].filter(Boolean).length;
 }
 
+// Mismo backend que el botón original de Centro de Control (acción
+// crearCarpetasMasivo, sin cambios) — este wrapper solo maneja el estado
+// de ESTE botón (Clientes Nuevos) por separado, para no interferir con el otro.
+function cmCrearCarpetasMasivo(){
+  if(!APPS_SCRIPT_URL)return;
+  var btn=document.getElementById('cmBtnDriveMasivo');
+  var textoOriginal=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='⏳ Procesando...';}
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'crearCarpetasMasivo'})})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(btn){btn.disabled=false;btn.textContent=textoOriginal;}
+      if(rs.ok) toast('Carpetas creadas: '+(rs.creadas!==undefined?rs.creadas:'✓'),'ok');
+      else toast('Error: '+(rs.error||'desconocido'),'err');
+    }).catch(function(){
+      if(btn){btn.disabled=false;btn.textContent=textoOriginal;}
+      toast('Sin conexión','err');
+    });
+}
+
 function cmInit(){
+  var btnDrive=document.getElementById('cmBtnDriveMasivo');
+  if(btnDrive)btnDrive.style.display=(S.rol==='ADMIN')?'':'none';
+
   var mesSel=document.getElementById('cmMesFilter');
   if(!mesSel.options.length){
     var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -8278,8 +8311,9 @@ function renderTabGestionComercial(r){
   var bienv=(r['BIENVENIDA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
   var prof=(r['PROFORMA_ENVIADA']||'').toString().trim().toUpperCase()==='SI';
   var correoEnv=(r['CORREO_ENVIADO']||'').toString().trim().toUpperCase()==='SI';
+  var docsGenerados=bienv&&prof;
 
-  var completos=[lOk, cxc==='SI'||cxc==='NO_APLICA', (bienv&&prof), correoEnv].filter(Boolean).length;
+  var completos=[docsGenerados, lOk, cxc==='SI'||cxc==='NO_APLICA', correoEnv].filter(Boolean).length;
   var pct=Math.round(completos/4*100);
   var cntEl=document.querySelector('#tab-btn-gestion-comercial .cnt');
   if(cntEl)cntEl.textContent=completos+'/4';
@@ -8288,64 +8322,112 @@ function renderTabGestionComercial(r){
     +'<div class="gestion-progress-bar"><div class="gestion-progress-fill" style="width:'+pct+'%"></div></div>'
     +'<div class="gestion-progress-lbl">'+completos+' de 4 completado</div></div>';
 
-  // ── Documentos legales ──
+  // ── 1. Bienvenida — genera Proforma+Carta juntas, y el saludo (WA/correo) ──
+  var bienvSub;
+  if(docsGenerados) bienvSub='Documentos generados'+(r['FECHA_BIENVENIDA_ENVIADA']?(' — '+esc(r['FECHA_BIENVENIDA_ENVIADA'])):'');
+  else bienvSub='Pendiente de generar Proforma y Carta de Bienvenida';
+  h+='<div class="gitem">'
+    +'<div class="gitem-dot '+(docsGenerados?'ok':'pend')+'">'+(docsGenerados?'✓':'⏳')+'</div>'
+    +'<div class="gitem-body"><div class="gitem-title">1. Bienvenida</div>'
+    +'<div class="gitem-sub" id="gsub-bienvenida">'+bienvSub+'</div></div>'
+    +'<div class="gitem-actions">'
+    +'<button class="gbtn'+(docsGenerados?' outline':'')+'" id="cmBtnDocsGen" onclick="cmGenerarDocumentos(\''+rifSafe+'\')">⬇️ '+(docsGenerados?'Volver a generar':'Generar documentos')+'</button>'
+    +cmGestionMenuHTML(rif,'bienvenida',docsGenerados?'SI':'')
+    +'</div></div>';
+
+  // ── 2. Documentos legales ──
   h+='<div class="gitem">'
     +'<div class="gitem-dot '+(lOk?'ok':'pend')+'">'+(lOk?'✓':'⏳')+'</div>'
-    +'<div class="gitem-body"><div class="gitem-title">Documentos legales</div>'
+    +'<div class="gitem-body"><div class="gitem-title">2. Documentos legales</div>'
     +'<div class="gitem-sub" id="gsub-docs">'+(lOk?'Completos':esc(r['ESTATUS_LEGAL']||'Pendiente de solicitar'))+'</div></div>'
     +'<div class="gitem-actions">'+cmGestionMenuHTML(rif,'docs',lOk?'SI':'')+'</div></div>';
 
-  // ── Cobranza ──
+  // ── 3. Cobranza ──
   h+='<div class="gitem">'
     +'<div class="gitem-dot '+(cxc==='SI'?'ok':cxc==='NO_APLICA'?'no':'pend')+'">'+(cxc==='SI'?'✓':cxc==='NO_APLICA'?'➖':'⏳')+'</div>'
-    +'<div class="gitem-body"><div class="gitem-title">Cobranza de instalación</div>'
+    +'<div class="gitem-body"><div class="gitem-title">3. Cobranza de instalación</div>'
     +'<div class="gitem-sub" id="gsub-cxc">'+(cxc==='SI'?'Pagado':cxc==='NO_APLICA'?'Fuera de la ventana de evaluación':'Pendiente de pago')+'</div></div>'
     +'<div class="gitem-actions">'+cmGestionMenuHTML(rif,'cxc',cxc)+'</div></div>';
 
-  // ── Carta de Bienvenida ──
-  h+='<div class="gitem">'
-    +'<div class="gitem-dot '+(bienv?'ok':'pend')+'">'+(bienv?'✓':'⏳')+'</div>'
-    +'<div class="gitem-body"><div class="gitem-title">Carta de Bienvenida</div>'
-    +'<div class="gitem-sub" id="gsub-bienvenida">'+(bienv?('Generada'+(r['FECHA_BIENVENIDA_ENVIADA']?(' — '+esc(r['FECHA_BIENVENIDA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
-    +'<div class="gitem-actions">'
-    +'<button class="gbtn'+(bienv?' outline':'')+'" id="cmBtnBienvenida" onclick="cmDescargarBienvenida(\''+rifSafe+'\')">⬇️ '+(bienv?'Volver a descargar':'Generar y descargar')+'</button>'
-    +cmGestionMenuHTML(rif,'bienvenida',bienv?'SI':'')
-    +'</div></div>';
-
-  // ── Proforma ──
-  h+='<div class="gitem">'
-    +'<div class="gitem-dot '+(prof?'ok':'pend')+'">'+(prof?'✓':'⏳')+'</div>'
-    +'<div class="gitem-body"><div class="gitem-title">Proforma</div>'
-    +'<div class="gitem-sub">'+(prof?('Generada'+(r['FECHA_PROFORMA_ENVIADA']?(' — '+esc(r['FECHA_PROFORMA_ENVIADA'])):'')):'Pendiente de generar')+'</div></div>'
-    +'<div class="gitem-actions">'
-    +'<button class="gbtn'+(prof?' outline':'')+'" id="cmBtnProforma" onclick="cmDescargarProforma(\''+rifSafe+'\')">⬇️ '+(prof?'Volver a descargar':'Generar y descargar')+'</button>'
-    +cmGestionMenuHTML(rif,'proforma',prof?'SI':'')
-    +'</div></div>';
-
-  // ── Envío por correo — una sola vez, requiere Bienvenida + Proforma listas ──
-  var puedeEnviarCorreo=bienv&&prof;
+  // ── 4. Envío formal por correo — una sola vez, con los 2 PDF adjuntos reales ──
+  var puedeEnviarCorreo=docsGenerados;
   var correoSub;
   if(correoEnv) correoSub='Enviado'+(r['CORREO_ENVIADO_POR']?(' por '+esc(r['CORREO_ENVIADO_POR'])):'')+(r['FECHA_CORREO_ENVIADO']?(' — '+esc(r['FECHA_CORREO_ENVIADO'])):'');
-  else if(!puedeEnviarCorreo) correoSub='Genera primero la Bienvenida y la Proforma';
+  else if(!puedeEnviarCorreo) correoSub='Genera primero los documentos (paso 1)';
   else correoSub='Pendiente de enviar (una sola vez)';
   h+='<div class="gitem">'
     +'<div class="gitem-dot '+(correoEnv?'ok':'pend')+'">'+(correoEnv?'✓':'✉️')+'</div>'
-    +'<div class="gitem-body"><div class="gitem-title">Envío por correo</div>'
+    +'<div class="gitem-body"><div class="gitem-title">4. Envío formal por correo</div>'
     +'<div class="gitem-sub">'+correoSub+'</div></div>'
     +'<div class="gitem-actions">'
     + (correoEnv ? '' : '<button class="gbtn" id="cmBtnCorreo"'+(puedeEnviarCorreo?'':' disabled style="opacity:.5;cursor:not-allowed"')+' onclick="'+(puedeEnviarCorreo?'cmEnviarCorreoGestion(\''+rifSafe+'\')':'')+'">✉️ Enviar por correo</button>')
     + cmGestionMenuHTML(rif,'correo',correoEnv?'SI':'')
     +'</div></div>';
 
-  h+='<div style="margin-top:18px;font-size:11.5px;color:var(--text3);line-height:1.6">⚠️ WhatsApp no permite adjuntar archivos automáticamente — si necesitas mandar los PDF, usa "Enviar por correo".</div>';
+  h+='<div style="margin-top:18px;font-size:11.5px;color:var(--text3);line-height:1.6">⚠️ WhatsApp no permite adjuntar archivos automáticamente. El correo rápido (⋯) abre Gmail con el texto listo, pero tampoco adjunta solo — si hace falta, arrastra el PDF que ya descargaste. El único envío con adjunto 100% automático es "Enviar por correo" (paso 4).</div>';
 
   panel.innerHTML=h;
   cmCargarUltimosContactosWA(rif);
 }
 
+// Genera Proforma + Carta de Bienvenida juntas con un solo clic (antes eran
+// 2 botones separados). Internamente sigue llamando a las 2 acciones GAS de
+// siempre, solo que en secuencia y con un solo botón/estado de carga.
+function cmGenerarDocumentos(rif){
+  if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
+  var btn=document.getElementById('cmBtnDocsGen');
+  var textoOriginal=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Generando Proforma...'; }
+
+  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'generarProforma',rif:rif,usuario:S.user})})
+    .then(function(r){return r.json();})
+    .then(function(rsProf){
+      if(!rsProf.ok){ toast('Error generando Proforma: '+(rsProf.error||''),'err'); if(btn){btn.disabled=false;btn.textContent=textoOriginal;} throw new Error('stop'); }
+      cmDescargarBlob_(rsProf.fileBase64, rsProf.fileName, rsProf.mimeType);
+      var reg=cmFindByRif(rif);
+      if(reg){ reg['PROFORMA_ENVIADA']='SI'; reg['FECHA_PROFORMA_ENVIADA']=new Date().toLocaleDateString('es-VE'); }
+      if(btn)btn.textContent='Generando Bienvenida...';
+      return fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'generarCartaBienvenida',rif:rif,usuario:S.user})});
+    })
+    .then(function(r){return r.json();})
+    .then(function(rsBienv){
+      if(!rsBienv.ok){ toast('Proforma generada, pero falló la Carta: '+(rsBienv.error||''),'err'); if(btn){btn.disabled=false;btn.textContent=textoOriginal;} return; }
+      cmDescargarBlob_(rsBienv.fileBase64, rsBienv.fileName, rsBienv.mimeType);
+      var reg=cmFindByRif(rif);
+      if(reg){ reg['BIENVENIDA_ENVIADA']='SI'; reg['FECHA_BIENVENIDA_ENVIADA']=new Date().toLocaleDateString('es-VE'); }
+      toast('Proforma y Carta de Bienvenida generadas ✓','ok');
+      renderTabGestionComercial(cmFindByRif(rif));
+      cmRender();
+    })
+    .catch(function(e){
+      if(e&&e.message==='stop')return;
+      toast('Sin conexión — no se pudieron generar los documentos','err');
+      if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+    });
+}
+
+// Decodifica un PDF en base64 y dispara la descarga — compartida por
+// cmGenerarDocumentos (ambos documentos) y cualquier descarga individual.
+function cmDescargarBlob_(fileBase64, fileName, mimeType){
+  try{
+    var byteChars=atob(fileBase64);
+    var byteNums=new Array(byteChars.length);
+    for(var i=0;i<byteChars.length;i++) byteNums[i]=byteChars.charCodeAt(i);
+    var blob=new Blob([new Uint8Array(byteNums)],{type:mimeType||'application/pdf'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fileName||'documento.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }catch(e){
+    toast('Documento generado pero no se pudo descargar automáticamente: '+e.message,'err');
+  }
+}
+
 // Trae el último contacto por WhatsApp de cada tipo (Documentos/Cobranza/
 // Bienvenida) desde Seguimiento — ya se registraba antes, solo faltaba
-// mostrarlo. No bloquea el render principal, llega y se pinta después.
+// mostrarlo. Incluye el rol (Líder/Analista/Admin) junto al nombre. No
+// bloquea el render principal, llega y se pinta después.
 function cmCargarUltimosContactosWA(rif){
   if(!APPS_SCRIPT_URL)return;
   fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'consultarSeguimientoCompleto',rif:rif})})
@@ -8357,35 +8439,51 @@ function cmCargarUltimosContactosWA(rif){
         var ultimo=logs.filter(function(e){return e.tipo===tipo;})[0]; // ya vienen más reciente primero
         if(!ultimo)return;
         var el=document.getElementById(mapa[tipo]);
-        if(el)el.innerHTML+=' <span style="color:var(--text3)">· último WA: '+esc(ultimo.usuario||'')+' — '+esc(ultimo.fecha||'')+'</span>';
+        var rolTxt=cmRolUsuarioTexto_(ultimo.usuario);
+        if(el)el.innerHTML+=' <span style="color:var(--text3)">· último WA: '+esc(ultimo.usuario||'')+(rolTxt?' ('+rolTxt+')':'')+' — '+esc(ultimo.fecha||'')+'</span>';
       });
     }).catch(function(){});
 }
 
-// Menú "⋯" de cada fila: WhatsApp con selección de número (si aplica) +
-// override de Admin (si aplica). Devuelve '' si no hay nada que ofrecer.
-function cmGestionMenuHTML(rif, tipo, valorActual){
+// Busca el rol de un usuario por nombre en S.cfg (la config ya cargada al
+// iniciar sesión) — best-effort, si no lo encuentra no rompe nada,
+// simplemente no muestra el rol entre paréntesis.
+function cmRolUsuarioTexto_(nombreUsuario){
+  if(!nombreUsuario||!S.cfg)return'';
+  var u=(S.cfg||[]).find(function(x){return normalizeStr(x.EJECUTIVO)===normalizeStr(nombreUsuario);});
+  if(!u||!u.ROL)return'';
+  var mapa={ADMIN:'Admin',LIDER:'Líder',ABOGADO:'Abogado',ANALISTA:'Analista'};
+  return mapa[u.ROL.toUpperCase()]||u.ROL;
+}
+
+// Menú "⋯" de cada fila: WhatsApp con selección de número + correo rápido
+// (abre Gmail) + override de Admin — todo lo que aplique según el tipo.
+// Devuelve '' si no hay nada que ofrecer.
+function cmGestionMenuHTML(rif, tipo, valorActual, etiquetaBoton){
   var r=cmFindByRif(rif);
   var rifSafe=esc(rif);
   var items='';
 
   if(tipo==='docs'||tipo==='cxc'||tipo==='bienvenida'){
     items+=cmWhatsAppMenuItems(r, tipo);
+    items+='<div class="gmenu-sec">Correo</div>';
+    items+=cmCorreoMenuItem_(r, tipo);
   }
 
   if(tipo==='cxc'&&S.rol==='ADMIN'){
     var accion=valorActual==='SI'?'Revertir a pendiente':'Marcar como pagado manualmente';
     var nuevoValor=valorActual==='SI'?'':'SI';
-    if(items)items+='<div class="gmenu-divider"></div>';
+    items+='<div class="gmenu-divider"></div>';
     items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCxC(\''+rifSafe+'\',\''+nuevoValor+'\')">⚙️ Admin: '+accion+'</button>';
   }
-  if((tipo==='bienvenida'||tipo==='proforma')&&S.rol==='ADMIN'){
-    var accionGAS=tipo==='bienvenida'?'marcarBienvenidaManual':'marcarProformaManual';
+  if(tipo==='bienvenida'&&S.rol==='ADMIN'){
     var yaSi=valorActual==='SI';
-    var accion2=yaSi?'Revertir a pendiente':'Marcar como enviada manualmente';
+    var accion2=yaSi?'Revertir Bienvenida a pendiente':'Marcar Bienvenida como enviada';
     var nuevoValor2=yaSi?'':'SI';
-    if(items)items+='<div class="gmenu-divider"></div>';
-    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\''+accionGAS+'\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2+'</button>';
+    var accion2b=yaSi?'Revertir Proforma a pendiente':'Marcar Proforma como enviada';
+    items+='<div class="gmenu-divider"></div>';
+    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\'marcarBienvenidaManual\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2+'</button>';
+    items+='<button class="danger" onclick="cmGestionMenuCerrar();cmForzarCampoManual(\''+rifSafe+'\',\'marcarProformaManual\',\''+nuevoValor2+'\')">⚙️ Admin: '+accion2b+'</button>';
   }
   if(tipo==='correo'&&S.rol==='ADMIN'){
     var yaSiC=valorActual==='SI';
@@ -8395,7 +8493,9 @@ function cmGestionMenuHTML(rif, tipo, valorActual){
   }
 
   if(!items) return '';
-  return '<div class="gmenu-wrap"><button class="gmenu-btn" onclick="cmGestionMenuToggle(this)">⋯</button><div class="gmenu">'+items+'</div></div>';
+  var etiqueta=etiquetaBoton?etiquetaBoton:'⋯';
+  var clase=etiquetaBoton?'gbtn outline':'gmenu-btn';
+  return '<div class="gmenu-wrap"><button class="'+clase+'" onclick="cmGestionMenuToggle(this)">'+etiqueta+'</button><div class="gmenu">'+items+'</div></div>';
 }
 
 // Construye las opciones de WhatsApp para un ítem: un botón por cada número
@@ -8419,13 +8519,96 @@ function cmWhatsAppMenuItems(r, tipo){
   return items;
 }
 
-// Mensaje por tipo — una sola fuente de verdad, la usan el envío directo,
-// copiar mensaje y el número manual, para que el texto nunca se desincronice.
+function cmCorreoMenuItem_(r, tipo){
+  var rifSafe=esc(r['RIF']);
+  var lbl=tipo==='docs'?'Pedir documentos':tipo==='cxc'?'Recordar pago':'Enviar bienvenida';
+  return '<button onclick="cmGestionMenuCerrar();cmEnviarCorreoRapido(\''+rifSafe+'\',\''+tipo+'\')">✉️ '+lbl+' por correo</button>';
+}
+
+// ── Mensajes predeterminados — una sola fuente de verdad por tema, cada
+// una con versión WhatsApp y versión Correo (asunto+cuerpo). Los usan el
+// envío directo, copiar mensaje, número manual y el correo rápido. ──
+function cmDatosMensaje_(r){
+  return { NOMBRE_CLIENTE: r['RAZON SOCIAL']||'', LIDER_NOMBRE: r['EJECUTIVO']||'' };
+}
+
+function cmListaDocumentosPendientesTexto_(r, formato){
+  var esISP=(r['TIPO_CLIENTE']||'').toString().toUpperCase().indexOf('ISP')>=0;
+  var items=getFaltItems_(esISP);
+  var parsed=parseObsDoc_(r);
+  var pendientes=items.filter(function(it){
+    var e=parsed.estadosDoc[it.k];
+    return e==='problema'||e==='faltante';
+  });
+  var bullet=formato==='wa'?'📄 ':'• ';
+  return pendientes.map(function(it){
+    var nota=parsed.notas[it.k]||'';
+    return bullet+it.lbl+(nota?' — '+nota:'');
+  }).join('\n');
+}
+
+function cmMensajeBienvenida_(r, canal){
+  var d=cmDatosMensaje_(r);
+  if(canal==='wa'){
+    return '¡Bienvenido a Airtek! 🎉\n\n'
+      +'Es un gusto tener a '+d.NOMBRE_CLIENTE+' como parte de nuestros clientes corporativos.\n\n'
+      +'Tu servicio ya está activo 🎉 — en los próximos días vamos a dejar la documentación al día juntos.\n\n'
+      +'Cualquier duda, aquí estoy para acompañarte.\n\n'
+      +'¡Gracias por confiar en nosotros! 🙌\n\n'
+      +'— '+d.LIDER_NOMBRE+', Airtek';
+  }
+  return {
+    asunto: '¡Bienvenido a Airtek! — '+d.NOMBRE_CLIENTE,
+    cuerpo: '¡Bienvenido a Airtek!\n\n'
+      +'Es un placer darle la bienvenida al servicio corporativo de Airtek. Nos entusiasma contar con '+d.NOMBRE_CLIENTE+' como parte de nuestra cartera de clientes corporativos, y estamos comprometidos en brindarle una experiencia de excelencia desde el primer día.\n\n'
+      +'Su servicio ya está activo. En los próximos días finalizaremos junto a usted la documentación pendiente para dejar su expediente completamente al día.\n\n'
+      +'Cualquier duda que tenga en el camino, cuente con nosotros — estamos para acompañarlo en cada paso.\n\n'
+      +'Gracias por su confianza. Construyamos juntos una relación de largo plazo.\n\n'
+      +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
+  };
+}
+
+function cmMensajeDocumentos_(r, canal){
+  var d=cmDatosMensaje_(r);
+  var lista=cmListaDocumentosPendientesTexto_(r, canal)||(canal==='wa'?'📄 Documentos pendientes de revisión':'• Documentos pendientes de revisión');
+  if(canal==='wa'){
+    return 'Hola! Para avanzar con el expediente de '+d.NOMBRE_CLIENTE+' nos faltan estos documentos:\n\n'
+      +lista+'\n\n'
+      +'Puedes enviarlos por aquí mismo cuando puedas 🙌\n\n'
+      +'— '+d.LIDER_NOMBRE+', Airtek';
+  }
+  return {
+    asunto: 'Documentos pendientes — '+d.NOMBRE_CLIENTE,
+    cuerpo: 'Estimado cliente,\n\n'
+      +'Para completar el expediente legal de '+d.NOMBRE_CLIENTE+' y avanzar con la activación de su servicio, necesitamos que nos haga llegar los siguientes documentos:\n\n'
+      +lista+'\n\n'
+      +'Puede responder este mismo correo adjuntando los documentos, o enviarlos por WhatsApp a nuestro equipo.\n\n'
+      +'Quedamos atentos.\n\n'
+      +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
+  };
+}
+
+function cmMensajeCobranza_(r, canal){
+  var d=cmDatosMensaje_(r);
+  if(canal==='wa'){
+    return 'Hola! Te escribimos de Airtek para recordarte que tienes un pago pendiente por la instalación de tu servicio.\n\n'
+      +'Puedes revisar el monto exacto en la Proforma que te enviamos.\n\n'
+      +'Cualquier duda o para coordinar el pago, aquí estamos 🙌\n\n'
+      +'— '+d.LIDER_NOMBRE+', Airtek';
+  }
+  return {
+    asunto: 'Pago pendiente de instalación — '+d.NOMBRE_CLIENTE,
+    cuerpo: 'Estimado cliente,\n\n'
+      +'Le informamos que tiene un pago pendiente correspondiente a la instalación de su servicio corporativo con Airtek.\n\n'
+      +'Puede revisar el monto exacto en la Proforma que le hicimos llegar. Quedamos atentos para coordinar el pago o resolver cualquier duda al respecto.\n\n'
+      +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
+  };
+}
+
 function cmMensajeWA(r, tipo){
-  var nombre=r['RAZON SOCIAL']||'';
-  if(tipo==='docs')       return 'Hola, te contactamos de Airtek respecto al expediente de '+nombre+' — nos falta completar algunos documentos para avanzar. ¿Podemos coordinar el envío?';
-  if(tipo==='cxc')        return 'Hola, te contactamos de Airtek para recordarte el pago de la instalación de '+nombre+'. Quedamos atentos.';
-  if(tipo==='bienvenida') return '¡Bienvenido a Airtek, '+nombre+'! Estamos para apoyarte en todo lo que necesites.';
+  if(tipo==='docs')       return cmMensajeDocumentos_(r,'wa');
+  if(tipo==='cxc')        return cmMensajeCobranza_(r,'wa');
+  if(tipo==='bienvenida') return cmMensajeBienvenida_(r,'wa');
   return '';
 }
 
@@ -8447,9 +8630,31 @@ function cmWAOtroNumero(rif, tipo){
   cmEnviarWA(rif, num, tipo);
 }
 
-// Cuando el líder pide documentos (por cualquier vía: número directo,
-// copiar mensaje u otro número), el estatus pasa a DOCUMENTOS SOLICITADOS
-// — confirmado con Gualfredo. No repite la llamada si ya está en ese estatus.
+// Abre Gmail con destinatario/asunto/cuerpo prellenados. No puede adjuntar
+// archivos automáticamente — ninguna URL de ningún proveedor de correo lo
+// permite (restricción de seguridad del navegador), así que se avisa.
+function cmAbrirGmailCompose(destinatario, asunto, cuerpo){
+  var url='https://mail.google.com/mail/?view=cm&fs=1'
+    +'&to='+encodeURIComponent(destinatario||'')
+    +'&su='+encodeURIComponent(asunto||'')
+    +'&body='+encodeURIComponent(cuerpo||'');
+  window.open(url,'_blank');
+  toast('Se abrió Gmail — si hace falta adjuntar el PDF, arrástralo manualmente','ok');
+}
+
+function cmEnviarCorreoRapido(rif, tipo){
+  var r=cmFindByRif(rif); if(!r)return;
+  var correoDest=(r['CORREO_REPRESENTANTES']||'').toString().trim();
+  if(!correoDest){ toast('Este cliente no tiene correo de representante cargado','err'); return; }
+  var msg = tipo==='docs'?cmMensajeDocumentos_(r,'correo'):tipo==='cxc'?cmMensajeCobranza_(r,'correo'):cmMensajeBienvenida_(r,'correo');
+  cmAbrirGmailCompose(correoDest, msg.asunto, msg.cuerpo);
+  if(tipo==='docs') cmMarcarDocumentosSolicitados(rif);
+}
+
+// Cuando el líder pide documentos (por cualquier vía: WhatsApp directo,
+// copiar mensaje, número manual, o correo rápido), el estatus pasa a
+// DOCUMENTOS SOLICITADOS — confirmado con Gualfredo. No repite la llamada
+// si ya está en ese estatus.
 function cmMarcarDocumentosSolicitados(rif){
   var r=cmFindByRif(rif); if(!r)return;
   var estatusActual=(r['ESTATUS_LEGAL']||'').toString().trim().toUpperCase();
@@ -8521,91 +8726,6 @@ function cmGestionMenuCerrar(){
 document.addEventListener('click', function(e){
   if(!e.target.closest('.gmenu-wrap')) cmGestionMenuCerrar();
 });
-
-function cmDescargarBienvenida(rif){
-  if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
-  var btn=document.getElementById('cmBtnBienvenida');
-  var textoOriginal = btn ? btn.textContent : '';
-  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
-
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-    action:'generarCartaBienvenida', rif:rif, usuario:S.user
-  })}).then(function(r){return r.json();}).then(function(rs){
-    if(!rs.ok){
-      toast('Error generando carta: '+(rs.error||'desconocido'),'err');
-      if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
-      return;
-    }
-    try{
-      var byteChars=atob(rs.fileBase64);
-      var byteNums=new Array(byteChars.length);
-      for(var i=0;i<byteChars.length;i++) byteNums[i]=byteChars.charCodeAt(i);
-      var blob=new Blob([new Uint8Array(byteNums)],{type:rs.mimeType||'application/pdf'});
-      var a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download=rs.fileName||('Carta_Bienvenida_'+rif+'.pdf');
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }catch(e){
-      toast('Carta generada pero no se pudo descargar automáticamente: '+e.message,'err');
-    }
-
-    var reg=cmFindByRif(rif);
-    if(reg){
-      reg['BIENVENIDA_ENVIADA']='SI';
-      reg['FECHA_BIENVENIDA_ENVIADA']=new Date().toLocaleDateString('es-VE');
-    }
-    toast('Carta de Bienvenida generada y descargada','ok');
-    renderTabGestionComercial(cmFindByRif(rif));
-    cmRender();
-  }).catch(function(){
-    toast('Sin conexión — no se pudo generar la carta','err');
-    if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
-  });
-}
-
-function cmDescargarProforma(rif){
-  if(!APPS_SCRIPT_URL){ toast('GAS URL no configurada','err'); return; }
-  var btn=document.getElementById('cmBtnProforma');
-  var textoOriginal = btn ? btn.textContent : '';
-  if(btn){ btn.disabled=true; btn.textContent='Generando...'; }
-
-  fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
-    action:'generarProforma', rif:rif, usuario:S.user
-  })}).then(function(r){return r.json();}).then(function(rs){
-    if(!rs.ok){
-      toast('Error generando proforma: '+(rs.error||'desconocido'),'err');
-      if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
-      return;
-    }
-    try{
-      var byteChars=atob(rs.fileBase64);
-      var byteNums=new Array(byteChars.length);
-      for(var i=0;i<byteChars.length;i++) byteNums[i]=byteChars.charCodeAt(i);
-      var blob=new Blob([new Uint8Array(byteNums)],{type:rs.mimeType||'application/pdf'});
-      var a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download=rs.fileName||('Proforma_'+rif+'.pdf');
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }catch(e){
-      toast('Proforma generada pero no se pudo descargar automáticamente: '+e.message,'err');
-    }
-
-    // Refleja el cambio de una vez en memoria, sin esperar el próximo refresh del CSV
-    var reg=cmFindByRif(rif);
-    if(reg){
-      reg['PROFORMA_ENVIADA']='SI';
-      reg['FECHA_PROFORMA_ENVIADA']=new Date().toLocaleDateString('es-VE');
-    }
-    toast('Proforma generada y descargada ('+(rs.numero||'')+')','ok');
-    renderTabGestionComercial(cmFindByRif(rif));
-    cmRender();
-  }).catch(function(){
-    toast('Sin conexión — no se pudo generar la proforma','err');
-    if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
-  });
-}
 
 function cmForzarCampoManual(rif, accionGAS, valor){
   var motivo=prompt('Motivo del cambio manual (queda registrado en Historial):', 'Marcado manual — se envió fuera del sistema');
