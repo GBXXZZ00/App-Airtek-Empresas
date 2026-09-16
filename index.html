@@ -8635,14 +8635,12 @@ function cmCorreoMenuItem_(r, tipo){
 // una con versión WhatsApp y versión Correo (asunto+cuerpo). Los usan el
 // envío directo, copiar mensaje, número manual y el correo rápido. ──
 //
-// Los emojis se escriben como escape Unicode (\u{...}) en vez de caracteres
-// literales — así sobreviven aunque el archivo se resalve con una
-// codificación que no soporte UTF-8 completo (causa real de los '�' que
-// aparecían en WhatsApp: el archivo se corrompe en algún punto entre que
-// se entrega y se sube a producción, esto lo hace inmune a eso).
-var EMOJI_FIESTA = '\u{1F389}'; // 🎉
-var EMOJI_MANOS  = '\u{1F64C}'; // 🙌
-var EMOJI_DOC    = '\u{1F4C4}'; // 📄
+// SIN EMOJIS en el cuerpo del mensaje — se probó con escape Unicode
+// (\u{...}) y de todas formas llegaban rotos ('�') al WhatsApp real de
+// Gualfredo. Eso descarta que sea un problema de codificación del archivo
+// (el escape es inmune a eso) — es un bug conocido de WhatsApp con ciertos
+// emoji fuera del plano básico de Unicode dentro del link wa.me/?text=.
+// Más simple y más confiable: no depender de que WhatsApp los renderice bien.
 var CORREO_VENTAS_CORP = 'ventascorporativas@airtek.com.ve';
 
 function cmDatosMensaje_(r){
@@ -8661,10 +8659,9 @@ function cmListaDocumentosPendientesTexto_(r, formato){
     var e=parsed.estadosDoc[it.k];
     return e==='problema'||e==='faltante';
   });
-  var bullet=formato==='wa'?EMOJI_DOC+' ':'• ';
   return pendientes.map(function(it){
     var nota=parsed.notas[it.k]||'';
-    return bullet+it.lbl+(nota?' — '+nota:'');
+    return '• '+it.lbl+(nota?' — '+nota:'');
   }).join('\n');
 }
 
@@ -8672,12 +8669,11 @@ function cmListaDocumentosPendientesTexto_(r, formato){
 // para la primera solicitud (GRANDES NEGOCIOS), donde todavía no hay nada
 // revisado y hay que pedirlo TODO, Cédula/RIF/Correo/Número del
 // representante incluidos.
-function cmListaDocumentosCompletaTexto_(r, formato){
+function cmListaDocumentosCompletaTexto_(r){
   var esISP=(r['TIPO_CLIENTE']||'').toString().toUpperCase().indexOf('ISP')>=0;
   var esPersonaNatural=(r['TIPO_CLIENTE']||'').toString().toUpperCase()==='PERSONA NATURAL';
   var items=getFaltItems_(esISP, esPersonaNatural);
-  var bullet=formato==='wa'?EMOJI_DOC+' ':'• ';
-  return items.map(function(it){return bullet+it.lbl;}).join('\n');
+  return items.map(function(it){return '• '+it.lbl;}).join('\n');
 }
 
 // Determina qué variante del mensaje de Documentos corresponde, según el
@@ -8689,10 +8685,21 @@ function cmModoMensajeDocs_(r){
   return 'primera'; // GRANDES NEGOCIOS y cualquier estatus no contemplado explícitamente
 }
 
+// Arma la lista final a mostrar. Si el modo NO es "primera" pero todavía
+// no hay NADA marcado explícito (nadie ha revisado documentos todavía,
+// aunque ya se hayan "solicitado"), cae a la lista COMPLETA — antes caía a
+// un texto genérico sin sentido ("Documentos pendientes") cuando en
+// realidad hay que seguir pidiendo todo, igual que en la primera solicitud.
+function cmListaParaModo_(r, modo){
+  if(modo==='primera') return cmListaDocumentosCompletaTexto_(r);
+  var filtrada=cmListaDocumentosPendientesTexto_(r, 'wa');
+  return filtrada || cmListaDocumentosCompletaTexto_(r);
+}
+
 function cmMensajeBienvenida_(r, canal){
   var d=cmDatosMensaje_(r);
   if(canal==='wa'){
-    return '¡Bienvenido a *Airtek*! '+EMOJI_FIESTA+'\n\n'
+    return '¡Bienvenido a *Airtek*!\n\n'
       +'Es un placer darte la bienvenida al servicio corporativo de Airtek. Nos entusiasma contar con *'+d.NOMBRE_CLIENTE+'* como parte de nuestra cartera de clientes corporativos, y estamos comprometidos en brindarte una experiencia de excelencia, asegurándonos de atender tus necesidades con eficiencia y profesionalismo.\n\n'
       +'Cualquier consulta o lo que necesites, aquí estamos para acompañarte.\n\n'
       +'¡Gracias por tu confianza — construyamos juntos una relación de largo plazo!\n\n'
@@ -8711,10 +8718,7 @@ function cmMensajeBienvenida_(r, canal){
 function cmMensajeDocumentos_(r, canal){
   var d=cmDatosMensaje_(r);
   var modo=cmModoMensajeDocs_(r);
-  var lista = (modo==='primera')
-    ? cmListaDocumentosCompletaTexto_(r, canal)
-    : cmListaDocumentosPendientesTexto_(r, canal);
-  if(!lista) lista = canal==='wa' ? (EMOJI_DOC+' Documentos pendientes') : ('• Documentos pendientes');
+  var lista=cmListaParaModo_(r, modo);
 
   if(canal==='wa'){
     if(modo==='primera'){
@@ -8732,7 +8736,7 @@ function cmMensajeDocumentos_(r, canal){
     // recordatorio
     return '¡Hola! Seguimos esperando estos documentos para avanzar con el expediente de *'+d.NOMBRE_CLIENTE+'*:\n\n'
       +lista+'\n\n'
-      +'Puedes enviarlo por este mismo chat o al correo '+CORREO_VENTAS_CORP+' — cualquier duda con alguno, aquí estamos.\n\n'
+      +'Puedes enviarlo por este mismo chat o al correo '+CORREO_VENTAS_CORP+'. Este documento sigue pendiente y es imprescindible para continuar con el proceso — te pedimos hacerlo llegar cuanto antes.\n\n'
       +'— '+d.LIDER_NOMBRE+', Airtek';
   }
 
@@ -8775,7 +8779,7 @@ function cmMensajeCobranza_(r, canal){
   if(canal==='wa'){
     return 'Hola! Te escribimos de Airtek para recordarte que tienes un pago pendiente por la instalación de tu servicio.\n\n'
       +'Puedes revisar el monto exacto en la Proforma que te enviamos.\n\n'
-      +'Cualquier duda o para coordinar el pago, aquí estamos '+EMOJI_MANOS+'\n\n'
+      +'Cualquier duda o para coordinar el pago, aquí estamos.\n\n'
       +'— '+d.LIDER_NOMBRE+', Airtek';
   }
   return {
