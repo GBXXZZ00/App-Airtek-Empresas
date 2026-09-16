@@ -1204,7 +1204,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
 
       <div class="cm-kpi-row" id="cmKpiRow">
-        <div class="cm-kpi-card">
+        <div class="cm-kpi-card clickable" onclick="cmClickInstaladosMes()">
           <div class="cm-kpi-top"><span class="cm-kpi-val" id="cmKpiTotal">0</span></div>
           <div class="cm-kpi-lbl">📦 Instalados este mes</div>
         </div>
@@ -2630,7 +2630,8 @@ function rmRep(n){
 
 function renderTabDocs(r){
   var esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
-  var puedeEditar=(S.rol==='ADMIN'||S.rol==='ABOGADO');
+  var esPersonaNatural=(r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL';
+  var puedeEditar=(S.rol==='ADMIN'||S.rol==='ABOGADO'||S.rol==='ANALISTA');
 
   // ── Observaciones por documento (parser compartido con Datos/renderResumenDocumentos) ──
   var parsedObs=parseObsDoc_(r);
@@ -2639,14 +2640,16 @@ function renderTabDocs(r){
   // ── Definición de documentos ───────────────────────────────────
   var repSections=[];
   repSections.push({
-    lbl:'Representante 1',
+    lbl:esPersonaNatural?'Datos del Cliente':'Representante 1',
     ck:'CORREO_REPRESENTANTES', nk:'NUMERO_REPRESENTANTES', idx:1,
     docs:[
       {col:'DOCUMENTOS_REPRESENTANTES', lbl:'Cédula', faltCod:'CEDULA_REP'},
       {col:'DOCUMENTOS_REPRESENTANTES2',lbl:'RIF Personal', faltCod:'RIF_REP'},
     ]
   });
-  if(S.nReps>=2){
+  // Persona Natural es ella misma el cliente — no aplica "Representante 2"
+  // ni ningún documento de empresa (Acta Constitutiva, RIF Vigente, etc.).
+  if(S.nReps>=2 && !esPersonaNatural){
     repSections.push({
       lbl:'Representante 2',
       ck:'CORREO_REPRESENTANTES2', nk:'NUMERO_REPRESENTANTES2', idx:2,
@@ -2656,18 +2659,18 @@ function renderTabDocs(r){
       ]
     });
   }
-  var empDocsBase=[
+  var empDocsBase=esPersonaNatural?[]:[
     {col:'RIF_VIGENTE',         lbl:'RIF Vigente',        faltCod:'RIF_EMPRESA'},
     {col:'ACTA CONSTITUTIVA',   lbl:'Acta Constitutiva',  faltCod:'ACTA_CONST'},
     ...(esISP?[{col:'HABILITACION_CONATEL',lbl:'Habilitación CONATEL',faltCod:'CONATEL'}]:[]),
   ];
-  var empDocsActasExtra=[
+  var empDocsActasExtra=esPersonaNatural?[]:[
     {col:'ACTA_ASAMBLEA_JUNTA', lbl:'Acta de Asamblea 1', faltCod:'ACTA_ASAMBLEA'},
     {col:'ACTA_ASAMBLEA_JUNTA2',lbl:'Acta de Asamblea 2', faltCod:''},
     {col:'ACTA_ASAMBLEA_JUNTA3',lbl:'Acta de Asamblea 3', faltCod:''},
     {col:'ACTA_ASAMBLEA_JUNTA4',lbl:'Acta de Asamblea 4', faltCod:''},
   ];
-  var empDocsFinal=[{col:'CONTRATO',lbl:'Contrato',faltCod:''}];
+  var empDocsFinal=esPersonaNatural?[]:[{col:'CONTRATO',lbl:'Contrato',faltCod:''}];
   var empDocs=empDocsBase.concat(empDocsActasExtra).concat(empDocsFinal);
 
   // Conteo
@@ -2790,7 +2793,7 @@ function renderTabDocs(r){
   h+='</div>';
 
   // ── Checklist de estados — Admin y Abogado editan, Líder lee + responde ──
-  var faltItems=getFaltItems_(esISP);
+  var faltItems=getFaltItems_(esISP, esPersonaNatural);
 
   h+='<div class="falt-panel'+(puedeEditar?'':' falt-readonly')+'">';
   h+='<div class="falt-title">📋 Estado de documentos';
@@ -3383,17 +3386,22 @@ function b64dec_(b64){ try{ return decodeURIComponent(escape(atob(b64))); }catch
 
 // Lista de documentos evaluables — misma que ya existía en renderTabDocs,
 // factorizada aquí para que Datos y Documentos usen exactamente la misma.
-function getFaltItems_(esISP){
-  return [
+function getFaltItems_(esISP, esPersonaNatural){
+  var base=[
     {k:'CEDULA_REP',   lbl:'Cédula del Representante Legal'},
     {k:'RIF_REP',      lbl:'RIF personal del Representante Legal'},
     {k:'CORREO_REP',   lbl:'Correo del Representante'},
     {k:'NUMERO_REP',   lbl:'Número (WhatsApp) del Representante'},
+  ];
+  // Persona Natural es ella misma el cliente — no tiene documentos de
+  // empresa que puedan faltar (Acta Constitutiva, RIF Vigente, etc.).
+  if(esPersonaNatural)return base;
+  return base.concat([
     {k:'RIF_EMPRESA',  lbl:'RIF vigente de la empresa'},
     {k:'ACTA_CONST',   lbl:'Acta Constitutiva'},
     {k:'ACTA_ASAMBLEA',lbl:'Acta de Asamblea'},
     ...(esISP?[{k:'CONATEL',lbl:'Habilitación CONATEL'}]:[]),
-  ];
+  ]);
 }
 
 function parseObsDoc_(r){
@@ -3470,7 +3478,8 @@ function guardarRespuestaLider(rif, cod){
 // (modo Comercial) — reemplaza el espacio que dejó libre Régimen de Firma.
 function renderResumenDocumentos(r){
   var esISP=(r['TIPO_CLIENTE']||'').toUpperCase().includes('ISP');
-  var items=getFaltItems_(esISP);
+  var esPersonaNatural=(r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL';
+  var items=getFaltItems_(esISP, esPersonaNatural);
   var parsed=parseObsDoc_(r);
   var pendientes=items.filter(function(it){
     var e=parsed.estadosDoc[it.k];
@@ -8228,6 +8237,21 @@ function cmSetFiltro(f, btn){
 
 // Tarjetas "Listos para comisionar" / "No listos aún": clic activa ese filtro,
 // clic de nuevo sobre la misma vuelve a "Todos los clientes" (toggle).
+// La tarjeta "Instalados este mes" no alterna nada (a diferencia de
+// Listos/No listos, que sí tienen un complemento lógico) — limpia
+// TODOS los filtros activos (chips + dropdown de líder) y muestra el
+// total completo del mes seleccionado.
+function cmClickInstaladosMes(){
+  document.querySelectorAll('#cmFilterRow .cm-qf').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.cm-kpi-card.clickable').forEach(function(k){k.classList.remove('active');});
+  var btnTodos=document.querySelector('#cmFilterRow .cm-qf[data-f="todos"]');
+  if(btnTodos) btnTodos.classList.add('active');
+  var liderSel=document.getElementById('cmLiderFilter');
+  if(liderSel && !liderSel.disabled) liderSel.value='';
+  CM.filtro='todos';
+  cmRender();
+}
+
 function cmToggleKpiFiltro(card){
   var f = card.getAttribute('data-kpi-f');
   var yaActivo = CM.filtro === f;
@@ -8263,7 +8287,17 @@ function cmRender(){
   var esLider=(S.rol==='LIDER');
 
   var base=(S.all||[]).filter(function(r){
-    if((r['TIPO_CLIENTE']||'').toUpperCase()==='PERSONA NATURAL')return false;
+    // Regla confirmada con Gualfredo (16/09/2026): la comisión es SOLO para
+    // instalaciones PYME (Plan ORO-EMP) — un dedicado no comisiona aquí (se
+    // paga por otro lado). Antes esto se miraba con TIPO_CLIENTE.includes('PYME'),
+    // que es un acumulado histórico ("¿alguna vez tuvo PYME?") — un cliente
+    // "DEDICADO + PYME" cuya instalación más reciente fue dedicado igual
+    // pasaba el filtro, cosa que no debía pasar. ES_PYME_INSTALACION_RECIENTE
+    // (calculado por el cruce Python) mira solo el plan de la instalación más
+    // nueva puntual, así que reemplaza tanto ese chequeo como la exclusión de
+    // Persona Natural: Persona Natural SÍ entra si su instalación fue PYME
+    // (que es como llegan a este dataset), dedicados puros quedan afuera.
+    if((r['ES_PYME_INSTALACION_RECIENTE']||'').toString().trim().toUpperCase()!=='SI')return false;
     var fInst=parseDate(r['Fecha de Instalacion Cliente']);
     var esHistorico = fInst && fInst<FECHA_CORTE_REGLA_NUEVA;
     if(CM.vista==='historico') return !!esHistorico;
@@ -8603,7 +8637,8 @@ function cmDatosMensaje_(r){
 
 function cmListaDocumentosPendientesTexto_(r, formato){
   var esISP=(r['TIPO_CLIENTE']||'').toString().toUpperCase().indexOf('ISP')>=0;
-  var items=getFaltItems_(esISP);
+  var esPersonaNatural=(r['TIPO_CLIENTE']||'').toString().toUpperCase()==='PERSONA NATURAL';
+  var items=getFaltItems_(esISP, esPersonaNatural);
   var parsed=parseObsDoc_(r);
   var pendientes=items.filter(function(it){
     var e=parsed.estadosDoc[it.k];
