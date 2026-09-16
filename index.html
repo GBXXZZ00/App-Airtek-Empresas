@@ -2130,17 +2130,40 @@ function cleanVal(v){
   return s;
 }
 function parseCSV(t){
-  const ln=t.split('\n');if(!ln.length)return[];
-  const hd=parseLine(ln[0]);
-  return ln.slice(1).filter(l=>l.trim()).map(l=>{
-    const v=parseLine(l);const o={};
-    hd.forEach(function(h,i){
-      o[h.trim()]=cleanVal(v[i]);
-    });
+  const rows=parseCSVRows(t);
+  if(!rows.length)return[];
+  const hd=rows[0];
+  return rows.slice(1).filter(function(v){return v.some(function(x){return x!=='';});}).map(function(v){
+    const o={};
+    hd.forEach(function(h,i){o[h.trim()]=cleanVal(v[i]);});
     return o;
   });
 }
-function parseLine(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){if(l[i]==='"'){q=!q}else if(l[i]===','&&!q){r.push(c);c=''}else c+=l[i];}r.push(c);return r;}
+// Parser de CSV completo (no línea por línea): las comillas se rastrean a
+// través de TODO el texto, así que un salto de línea o una coma dentro de
+// un campo entre comillas (ej. una nota larga de Observación/Verificación
+// IA) no corta la fila por la mitad ni corre las columnas siguientes —
+// bug real detrás de los valores basura que aparecían en EJECUTIVO.
+function parseCSVRows(t){
+  const rows=[];let row=[];let c='';let q=false;
+  for(let i=0;i<t.length;i++){
+    const ch=t[i];
+    if(q){
+      if(ch==='"'){
+        if(t[i+1]==='"'){c+='"';i++;} // comilla escapada ("") dentro del campo
+        else q=false;
+      } else c+=ch;
+    } else {
+      if(ch==='"')q=true;
+      else if(ch===',')      {row.push(c);c='';}
+      else if(ch==='\r')     {/* ignorar — el salto real lo marca \n */}
+      else if(ch==='\n')     {row.push(c);rows.push(row);row=[];c='';}
+      else c+=ch;
+    }
+  }
+  if(c!==''||row.length){row.push(c);rows.push(row);}
+  return rows;
+}
 
 // FILTROS
 function normalizeStr(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
@@ -2162,13 +2185,30 @@ function qfSetAll(){
   applyFilters();
 }
 
+// ── Lista blanca de "líderes válidos" para chips/dropdowns de filtro ────
+// SOLO nombres reales de CONFIG (rol LIDER o ALIADO, activos) + los buckets
+// especiales conocidos. Antes cada filtro armaba su lista copiando
+// cualquier valor distinto que apareciera en la columna EJECUTIVO de los
+// datos — si algún proceso deja basura ahí (ej. un mensaje de validación
+// escrito por error en la fila equivocada), esa basura se colaba directo
+// a la UI. Con una lista cerrada esto no puede volver a pasar, sin
+// importar qué tan sucia esté la columna EJECUTIVO en el Sheet.
+function getLideresValidos(){
+  var deConfig=(S.cfg||[]).filter(function(x){
+    var rol=(x.ROL||'').toUpperCase();
+    return (rol==='LIDER'||rol==='ALIADO')&&(x.ACTIVO||'').toUpperCase()==='SI';
+  }).map(function(x){return x.EJECUTIVO;});
+  var especiales=['Pendiente','Aliado Comercial'];
+  return [].concat(deConfig,especiales).filter(function(v,i,arr){return v&&arr.indexOf(v)===i;}).sort();
+}
+
 function initQfEjeChips(){
   // Show executive chips for ADMIN/ABOGADO (not LIDER — they only see their own)
   var sep=document.getElementById('qfEjeSep');
   var wrap=document.getElementById('qfEjeChips');
   if(!sep||!wrap)return;
   if(S.rol==='LIDER'){sep.style.display='none';wrap.innerHTML='';return;}
-  var execs=[...new Set(S.all.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
+  var execs=getLideresValidos();
   if(!execs.length){sep.style.display='none';wrap.innerHTML='';return;}
   sep.style.display='block';
   wrap.innerHTML=execs.map(function(e){
@@ -2193,8 +2233,7 @@ function qfToggleEje(btn){
 }
 
 function populateFilters(){
-  const b=getBase();
-  const ls=[...new Set(b.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
+  const ls=getLideresValidos();
   ['fLider','rLider'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const cur=el.value;el.innerHTML='<option value="">Todos</option>';
@@ -3770,7 +3809,7 @@ function populateDashFilters(){
   const b = getDashBase();
   const years=[...new Set(b.map(r=>{const d=parseDate(r['Fecha de Instalacion Cliente']);return d?d.getFullYear():null}).filter(Boolean))].sort((a,b)=>a-b);
   const sels=[...new Set(b.map(r=>r['Sucursal']).filter(Boolean))].sort();
-  const lids=[...new Set(b.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
+  const lids=getLideresValidos();
   const dfAnio=document.getElementById('df-anio');
   dfAnio.innerHTML='<option value="">Todos</option>';
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;dfAnio.appendChild(o);});
@@ -3924,7 +3963,8 @@ function renderFunnelApp(){
 function renderLideresApp(){
   destroyDashChart('lideres');
   const d=dashFiltered;
-  const lids=[...new Set(d.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
+  const _validosL=getLideresValidos();
+  const lids=[...new Set(d.map(r=>r['EJECUTIVO']).filter(Boolean))].filter(v=>_validosL.indexOf(v)>=0).sort();
   const data=lids.map(l=>({
     name:l.split(' ')[0],
     sinDocs:d.filter(r=>r['EJECUTIVO']===l&&['GRANDES NEGOCIOS','PENDIENTE POR DOCUMENTOS'].includes(r['ESTATUS_LEGAL'])).length,
@@ -4130,7 +4170,8 @@ function genWhatsApp(){
   lines.push('');
   lines.push('*DESGLOSE POR LIDER*');
   lines.push('----------------------------');
-  const lideres=[...new Set(base.map(r=>r['EJECUTIVO']).filter(Boolean))].sort();
+  const _validosR=getLideresValidos();
+  const lideres=[...new Set(base.map(r=>r['EJECUTIVO']).filter(Boolean))].filter(v=>_validosR.indexOf(v)>=0).sort();
   const lidsToShow=l?lideres.filter(li=>li===l):lideres;
   lidsToShow.forEach(lid=>{
     const datos=base.filter(r=>r['EJECUTIVO']===lid);
@@ -5166,7 +5207,8 @@ function exportSegCSV(){
 function renderRanking(){
   var tbl=document.getElementById('rankingTbl');if(!tbl)return;
   var base=S.rol==='LIDER'?S.all.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);}):S.all;
-  var lids=[...new Set(base.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].sort();
+  var _validosRk=getLideresValidos();
+  var lids=[...new Set(base.map(function(r){return r['EJECUTIVO'];}).filter(Boolean))].filter(function(v){return _validosRk.indexOf(v)>=0;}).sort();
   if(!lids.length){tbl.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Sin datos</td></tr>';return;}
   tbl.innerHTML=lids.map(function(l){
     var carr=base.filter(function(r){return r['EJECUTIVO']===l;});
@@ -8164,15 +8206,11 @@ function cmInit(){
   } else {
     liderSel.disabled=false;
     if(liderSel.options.length<=1){
-      // Antes solo salían los roles LIDER de CONFIG — cualquier valor de
-      // EJECUTIVO que no fuera un líder formal (ej. "Aliado Comercial",
-      // "Pendiente") quedaba invisible en este filtro aunque sí hubiera
-      // clientes con ese valor. Ahora se arma la lista con ambas fuentes:
-      // los líderes de CONFIG (para el orden/nombres oficiales) + cualquier
-      // otro valor de EJECUTIVO que exista de verdad en los datos.
-      var lideresCfg=(S.cfg||[]).filter(function(x){return (x.ROL||'').toUpperCase()==='LIDER'&&(x.ACTIVO||'').toUpperCase()==='SI';}).map(function(x){return x.EJECUTIVO;});
-      var enDatos=(S.all||[]).map(function(r){return r['EJECUTIVO'];}).filter(function(v){return v&&v.toString().trim();});
-      var todosLideres=lideresCfg.concat(enDatos).filter(function(v,i,arr){return arr.indexOf(v)===i;}).sort();
+      // Corregido: la versión anterior copiaba cualquier valor distinto que
+      // apareciera en EJECUTIVO — eso dejaba pasar basura si algún proceso
+      // corrompe esa columna. Ahora usa la misma lista blanca centralizada
+      // (getLideresValidos) que el resto de la app.
+      var todosLideres=getLideresValidos();
       liderSel.innerHTML='<option value="">Todos los líderes</option>'+todosLideres.map(function(l){return '<option value="'+esc(l)+'">'+esc(l)+'</option>';}).join('');
     }
   }
