@@ -8416,10 +8416,13 @@ function renderTabGestionComercial(r){
   var correoEnv=(r['CORREO_ENVIADO']||'').toString().trim().toUpperCase()==='SI';
   var docsGenerados=bienv&&prof;
 
-  var completos=[docsGenerados, lOk, cxc==='SI'||cxc==='NO_APLICA', correoEnv].filter(Boolean).length;
-  var pct=Math.round(completos/4*100);
+  // "4. Envío formal por correo" queda FUERA del conteo de progreso — es un
+  // paso extra/opcional, confirmado con Gualfredo (16/09/2026). El progreso
+  // real del expediente son estos 3: documentos generados, legal OK, cobranza.
+  var completos=[docsGenerados, lOk, cxc==='SI'||cxc==='NO_APLICA'].filter(Boolean).length;
+  var pct=Math.round(completos/3*100);
   var cntEl=document.querySelector('#tab-btn-gestion-comercial .cnt');
-  if(cntEl)cntEl.textContent=completos+'/4';
+  if(cntEl)cntEl.textContent=completos+'/3';
 
   var h='<div class="gestion-progress">'
     +'<div class="gestion-progress-bar"><div class="gestion-progress-fill" style="width:'+pct+'%"></div></div>'
@@ -8631,10 +8634,24 @@ function cmCorreoMenuItem_(r, tipo){
 // ── Mensajes predeterminados — una sola fuente de verdad por tema, cada
 // una con versión WhatsApp y versión Correo (asunto+cuerpo). Los usan el
 // envío directo, copiar mensaje, número manual y el correo rápido. ──
+//
+// Los emojis se escriben como escape Unicode (\u{...}) en vez de caracteres
+// literales — así sobreviven aunque el archivo se resalve con una
+// codificación que no soporte UTF-8 completo (causa real de los '�' que
+// aparecían en WhatsApp: el archivo se corrompe en algún punto entre que
+// se entrega y se sube a producción, esto lo hace inmune a eso).
+var EMOJI_FIESTA = '\u{1F389}'; // 🎉
+var EMOJI_MANOS  = '\u{1F64C}'; // 🙌
+var EMOJI_DOC    = '\u{1F4C4}'; // 📄
+var CORREO_VENTAS_CORP = 'ventascorporativas@airtek.com.ve';
+
 function cmDatosMensaje_(r){
   return { NOMBRE_CLIENTE: r['RAZON SOCIAL']||'', LIDER_NOMBRE: r['EJECUTIVO']||'' };
 }
 
+// Lista de documentos ya FILTRADA por lo que Reina/el líder marcó ⚠️/❌
+// explícitamente — se usa en los modos "recordatorio" y "pendiente", donde
+// ya hubo al menos una revisión y sabemos puntualmente qué falta.
 function cmListaDocumentosPendientesTexto_(r, formato){
   var esISP=(r['TIPO_CLIENTE']||'').toString().toUpperCase().indexOf('ISP')>=0;
   var esPersonaNatural=(r['TIPO_CLIENTE']||'').toString().toUpperCase()==='PERSONA NATURAL';
@@ -8644,47 +8661,108 @@ function cmListaDocumentosPendientesTexto_(r, formato){
     var e=parsed.estadosDoc[it.k];
     return e==='problema'||e==='faltante';
   });
-  var bullet=formato==='wa'?'📄 ':'• ';
+  var bullet=formato==='wa'?EMOJI_DOC+' ':'• ';
   return pendientes.map(function(it){
     var nota=parsed.notas[it.k]||'';
     return bullet+it.lbl+(nota?' — '+nota:'');
   }).join('\n');
 }
 
+// Lista COMPLETA de documentos requeridos, SIN filtrar por marcas previas —
+// para la primera solicitud (GRANDES NEGOCIOS), donde todavía no hay nada
+// revisado y hay que pedirlo TODO, Cédula/RIF/Correo/Número del
+// representante incluidos.
+function cmListaDocumentosCompletaTexto_(r, formato){
+  var esISP=(r['TIPO_CLIENTE']||'').toString().toUpperCase().indexOf('ISP')>=0;
+  var esPersonaNatural=(r['TIPO_CLIENTE']||'').toString().toUpperCase()==='PERSONA NATURAL';
+  var items=getFaltItems_(esISP, esPersonaNatural);
+  var bullet=formato==='wa'?EMOJI_DOC+' ':'• ';
+  return items.map(function(it){return bullet+it.lbl;}).join('\n');
+}
+
+// Determina qué variante del mensaje de Documentos corresponde, según el
+// estatus legal real del cliente — confirmado con Gualfredo (16/09/2026).
+function cmModoMensajeDocs_(r){
+  var est=(r['ESTATUS_LEGAL']||'').toString().trim().toUpperCase();
+  if(est==='DOCUMENTOS SOLICITADOS')  return 'recordatorio';
+  if(est==='PENDIENTE POR DOCUMENTOS')return 'pendiente';
+  return 'primera'; // GRANDES NEGOCIOS y cualquier estatus no contemplado explícitamente
+}
+
 function cmMensajeBienvenida_(r, canal){
   var d=cmDatosMensaje_(r);
   if(canal==='wa'){
-    return '¡Bienvenido a Airtek! 🎉\n\n'
-      +'Es un gusto tener a '+d.NOMBRE_CLIENTE+' como parte de nuestros clientes corporativos.\n\n'
-      +'Tu servicio ya está activo 🎉 — en los próximos días vamos a dejar la documentación al día juntos.\n\n'
-      +'Cualquier duda, aquí estoy para acompañarte.\n\n'
-      +'¡Gracias por confiar en nosotros! 🙌\n\n'
+    return '¡Bienvenido a *Airtek*! '+EMOJI_FIESTA+'\n\n'
+      +'Es un placer darte la bienvenida al servicio corporativo de Airtek. Nos entusiasma contar con *'+d.NOMBRE_CLIENTE+'* como parte de nuestra cartera de clientes corporativos, y estamos comprometidos en brindarte una experiencia de excelencia, asegurándonos de atender tus necesidades con eficiencia y profesionalismo.\n\n'
+      +'Cualquier consulta o lo que necesites, aquí estamos para acompañarte.\n\n'
+      +'¡Gracias por tu confianza — construyamos juntos una relación de largo plazo!\n\n'
       +'— '+d.LIDER_NOMBRE+', Airtek';
   }
   return {
     asunto: '¡Bienvenido a Airtek! — '+d.NOMBRE_CLIENTE,
     cuerpo: '¡Bienvenido a Airtek!\n\n'
-      +'Es un placer darle la bienvenida al servicio corporativo de Airtek. Nos entusiasma contar con '+d.NOMBRE_CLIENTE+' como parte de nuestra cartera de clientes corporativos, y estamos comprometidos en brindarle una experiencia de excelencia desde el primer día.\n\n'
-      +'Su servicio ya está activo. En los próximos días finalizaremos junto a usted la documentación pendiente para dejar su expediente completamente al día.\n\n'
-      +'Cualquier duda que tenga en el camino, cuente con nosotros — estamos para acompañarlo en cada paso.\n\n'
-      +'Gracias por su confianza. Construyamos juntos una relación de largo plazo.\n\n'
+      +'Es un placer darle la bienvenida al servicio corporativo de Airtek. Nos entusiasma contar con '+d.NOMBRE_CLIENTE+' como parte de nuestra cartera de clientes corporativos, y estamos comprometidos en brindarle una experiencia excepcional, asegurándonos de satisfacer sus necesidades con eficiencia y profesionalismo.\n\n'
+      +'En Airtek valoramos a nuestros clientes y nos esforzamos por ofrecer soluciones innovadoras y un soporte de primera calidad. Si tiene alguna consulta o requiere asistencia, no dude en contactarnos — nuestro equipo está siempre disponible para ayudarle.\n\n'
+      +'Agradecemos su confianza y esperamos construir juntos una relación exitosa.\n\n'
       +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
   };
 }
 
 function cmMensajeDocumentos_(r, canal){
   var d=cmDatosMensaje_(r);
-  var lista=cmListaDocumentosPendientesTexto_(r, canal)||(canal==='wa'?'📄 Documentos pendientes de revisión':'• Documentos pendientes de revisión');
+  var modo=cmModoMensajeDocs_(r);
+  var lista = (modo==='primera')
+    ? cmListaDocumentosCompletaTexto_(r, canal)
+    : cmListaDocumentosPendientesTexto_(r, canal);
+  if(!lista) lista = canal==='wa' ? (EMOJI_DOC+' Documentos pendientes') : ('• Documentos pendientes');
+
   if(canal==='wa'){
-    return 'Hola! Para avanzar con el expediente de '+d.NOMBRE_CLIENTE+' nos faltan estos documentos:\n\n'
+    if(modo==='primera'){
+      return '¡Hola! Para poder cerrar el expediente legal de *'+d.NOMBRE_CLIENTE+'* y emitir tu contrato de servicio, necesitamos que nos hagas llegar lo siguiente:\n\n'
+        +lista+'\n\n'
+        +'Este paso es imprescindible para continuar con el disfrute del servicio. Puedes enviarlo por este mismo chat, o si prefieres, al correo '+CORREO_VENTAS_CORP+'.\n\n'
+        +'— '+d.LIDER_NOMBRE+', Airtek';
+    }
+    if(modo==='pendiente'){
+      return '¡Hola! Revisamos el expediente de *'+d.NOMBRE_CLIENTE+'* y necesitamos que nos hagas llegar nuevamente lo siguiente:\n\n'
+        +lista+'\n\n'
+        +'Puedes enviarlo por este mismo chat o al correo '+CORREO_VENTAS_CORP+' — en cuanto lo recibamos, seguimos con el proceso sin demora.\n\n'
+        +'— '+d.LIDER_NOMBRE+', Airtek';
+    }
+    // recordatorio
+    return '¡Hola! Seguimos esperando estos documentos para avanzar con el expediente de *'+d.NOMBRE_CLIENTE+'*:\n\n'
       +lista+'\n\n'
-      +'Puedes enviarlos por aquí mismo cuando puedas 🙌\n\n'
+      +'Puedes enviarlo por este mismo chat o al correo '+CORREO_VENTAS_CORP+' — cualquier duda con alguno, aquí estamos.\n\n'
       +'— '+d.LIDER_NOMBRE+', Airtek';
   }
+
+  // Correo
+  if(modo==='primera'){
+    return {
+      asunto: 'Documentos requeridos para su expediente — '+d.NOMBRE_CLIENTE,
+      cuerpo: 'Estimado cliente,\n\n'
+        +'Para poder cerrar el expediente legal de '+d.NOMBRE_CLIENTE+' y emitir su contrato de servicio, necesitamos que nos haga llegar los siguientes documentos:\n\n'
+        +lista+'\n\n'
+        +'Este paso es imprescindible para continuar con el disfrute del servicio. Puede responder este mismo correo adjuntando los documentos, o enviarlos por WhatsApp a nuestro equipo.\n\n'
+        +'Quedamos atentos.\n\n'
+        +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
+    };
+  }
+  if(modo==='pendiente'){
+    return {
+      asunto: 'Documentos por reenviar — '+d.NOMBRE_CLIENTE,
+      cuerpo: 'Estimado cliente,\n\n'
+        +'Revisamos el expediente de '+d.NOMBRE_CLIENTE+' y necesitamos que nos haga llegar nuevamente los siguientes documentos:\n\n'
+        +lista+'\n\n'
+        +'Puede responder este mismo correo adjuntando los documentos, o enviarlos por WhatsApp a nuestro equipo. En cuanto los recibamos, seguimos con el proceso sin demora.\n\n'
+        +'Atentamente,\n'+d.LIDER_NOMBRE+'\nAnalista de Atención al Cliente Corporativo — Airtek'
+    };
+  }
+  // recordatorio
   return {
-    asunto: 'Documentos pendientes — '+d.NOMBRE_CLIENTE,
+    asunto: 'Recordatorio — documentos pendientes de '+d.NOMBRE_CLIENTE,
     cuerpo: 'Estimado cliente,\n\n'
-      +'Para completar el expediente legal de '+d.NOMBRE_CLIENTE+' y avanzar con la activación de su servicio, necesitamos que nos haga llegar los siguientes documentos:\n\n'
+      +'Seguimos esperando los siguientes documentos para avanzar con el expediente de '+d.NOMBRE_CLIENTE+':\n\n'
       +lista+'\n\n'
       +'Puede responder este mismo correo adjuntando los documentos, o enviarlos por WhatsApp a nuestro equipo.\n\n'
       +'Quedamos atentos.\n\n'
@@ -8697,7 +8775,7 @@ function cmMensajeCobranza_(r, canal){
   if(canal==='wa'){
     return 'Hola! Te escribimos de Airtek para recordarte que tienes un pago pendiente por la instalación de tu servicio.\n\n'
       +'Puedes revisar el monto exacto en la Proforma que te enviamos.\n\n'
-      +'Cualquier duda o para coordinar el pago, aquí estamos 🙌\n\n'
+      +'Cualquier duda o para coordinar el pago, aquí estamos '+EMOJI_MANOS+'\n\n'
       +'— '+d.LIDER_NOMBRE+', Airtek';
   }
   return {
@@ -8737,19 +8815,25 @@ function cmWAOtroNumero(rif, tipo){
 // Abre Gmail con destinatario/asunto/cuerpo prellenados. No puede adjuntar
 // archivos automáticamente — ninguna URL de ningún proveedor de correo lo
 // permite (restricción de seguridad del navegador), así que se avisa.
+// Si no hay destinatario (cliente sin correo cargado), abre igual con el
+// campo "Para" vacío — el líder lo escribe a mano, mismo patrón que ya
+// existe con WhatsApp y "número manual".
 function cmAbrirGmailCompose(destinatario, asunto, cuerpo){
   var url='https://mail.google.com/mail/?view=cm&fs=1'
     +'&to='+encodeURIComponent(destinatario||'')
     +'&su='+encodeURIComponent(asunto||'')
     +'&body='+encodeURIComponent(cuerpo||'');
   window.open(url,'_blank');
-  toast('Se abrió Gmail — si hace falta adjuntar el PDF, arrástralo manualmente','ok');
+  if(destinatario){
+    toast('Se abrió Gmail — si hace falta adjuntar el PDF, arrástralo manualmente','ok');
+  } else {
+    toast('Se abrió Gmail sin destinatario — el cliente no tiene correo cargado, escríbelo tú','');
+  }
 }
 
 function cmEnviarCorreoRapido(rif, tipo){
   var r=cmFindByRif(rif); if(!r)return;
   var correoDest=(r['CORREO_REPRESENTANTES']||'').toString().trim();
-  if(!correoDest){ toast('Este cliente no tiene correo de representante cargado','err'); return; }
   var msg = tipo==='docs'?cmMensajeDocumentos_(r,'correo'):tipo==='cxc'?cmMensajeCobranza_(r,'correo'):cmMensajeBienvenida_(r,'correo');
   cmAbrirGmailCompose(correoDest, msg.asunto, msg.cuerpo);
   if(tipo==='docs') cmMarcarDocumentosSolicitados(rif);
