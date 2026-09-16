@@ -2484,6 +2484,23 @@ function renderTabDatos(r){
   h+='<div class="field"><label>Días en gestión</label><input readonly value="'+(dy!==null?dy+' días':'—')+'" style="color:'+dc+';font-weight:600"></div>';
   h+='</div>';
 
+  // ── Historial de Servicios — solo si el cliente tiene más de 1 servicio.
+  // 'Sucursal' e 'Instalación' arriba ya muestran, respectivamente, la unión
+  // de todas las sucursales y la fecha MÁS RECIENTE (así los escribe el
+  // cruce Python) — este bloque desglosa el detalle completo para que no
+  // haya que adivinar cuál corresponde a cuál.
+  var cantServ=Number(r['CANT_SERVICIOS']||1);
+  if(cantServ>1){
+    h+='<div class="sec-lbl">Historial de Servicios <span style="font-weight:400;font-size:9px;color:var(--text3)">('+cantServ+' servicios en este RIF)</span></div>';
+    h+='<div class="fg full">';
+    h+='<div class="field"><label>Sucursal del servicio más reciente</label><input readonly value="'+esc(r['SUCURSAL_RECIENTE']||'—')+'"></div>';
+    h+='<div class="field"><label>Todas las sucursales</label><input readonly value="'+esc(r['Sucursal']||'—')+'"></div>';
+    h+='<div class="field"><label>Código del servicio más reciente</label><input readonly value="'+esc(r['COD_RECIENTE']||'—')+'"></div>';
+    h+='<div class="field"><label>Todos los códigos</label><input readonly value="'+esc(r['HISTORIAL_CODIGOS']||'—')+'"></div>';
+    h+='<div class="field"><label>Todas las fechas de instalación</label><input readonly value="'+esc(r['HISTORIAL_FECHAS_SERVICIOS']||'—')+'"></div>';
+    h+='</div>';
+  }
+
   // ── Estatus legal — oculto en modo Comercial (ya está en el badge de arriba) ──
   if(!_drawerModoComercial){
     h+='<div class="sec-lbl">Estatus Legal</div>';
@@ -8147,8 +8164,16 @@ function cmInit(){
   } else {
     liderSel.disabled=false;
     if(liderSel.options.length<=1){
-      var lideres=(S.cfg||[]).filter(function(x){return (x.ROL||'').toUpperCase()==='LIDER'&&(x.ACTIVO||'').toUpperCase()==='SI';});
-      liderSel.innerHTML='<option value="">Todos los líderes</option>'+lideres.map(function(l){return '<option value="'+esc(l.EJECUTIVO)+'">'+esc(l.EJECUTIVO)+'</option>';}).join('');
+      // Antes solo salían los roles LIDER de CONFIG — cualquier valor de
+      // EJECUTIVO que no fuera un líder formal (ej. "Aliado Comercial",
+      // "Pendiente") quedaba invisible en este filtro aunque sí hubiera
+      // clientes con ese valor. Ahora se arma la lista con ambas fuentes:
+      // los líderes de CONFIG (para el orden/nombres oficiales) + cualquier
+      // otro valor de EJECUTIVO que exista de verdad en los datos.
+      var lideresCfg=(S.cfg||[]).filter(function(x){return (x.ROL||'').toUpperCase()==='LIDER'&&(x.ACTIVO||'').toUpperCase()==='SI';}).map(function(x){return x.EJECUTIVO;});
+      var enDatos=(S.all||[]).map(function(r){return r['EJECUTIVO'];}).filter(function(v){return v&&v.toString().trim();});
+      var todosLideres=lideresCfg.concat(enDatos).filter(function(v,i,arr){return arr.indexOf(v)===i;}).sort();
+      liderSel.innerHTML='<option value="">Todos los líderes</option>'+todosLideres.map(function(l){return '<option value="'+esc(l)+'">'+esc(l)+'</option>';}).join('');
     }
   }
   document.getElementById('cmFiltroBienvenida').style.display = (S.rol==='ANALISTA') ? '' : 'none';
@@ -8208,7 +8233,12 @@ function cmRender(){
     var clave=2026+'-'+String(mes+1).padStart(2,'0');
     return cmMesComisionEfectivo(r)===clave;
   });
-  if(esLider) base=base.filter(function(r){return normalizeStr(r['EJECUTIVO'])===normalizeStr(S.user);});
+  // El líder ve su propia cartera + los clientes aún sin asignar (Pendiente),
+  // por si alguno termina siendo suyo cuando el equipo de analistas lo asigne.
+  if(esLider) base=base.filter(function(r){
+    var ej=normalizeStr(r['EJECUTIVO']);
+    return ej===normalizeStr(S.user) || ej==='pendiente';
+  });
   else if(lider) base=base.filter(function(r){return r['EJECUTIVO']===lider;});
 
   var total=base.length;
@@ -8254,7 +8284,8 @@ function cmRender(){
     var nota=(r['NOTA_COMISION']||'').toString().trim();
     var notaTag=nota?'<div class="cm-tag" style="color:var(--amber);border-color:var(--amber)" title="'+esc(nota)+'">↪ '+esc(nota)+'</div>':'';
     var cant=Number(r['CANT_SERVICIOS']||1);
-    var multiTag=cant>1?'<span class="cm-tag">· +'+(cant-1)+' servicio(s) más</span>':'';
+    var multiTip=cant>1?('Fechas: '+esc(r['HISTORIAL_FECHAS_SERVICIOS']||'—')+' · Códigos: '+esc(r['HISTORIAL_CODIGOS']||'—')):'';
+    var multiTag=cant>1?'<span class="cm-tag" title="'+multiTip+'">· +'+(cant-1)+' servicio(s) más ℹ️</span>':'';
     var fechaInstD=parseDate(r['Fecha de Instalacion Cliente']);
     var instTag=fechaInstD?'<span class="cm-tag">Instalado: '+fechaInstD.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'})+'</span>':'';
     var rifSafe=esc(r['RIF']);
