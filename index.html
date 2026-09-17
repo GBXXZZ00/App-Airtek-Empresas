@@ -1719,7 +1719,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <script>
 const BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJCG8cUx5g3IQdPRvcZjowwio8A8YUMYwYpIHOYzL51tx29_wKMsUA5CDsxFZ_KtpeSgs9RWE2bllG/pub';
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9wn8gXPotkfJgAGr9JXb78ww6o8CKmvMgVlOWU3WHYqfKXFL2BdBm2Wn96vYTuQxRoA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytwhLZyrrMJarOldEuZYs98o1AafLAl-RkXreMB7Ez5T6-IByrwlQnlwIkNdoUa1HVHw/exec';
 // Deep link: si la URL tiene ?rif=XXXX, abrir ese expediente tras login
 const PENDING_RIF = (function(){var p=new URLSearchParams(window.location.search);return p.get('rif')||'';})();
 const PENDING_CASO = (function(){var p=new URLSearchParams(window.location.search);return p.get('caso')||'';})();
@@ -3564,21 +3564,29 @@ function persistObs(obsValue){
   });
 }
 
+// Mensaje destacado cuando el checklist se completa automáticamente y el
+// cliente pasa a DOCUMENTOS EN REVISION — usado tanto al subir el último
+// documento como al guardar el último dato de contacto que faltaba.
+function cmMostrarExpedienteCompleto_(nombreCliente){
+  toast('🎉 ¡Expediente completo! '+(nombreCliente||'El cliente')+' pasó a Documentos en Revisión — ya está listo para comisionar.','ok');
+}
+
 function saveExp(){
   if(!S.cur)return;
   // Guardar estados del checklist primero
   saveFaltantes();
 
   // Recoger correo/teléfono de representantes (ahora viven en tab-documentos)
+  var camposContacto={};
   for(var i=1;i<=S.nReps;i++){
     var ck=i===1?'CORREO_REPRESENTANTES':'CORREO_REPRESENTANTES'+i;
     var nk=i===1?'NUMERO_REPRESENTANTES':'NUMERO_REPRESENTANTES'+i;
-    if(document.getElementById('fc'+i))S.cur[ck]=document.getElementById('fc'+i).value;
-    if(document.getElementById('fn'+i))S.cur[nk]=document.getElementById('fn'+i).value;
+    if(document.getElementById('fc'+i)){S.cur[ck]=document.getElementById('fc'+i).value;camposContacto[ck]=S.cur[ck];}
+    if(document.getElementById('fn'+i)){S.cur[nk]=document.getElementById('fn'+i).value;camposContacto[nk]=S.cur[nk];}
   }
   // Correo empresa y Proham (también en tab-documentos ahora)
-  if(document.getElementById('f_correo_emp'))S.cur['CORREO_EMPRESA']=document.getElementById('f_correo_emp').value;
-  if(document.getElementById('f_tel_proham'))S.cur['TELEFONO_PROHAM']=document.getElementById('f_tel_proham').value;
+  if(document.getElementById('f_correo_emp')){S.cur['CORREO_EMPRESA']=document.getElementById('f_correo_emp').value;camposContacto['CORREO_EMPRESA']=S.cur['CORREO_EMPRESA'];}
+  if(document.getElementById('f_tel_proham')){S.cur['TELEFONO_PROHAM']=document.getElementById('f_tel_proham').value;camposContacto['TELEFONO_PROHAM']=S.cur['TELEFONO_PROHAM'];}
 
   // Sync S.all
   var inAll=S.all.find(function(x){return x['RIF']===S.cur['RIF'];});
@@ -3593,9 +3601,39 @@ function saveExp(){
     'ESTATUS_LEGAL':     S.cur['ESTATUS_LEGAL']
   });
   refreshTableRow(S.cur);
-  toast('Cambios guardados ✓','ok');
   persistObs(S.cur['Observacion']||'');
-  setTimeout(closeDrawer,900);
+
+  // BUG CRÍTICO corregido (16/09/2026): antes, correo/número de representante
+  // (y correo de empresa / tel. Proham) se veían "guardados" en pantalla
+  // (toast ✓) pero SOLO quedaban en memoria del navegador — nunca llegaban a
+  // la hoja real. saveField() para estos campos solo escribía en
+  // HISTORIAL_LOG (bitácora), nunca en la celda del cliente. Ahora se
+  // persisten de verdad con actualizarContactoCliente, que además revisa si
+  // con este dato el checklist quedó completo (correo/número puede ser
+  // justo lo último que faltaba).
+  if(APPS_SCRIPT_URL && Object.keys(camposContacto).length){
+    fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify(Object.assign({
+      action:'actualizarContactoCliente', rif:S.cur['RIF'], usuario:S.user||'app'
+    }, camposContacto))})
+    .then(function(r){return r.json();})
+    .then(function(rs){
+      if(!rs.ok){ toast('Error guardando contacto: '+(rs.error||'desconocido'),'err'); return; }
+      if(rs.estatusNuevo && rs.estatusNuevo!==S.cur['ESTATUS_LEGAL']){
+        S.cur['ESTATUS_LEGAL']=rs.estatusNuevo;
+        if(inAll)inAll['ESTATUS_LEGAL']=rs.estatusNuevo;
+        refreshTableRow(S.cur);
+        renderStBtns(S.cur);
+        cmMostrarExpedienteCompleto_(S.cur['RAZON SOCIAL']);
+      } else {
+        toast('Cambios guardados ✓','ok');
+      }
+      setTimeout(closeDrawer,900);
+    })
+    .catch(function(){ toast('Sin conexión — no se pudo guardar el contacto','err'); });
+  } else {
+    toast('Cambios guardados ✓','ok');
+    setTimeout(closeDrawer,900);
+  }
 }
 
 function refreshTableRow(r){
@@ -3730,7 +3768,7 @@ function handleFile(input,col,urlVieja){
           var btnIA=document.getElementById('tab-btn-verificacion');
           var rolIA=(S.rol==='ADMIN'||S.rol==='ABOGADO');
           if(btnIA)btnIA.style.display=rolIA?'':'none';
-          toast('✅ Todos los documentos subidos — Estatus → '+rs.estatusNuevo,'ok');
+          cmMostrarExpedienteCompleto_(S.cur['RAZON SOCIAL']);
         }else{
           toast('Documento subido ✓','ok');
         }
@@ -8153,7 +8191,12 @@ function cmMesComisionEfectivo(r){
 
 function cmEstatusLegalOk(estatus){
   var e=(estatus||'').toString().trim().toUpperCase();
-  return ['DOCUMENTOS RECIBIDOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'].indexOf(e)>=0;
+  // Confirmado con Gualfredo (16/09/2026): si el líder ya subió todo y el
+  // checklist pasó solo a DOCUMENTOS EN REVISION, eso YA cuenta como listo
+  // para comisionar — no hace falta esperar a que Reina apruebe formalmente
+  // (DOCUMENTOS RECIBIDOS). Reemplaza la regla anterior (que sí exigía la
+  // aprobación de Reina) — cambio de opinión consciente, no un descuido.
+  return ['DOCUMENTOS EN REVISION','DOCUMENTOS RECIBIDOS','CONTRATO EN CURSO','PENDIENTE POR FIRMAR','CONTRATO FIRMADO'].indexOf(e)>=0;
 }
 // Misma definición de "listo para comisionar" en un solo lugar — la usan
 // tanto las tarjetas KPI (Listos/No listos) como su filtro correspondiente.
@@ -8874,6 +8917,39 @@ function cmEnviarCorreoGestion(rif){
     action:'enviarCorreoGestionComercial', rif:rif, usuario:S.user
   })}).then(function(r){return r.json();}).then(function(rs){
     if(!rs.ok){
+      var sinCorreo=(rs.error||'').toLowerCase().indexOf('no tiene correo')>=0;
+      if(sinCorreo){
+        // Cliente sin correo cargado: abre Gmail igual (destinatario vacío,
+        // el líder lo escribe y adjunta los 2 PDF a mano — ya deberían estar
+        // descargados del paso 1) y se marca como enviado de una vez, con
+        // fecha y usuario, para que quede visible en Historial — confirmado
+        // con Gualfredo (16/09/2026): no hace falta verificar la entrega,
+        // basta con que quede registrado quién y cuándo lo hizo.
+        var r=cmFindByRif(rif);
+        var d=cmDatosMensaje_(r);
+        cmAbrirGmailCompose('', 'Bienvenida y Proforma — '+d.NOMBRE_CLIENTE,
+          'Estimado cliente,\n\nAdjunto encontrará su Carta de Bienvenida y la Proforma correspondiente a la instalación de su servicio con Airtek.\n\nQuedamos atentos ante cualquier consulta.\n\nSaludos cordiales,\nAirtek — Ventas Corporativas');
+        fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+          action:'marcarCorreoManual', rif:rif, valor:'SI', usuario:S.user,
+          motivo:'Enviado manualmente — cliente sin correo cargado en el sistema'
+        })}).then(function(r2){return r2.json();}).then(function(rs2){
+          if(reg){
+            reg['CORREO_ENVIADO']='SI';
+            reg['CORREO_ENVIADO_POR']=S.user;
+            reg['FECHA_CORREO_ENVIADO']=new Date().toLocaleDateString('es-VE');
+            reg['PROFORMA_ENVIADA']='SI';
+            reg['BIENVENIDA_ENVIADA']='SI';
+          }
+          toast('Se abrió Gmail sin destinatario — recuerda adjuntar los 2 PDF a mano. Marcado como enviado.','ok');
+          renderTabGestionComercial(reg);
+          cmRender();
+        }).catch(function(){
+          toast('Se abrió Gmail, pero no se pudo marcar como enviado — hazlo manual con "⋯"','err');
+        });
+        var reg=cmFindByRif(rif);
+        if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
+        return;
+      }
       toast('Error enviando correo: '+(rs.error||'desconocido'),'err');
       if(btn){ btn.disabled=false; btn.textContent=textoOriginal; }
       return;
